@@ -28,13 +28,13 @@ let wakeLock=null;
 async function keepAwake(on){ try{ if(on&&"wakeLock" in navigator&&!wakeLock){ wakeLock=await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release",()=>wakeLock=null);} if(!on&&wakeLock){ wakeLock.release(); wakeLock=null; } }catch(e){} }
 
 /* ---------- text-to-speech (partner voice) ---------- */
-function speak(text, lang, onend, rate, role){
+function speak(text, lang, onend, rate, role, pitchMul){
   let done=false; const fin=()=>{ if(!done){ done=true; onend&&onend(); } };
   try{
     if(!("speechSynthesis" in window)) return fin();
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(text); u.lang=LOCALE[lang]; u.rate=rate||+SET.rate||1;
-    if(role==="model"&&typeof modelVoice==="function"){ const m=modelVoice(lang); if(m.voice) try{ u.voice=m.voice; }catch(e){} u.pitch=Math.max(0.1,Math.min(2,m.pitch)); u.rate=u.rate*m.rate; }
+    if(role==="model"&&typeof modelVoice==="function"){ const m=modelVoice(lang); if(m.voice) try{ u.voice=m.voice; }catch(e){} u.pitch=Math.max(0.1,Math.min(2,m.pitch*(pitchMul||1))); u.rate=u.rate*m.rate; }
     else { const vs=speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.replace("_","-").toLowerCase().startsWith(lang));
       const pref=vs.find(v=>v.lang.replace("_","-")===LOCALE[lang])||vs[0]; if(pref) try{ u.voice=pref; }catch(e){} }
     u.onend=fin; u.onerror=fin; speechSynthesis.speak(u);

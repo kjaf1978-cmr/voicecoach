@@ -87,9 +87,10 @@ function patternPanel(box,tpl,{center=patternCenter(),band=voiceTarget(),relativ
       let level=null; if(band&&!relative){ const f=an.f0med; level=f>=band.lo&&f<=band.hi?1:Math.max(0,1-Math.min(Math.abs(f-band.lo),Math.abs(f-band.hi))/((band.hi-band.lo)/2)); }
       const parts=[tempo,shape].concat(level!=null?[level]:[]), score=Math.round(100*parts.reduce((x,y)=>x+y,0)/parts.length);
       const lines=[t("pat_tempo",{u:f1(an.total),p:f1(tpl.dur),s:ratio<0.88?t("pat_faster"):ratio>1.12?t("pat_slower"):t("pat_ok")}),t("pat_shape",{p:Math.round(shape*100)})];
-      if(dev&&Math.abs(dev.d)>2.5){ const w=tpl.words.slice().reverse().find(x=>x.t<=dev.t); if(w) lines.push(t("pat_dev",{w:w.w,d:t(dev.d>0?"pat_higher":"pat_lower")})); }
+      let devWord=null;
+      if(dev&&Math.abs(dev.d)>2.5){ let wi=-1; tpl.words.forEach((x,i)=>{ if(x.t<=dev.t) wi=i; }); if(wi>=0){ const sp=wordSpan(tpl,wi); devWord=Object.assign(sp,{d:dev.d}); lines.push(t("pat_dev",{w:sp.w,d:t(dev.d>0?"pat_higher":"pat_lower")})); } }
       if(level!=null) lines.push(t("pat_level",{f:Math.round(an.f0med),lo:band.lo,hi:band.hi}));
-      return {score,tempo,shape,level,lines,ratio};
+      return {score,tempo,shape,level,lines,ratio,devWord,ctx:{tpl,center,relative,ownMed:an.f0med}};
     }
   };
 }
@@ -105,5 +106,57 @@ function renderPatternTrainer(){
   recControls(box.querySelector("[data-r]"),{lang:srLang(),maxSec:30,onStart:()=>pan.reset(),onPitch:(f,s,db)=>pan.onPitch(f,s,db),onDone:r=>{
     const an=analyze(r.pcm), res=pan.evaluate(an), tips=makeTips(an,{sr:r.sr.text?r.sr:null,expected:plainText(text)});
     const take={blob:r.blob,an,tips,score:res?res.score:null,kind:"pattern",title:t("pat_title"),lang:l};
-    const o=box.querySelector("[data-o]"); o.innerHTML=""; o.append(replayView(take,{onSave:()=>saveTake(take),extra:patternResultHtml(res)})); logSession(t("pat_title"),0.5); }});
+    const o=box.querySelector("[data-o]"); o.innerHTML="";
+    if(res) o.append(patternResultBox(res,dw=>wordDrill(o,Object.assign({dw,lang:l,onBack:()=>renderPatternTrainer()},res.ctx))));
+    o.append(replayView(take,{onSave:()=>saveTake(take)})); logSession(t("pat_title"),0.5); }});
+}
+
+/* ================= v3.8: focused word training from the biggest deviation ================= */
+Object.assign(T.en,{wd_train:"🎯 Practise “{w}”", wd_title:"Practise “{w}”", wd_how_up:"You said “{w}” too low. Say only this word and let your voice rise to the green curve.", wd_how_down:"You said “{w}” too high. Say only this word and let your voice settle down onto the green curve.",
+ wd_goal:"Goal: on the curve (± 1.5 semitones) {n}× in a row.", wd_res:"Your pitch on “{w}”: {d} semitone(s) {dir} the target.", wd_above:"above", wd_below:"below", wd_ok:"✓ On the curve", wd_up:"↑ A little higher", wd_down:"↓ A little lower", wd_slope:"Follow the direction of the curve within the word (rising / falling).",
+ wd_model:"🔊 Listen", wd_back:"↩ Back to the full sentence", wd_done:"✓ “{w}” is right now – go back and say the whole sentence with the same tone.", wd_streak:"{a} of {n} in a row", wd_none:"No voice detected – say the word clearly."});
+Object.assign(T.de,{wd_train:"🎯 „{w}“ üben", wd_title:"„{w}“ üben", wd_how_up:"Du hast „{w}“ zu tief gesprochen. Sprich nur dieses Wort und lass die Stimme hoch zur grünen Kurve gehen.", wd_how_down:"Du hast „{w}“ zu hoch gesprochen. Sprich nur dieses Wort und lass die Stimme auf die grüne Kurve sinken.",
+ wd_goal:"Ziel: auf der Kurve (± 1,5 Halbtöne), {n}-mal hintereinander.", wd_res:"Deine Tonhöhe bei „{w}“: {d} Halbton/-töne {dir} dem Ziel.", wd_above:"über", wd_below:"unter", wd_ok:"✓ Auf der Kurve", wd_up:"↑ Etwas höher", wd_down:"↓ Etwas tiefer", wd_slope:"Folge der Richtung der Kurve innerhalb des Wortes (steigend / fallend).",
+ wd_model:"🔊 Anhören", wd_back:"↩ Zurück zum ganzen Satz", wd_done:"✓ „{w}“ sitzt jetzt – geh zurück und sprich den ganzen Satz mit derselben Tonhöhe.", wd_streak:"{a} von {n} hintereinander", wd_none:"Keine Stimme erkannt – sprich das Wort deutlich."});
+Object.assign(T.fr,{wd_train:"🎯 Travailler « {w} »", wd_title:"Travailler « {w} »", wd_how_up:"Vous avez dit « {w} » trop grave. Dites seulement ce mot et faites monter la voix jusqu'à la courbe verte.", wd_how_down:"Vous avez dit « {w} » trop aigu. Dites seulement ce mot et laissez la voix descendre sur la courbe verte.",
+ wd_goal:"Objectif : sur la courbe (± 1,5 demi-ton), {n} fois de suite.", wd_res:"Votre hauteur sur « {w} » : {d} demi-ton(s) {dir} de la cible.", wd_above:"au-dessus", wd_below:"en dessous", wd_ok:"✓ Sur la courbe", wd_up:"↑ Un peu plus haut", wd_down:"↓ Un peu plus bas", wd_slope:"Suivez la direction de la courbe dans le mot (montante / descendante).",
+ wd_model:"🔊 Écouter", wd_back:"↩ Retour à la phrase entière", wd_done:"✓ « {w} » est juste maintenant – revenez à la phrase entière avec la même hauteur.", wd_streak:"{a} sur {n} de suite", wd_none:"Aucune voix détectée – dites le mot clairement."});
+const WD_STREAK=3, WD_TOL=1.5;
+/* word span inside a text template */
+function wordSpan(tpl,idx){ const w=tpl.words[idx], nx=tpl.words[idx+1]; let t1=nx?nx.t:tpl.dur; tpl.pauses.forEach(p=>{ if(p.s>w.t&&p.s<t1) t1=p.s; }); return {w:w.w,t0:w.t,t1}; }
+/* box with the pattern result + "practise this word" button */
+function patternResultBox(res,onWord){
+  const box=el("div",{},patternResultHtml(res));
+  if(res&&res.devWord&&onWord){ const b=el("button",{class:"b warm",style:"width:100%;margin-top:6px"},t("wd_train",{w:res.devWord.w})); b.onclick=()=>onWord(res.devWord); box.append(b); }
+  return box;
+}
+function wordDrill(box,{dw,tpl,center,relative,ownMed,lang,onBack}){
+  const sub={dur:Math.max(0.3,dw.t1-dw.t0),pts:tpl.pts.filter(p=>p.t>=dw.t0-0.01&&p.t<=dw.t1+0.01).map(p=>({t:p.t-dw.t0,st:p.st})),words:[{t:0,w:dw.w}],pauses:[],src:"word"};
+  const tMean=sub.pts.reduce((a,p)=>a+p.st,0)/Math.max(1,sub.pts.length), tSlope=sub.pts.length>1?sub.pts[sub.pts.length-1].st-sub.pts[0].st:0;
+  const base=relative?(ownMed||center):center; let streak=0;
+  const render=(msg)=>{
+    box.innerHTML=`<div class="card" style="border:2px solid var(--accent2);margin-top:8px"><div class="row"><h3 class="grow" style="margin:0">🎯 ${esc(t("wd_title",{w:dw.w}))}</h3><button class="b sm alt" data-back>${t("wd_back")}</button></div>
+      <p>${esc(t(dw.d<0?"wd_how_up":"wd_how_down",{w:dw.w}))}</p><p class="muted">${t("wd_goal",{n:WD_STREAK})}</p>
+      <div class="row"><span class="dots big">${[...Array(WD_STREAK)].map((_,k)=>`<i class="${k<streak?'on':''}"></i>`).join("")}</span><span class="muted">${t("wd_streak",{a:streak,n:WD_STREAK})}</span></div>
+      <div class="huge" ${tlAttr(lang)} style="font-size:2.4rem;padding:8px">${esc(dw.w)}</div>
+      <button class="b sm alt" data-model>${t("wd_model")}</button>
+      <div data-p style="margin-top:6px"></div><div data-r></div><div data-m>${msg||""}</div></div>`;
+    box.querySelector("[data-back]").onclick=()=>onBack&&onBack();
+    box.querySelector("[data-model]").onclick=()=>speak(dw.w,lang,null,0.75,"model",Math.pow(2,tMean/24));
+    const pan=patternPanel(box.querySelector("[data-p]"),sub,{center:base,band:null,relative:false});
+    recControls(box.querySelector("[data-r]"),{maxSec:8,onStart:()=>pan.reset(),onPitch:(f,s,db)=>pan.onPitch(f,s,db),onDone:r=>{
+      const an=analyze(r.pcm,{minSpeech:15}); if(!an.ok||!an.f0med){ render(`<div class="warnbox">${t("wd_none")}</div>`); return; }
+      pan.evaluate(an);
+      const S=an.series, v=[]; S.f0.forEach((f,k)=>{ if(f>0) v.push({t:k*S.hop,st:12*Math.log2(f/base)}); });
+      const uMean=v.reduce((a,p)=>a+p.st,0)/v.length, diff=uMean-tMean;
+      const uSlope=v.length>4?(v.slice(-3).reduce((a,p)=>a+p.st,0)/3)-(v.slice(0,3).reduce((a,p)=>a+p.st,0)/3):0;
+      const slopeOk=Math.abs(tSlope)<2||Math.sign(uSlope)===Math.sign(tSlope);
+      const ok=Math.abs(diff)<=WD_TOL&&slopeOk; streak=ok?streak+1:0; beep(ok?990:520,.12,.1);
+      let m=`<div class="${ok?"okbox":"warnbox"}" style="margin-top:6px"><b>${ok?t("wd_ok"):diff<0?t("wd_up"):t("wd_down")}</b> – ${esc(t("wd_res",{w:dw.w,d:f1(Math.abs(diff)),dir:t(diff<0?"wd_below":"wd_above")}))}${slopeOk?"":"<br>"+t("wd_slope")}</div>`;
+      if(streak>=WD_STREAK){ m+=`<div class="okbox" style="margin-top:6px;font-size:1.05rem">🏆 ${esc(t("wd_done",{w:dw.w}))}</div>`; logSession(t("wd_title",{w:dw.w}),1); }
+      render(m);
+      if(streak>=WD_STREAK){ const bb=el("button",{class:"b",style:"width:100%;margin-top:6px"},t("wd_back")); bb.onclick=()=>onBack&&onBack(); box.querySelector("[data-m]").append(bb); }
+    }});
+  };
+  render(); box.scrollIntoView({behavior:"smooth",block:"start"});
 }

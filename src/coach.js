@@ -142,7 +142,8 @@ function coachDone(r,text){
     const same=el("button",{class:"b alt grow"},t("coach_same")); same.onclick=()=>renderCoach();
     nb.append(same,nxt); wrap.append(nb); renderCoach(wrap); $("#coachRes").scrollIntoView({behavior:"smooth"}); };
   const pres=R.pan&&an.ok?R.pan.evaluate(an):null;
-  wrap.append(replayView(take,{onSave:()=>saveTake(take),noRegister:true,extra:pres?patternResultHtml(pres):""}));
+  if(pres) wrap.append(patternResultBox(pres,dw=>{ const res=$("#coachRes"); res.innerHTML=""; const hold=el("div"); res.append(hold); wordDrill(hold,Object.assign({dw,lang:R.lang,onBack:()=>renderCoach()},pres.ctx)); }));
+  wrap.append(replayView(take,{onSave:()=>saveTake(take),noRegister:true}));
   if(!an.ok){ finish({pass:false,v:null,txt:an.noVoice?t("tip_noise"):t("tip_short")}); return; }
   if(def.needSR&&!sr){ /* self-assessment fallback */
     const q=el("div",{class:"card",style:"margin-top:8px"},`<p><b>${t(R.id==="fillers"?"coach_self_fill":"coach_self_clear")}</b></p><div class="chips"></div>`);

@@ -99,5 +99,7 @@ function refCompare(r,out){
     <p><b>${t("ref_sim")}: ${sim} %</b></p>${gaps.length?`<p class="muted">🏋 ${t("ref_gaps")}</p>`:""}`;
   const pres=REF.pan?REF.pan.evaluate(an):null;
   const take={blob:r.blob,an,tips,score:sim,kind:"style-"+REF.style,title,lang:SET.tl,text:sr?sr.text:""};
-  out.innerHTML=""; out.append(replayView(take,{onSave:()=>saveTake(take),extra:extra+patternResultHtml(pres)})); logSession(t("ref_title"),Math.max(0.5,an.dur/60));
+  out.innerHTML="";
+  if(pres) out.append(patternResultBox(pres,dw=>{ out.innerHTML=""; const hold=el("div"); out.append(hold); wordDrill(hold,Object.assign({dw,lang:SET.tl,onBack:()=>renderRef()},pres.ctx)); }));
+  out.append(replayView(take,{onSave:()=>saveTake(take),extra})); logSession(t("ref_title"),Math.max(0.5,an.dur/60));
 }
