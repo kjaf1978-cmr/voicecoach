@@ -15,22 +15,25 @@ function concatChunks(chunks){ const len=chunks.reduce((a,c)=>a+c.length,0), o=n
 
 /* ---------- live take: recording + optional speech recognition ---------- */
 const FATAL_SR=["not-allowed","service-not-allowed","audio-capture","unsupported","start-failed"];
-async function startTake({video=false, lang=null, onLevel=null, onText=null, onPitch=null}={}){
+async function startTake({video=false, lang=null, onLevel=null, onText=null, onPitch=null, capture=true}={}){
   if(typeof MIC!=="undefined" && MIC.stream) stopMic();
   const c=ac(); if(!c) throw new Error("noaudio");
-  const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},
-    video: video?{facingMode:"user",width:{ideal:640},height:{ideal:480}}:false});
-  const src=c.createMediaStreamSource(stream), proc=c.createScriptProcessor(4096,1,1), an=c.createAnalyser(); an.fftSize=2048;
+  const ac0={echoCancellation:false,noiseSuppression:false,autoGainControl:false}; if(SET.micId) ac0.deviceId={exact:SET.micId};
+  let stream; try{ stream=await navigator.mediaDevices.getUserMedia({audio:ac0,
+    video: video?{facingMode:"user",width:{ideal:640},height:{ideal:480}}:false}); }
+  catch(e){ if(SET.micId&&(e.name==="OverconstrainedError"||e.name==="NotFoundError")){ SET.micId=""; save(); delete ac0.deviceId; stream=await navigator.mediaDevices.getUserMedia({audio:ac0,video:video?{facingMode:"user"}:false}); } else throw e; }
+  // capture=false (live singing exercises): no PCM capture and no MediaRecorder → much less CPU, no audio crackle on phones
+  const src=c.createMediaStreamSource(stream), proc=capture?c.createScriptProcessor(4096,1,1):null, an=c.createAnalyser(), mute=c.createGain(); an.fftSize=2048; mute.gain.value=0;
   const chunks=[]; let capturing=true;
-  proc.onaudioprocess=e=>{ if(capturing) chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
-  src.connect(an); src.connect(proc); proc.connect(c.destination);
+  if(proc){ proc.onaudioprocess=e=>{ if(capturing) chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); }; src.connect(proc); proc.connect(mute); mute.connect(c.destination); }
+  src.connect(an);
   const cands=video?["video/webm;codecs=vp8,opus","video/webm","video/mp4"]:["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/ogg"];
   let mime=""; for(const m of cands){ try{ if(MediaRecorder.isTypeSupported(m)){ mime=m; break; } }catch(e){} }
   let mr=null; const parts=[];
-  try{ mr=new MediaRecorder(stream, mime?{mimeType:mime}:undefined); mr.ondataavailable=e=>{ if(e.data&&e.data.size) parts.push(e.data); }; mr.start(250); }catch(e){ mr=null; }
-  const t0=performance.now(), lb=new Float32Array(an.fftSize); let raf;
-  const lvl=()=>{ an.getFloatTimeDomainData(lb); let s=0; for(let i=0;i<lb.length;i++) s+=lb[i]*lb[i]; const dbv=10*Math.log10(s/lb.length+1e-10), sec=(performance.now()-t0)/1000; onLevel&&onLevel(dbv,sec);
-    if(onPitch){ const p=detectPitch(lb,c.sampleRate); onPitch(p.f,sec,dbv); } raf=requestAnimationFrame(lvl); }; lvl();
+  if(capture) try{ mr=new MediaRecorder(stream, mime?{mimeType:mime}:undefined); mr.ondataavailable=e=>{ if(e.data&&e.data.size) parts.push(e.data); }; mr.start(250); }catch(e){ mr=null; }
+  const t0=performance.now(), lb=new Float32Array(an.fftSize); let raf, fr=0;
+  const lvl=()=>{ raf=requestAnimationFrame(lvl); if(!capture&&(fr++&1)) return; an.getFloatTimeDomainData(lb); let s=0; for(let i=0;i<lb.length;i++) s+=lb[i]*lb[i]; const dbv=10*Math.log10(s/lb.length+1e-10), sec=(performance.now()-t0)/1000; onLevel&&onLevel(dbv,sec);
+    if(onPitch){ const p=detectPitch(lb,c.sampleRate); onPitch(p.f,sec,dbv); } }; lvl();
   const sr={text:"",confs:[],first:null,last:null,err:null,segs:0};
   let srOn=!!(lang && SR && !srBroken), srDone=Promise.resolve();
   const loop=()=>{ if(!srOn) return;
@@ -43,7 +46,7 @@ async function startTake({video=false, lang=null, onLevel=null, onText=null, onP
     srOn=false; stopRecognition(); cancelAnimationFrame(raf);
     if(mr&&mr.state!=="inactive") await new Promise(res=>{ mr.onstop=res; try{ mr.stop(); }catch(e){ res(); } });
     capturing=false;
-    try{ src.disconnect(); proc.disconnect(); an.disconnect(); }catch(e){}
+    try{ src.disconnect(); proc&&proc.disconnect(); an.disconnect(); mute.disconnect(); }catch(e){}
     stream.getTracks().forEach(t=>t.stop());
     await Promise.race([srDone.catch(()=>{}), new Promise(r=>setTimeout(r,2500))]);
     const blob=parts.length?new Blob(parts,{type:(mr&&mr.mimeType)||mime||(video?"video/webm":"audio/webm")}):null;

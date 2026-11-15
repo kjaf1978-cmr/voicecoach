@@ -115,6 +115,7 @@ function renderSettings(){
   chipSet($("#setMode"),[["auto",t("mode_auto")],["rec",t("mode_rec")],["text",t("mode_text")]],SET.mode,v=>{ SET.mode=v; if(v==="auto") store.flags.conc=undefined; save(); renderSettings(); });
   if(typeof renderProfileForm==="function") renderProfileForm($("#setProf"),()=>{ renderTone(); renderRoutines(); renderSettings(); });
   if(typeof renderVoicePick==="function") renderVoicePick();
+  renderMicPick();
   $("#setRate").value=SET.rate; $("#rateVal").textContent="×"+(+SET.rate).toFixed(2);
 }
 function setTl(v){ SET.tl=v; save(); SP.snd=Object.keys(ART[v])[0]; SP.idx=0; renderSettings(); renderTalkChips(); renderSpeech(); renderPassages(); renderTwisters(); nextPair(); renderScenes(); renderToday(); $("#topicBox").textContent=t("imp_tap"); delete $("#topicBox").dataset.set; renderV3(); }
@@ -234,13 +235,15 @@ $("#micBtn").onclick=async()=>{
 };
 function stopMic(){ cancelAnimationFrame(MIC.raf); MIC.stream.getTracks().forEach(x=>x.stop()); MIC.stream=null; $("#micBtn").textContent=t("mic_on"); keepAwake(false); }
 function detectPitch(buf,sr){
-  const n=buf.length; let rms=0; for(let i=0;i<n;i++) rms+=buf[i]*buf[i]; rms=Math.sqrt(rms/n); if(rms<0.008) return {f:0,rms};
-  const minLag=Math.floor(sr/1000), maxLag=Math.floor(sr/65), size=n-maxLag, corr=new Float32Array(maxLag+2); let best=-1,bestLag=0;
-  for(let lag=minLag;lag<=maxLag+1;lag++){ let s=0,e1=0,e2=0; for(let i=0;i<size;i++){ const a=buf[i],b=buf[i+lag]; s+=a*b; e1+=a*a; e2+=b*b; } corr[lag]=s/Math.sqrt(e1*e2+1e-12); }
+  const n0=buf.length; let rms=0; for(let i=0;i<n0;i++) rms+=buf[i]*buf[i]; rms=Math.sqrt(rms/n0); if(rms<0.008) return {f:0,rms};
+  // decimate to ~24 kHz (2-tap average) – 4× less work, same accuracy for voice up to 1100 Hz
+  const d=sr>=32000?2:1, n=Math.floor(n0/d), x=d>1?new Float32Array(n):buf; if(d>1) for(let i=0;i<n;i++) x[i]=(buf[2*i]+buf[2*i+1])/2; const r=sr/d;
+  const minLag=Math.floor(r/1100), maxLag=Math.floor(r/65), size=n-maxLag, corr=new Float32Array(maxLag+2); let best=-1,bestLag=0;
+  for(let lag=minLag;lag<=maxLag+1;lag++){ let s=0,e1=0,e2=0; for(let i=0;i<size;i++){ const a=x[i],b=x[i+lag]; s+=a*b; e1+=a*a; e2+=b*b; } corr[lag]=s/Math.sqrt(e1*e2+1e-12); }
   for(let lag=minLag+1;lag<=maxLag;lag++){ if(corr[lag]>corr[lag-1]&&corr[lag]>=corr[lag+1]&&corr[lag]>best){ best=corr[lag]; bestLag=lag; if(best>0.93) break; } }
   if(best<0.75) return {f:0,rms};
-  const y1=corr[bestLag-1],y2=corr[bestLag],y3=corr[bestLag+1], den=2*(2*y2-y1-y3), d=den?(y3-y1)/den:0;
-  return {f:sr/(bestLag+(isFinite(d)?d:0)),rms};
+  const y1=corr[bestLag-1],y2=corr[bestLag],y3=corr[bestLag+1], den=2*(2*y2-y1-y3), dd=den?(y3-y1)/den:0;
+  return {f:r/(bestLag+(isFinite(dd)?dd:0)),rms};
 }
 function cssv(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 function drawPitch(){ const pc=$("#pitchCanvas"), dpr=window.devicePixelRatio||1, W=pc.clientWidth*dpr, H=170*dpr; if(pc.width!==W){pc.width=W;pc.height=H;}
@@ -391,3 +394,12 @@ $("#logClear").onclick=()=>$("#confirmClear").classList.remove("hidden");
 $("#ccNo").onclick=()=>$("#confirmClear").classList.add("hidden");
 $("#ccYes").onclick=()=>{ Object.assign(store,{sessions:[],mpt:[],sz:[],fill:[],conv:{},hist:[],art:{}}); save(); $("#confirmClear").classList.add("hidden"); refreshStats(); renderProgress(); renderScenes(); renderSpeech(); toast(t("toast_cleared")); };
 
+
+/* microphone choice: with Bluetooth headphones Android switches to "call quality" when their mic is used – choosing the phone's microphone can keep music quality */
+async function renderMicPick(){ const box=$("#setMic"); if(!box) return; let list=[];
+  try{ list=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="audioinput"); }catch(e){}
+  const items=[["",t("mic_default")]].concat(list.filter(d=>d.deviceId&&d.deviceId!=="default"&&d.deviceId!=="communications").map((d,i)=>[d.deviceId,d.label||(t("mic_n")+" "+(i+1))]));
+  box.innerHTML=`<h3>${t("mic_title")}</h3><p class="muted" style="font-size:.8rem">${t("mic_hint")}</p><div class="chips" data-m></div>${list.length&&!list.some(d=>d.label)?`<button class="b alt sm" data-perm>${t("mic_show")}</button>`:""}`;
+  chipSet(box.querySelector("[data-m]"),items,SET.micId||"",v=>{ SET.micId=v; save(); renderMicPick(); });
+  const pb=box.querySelector("[data-perm]"); if(pb) pb.onclick=async()=>{ try{ const st=await navigator.mediaDevices.getUserMedia({audio:true}); st.getTracks().forEach(x=>x.stop()); }catch(e){} renderMicPick(); };
+}

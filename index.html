@@ -98,7 +98,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
 </head>
 <body>
 <header>
-  <h1>VoiceCoach <span class="ver">v4.4</span></h1>
+  <h1>VoiceCoach <span class="ver">v4.5</span></h1>
   <span class="badge" id="streakBadge"></span>
   <button class="pill hidden" id="installBtn" data-t="install"></button>
   <button class="pill" id="setBtn">⚙ <span id="setSummary"></span></button>
@@ -112,6 +112,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
   <div id="setProf"></div>
   <div id="setVoice"></div>
   <h3 data-t="set_mode"></h3><div class="chips" id="setMode"></div>
+  <div id="setMic"></div>
   <h3><span data-t="set_rate"></span>: <span id="rateVal"></span></h3>
   <input type="range" id="setRate" min="0.6" max="1.3" step="0.05">
   <div class="row" style="margin-top:12px"><span class="grow"></span><button class="b" id="setClose" data-t="set_close"></button></div>
@@ -298,7 +299,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
     <div class="row"><button class="b alt sm" id="szSave" data-t="sz_save"></button><button class="b alt sm" id="szReset" data-t="sz_reset"></button></div></div>
 </section>
 <section class="view" id="v-choir">
-  <div class="card"><h2 data-t="nav_choir"></h2><p class="muted" data-t="ch_intro"></p><div class="warnbox" data-t="ch_hp"></div></div>
+  <div class="card"><h2 data-t="nav_choir"></h2><p class="muted" data-t="ch_intro"></p><div class="warnbox" data-t="ch_hp"></div><p class="muted" style="font-size:.8rem;margin-top:6px" data-t="ch_bt"></p></div>
   <div class="card" id="vtCard"><h2 data-t="vt_title"></h2><div id="vtBody"></div></div>
   <div class="card" id="wuCard"><h2 data-t="wu_title"></h2><div id="wuBody"></div></div>
   <div class="card" id="ntCard"><h2 data-t="nt_title"></h2><div id="ntBody"></div></div>
@@ -327,7 +328,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
 <nav id="nav"></nav>
 <div class="toast" id="toast"></div>
 <script>
-/* VoiceCoach v4.4 */
+/* VoiceCoach v4.5 */
 /* UI strings – en / de / fr */
 const T = {
 en:{
@@ -1491,22 +1492,25 @@ function concatChunks(chunks){ const len=chunks.reduce((a,c)=>a+c.length,0), o=n
 
 /* ---------- live take: recording + optional speech recognition ---------- */
 const FATAL_SR=["not-allowed","service-not-allowed","audio-capture","unsupported","start-failed"];
-async function startTake({video=false, lang=null, onLevel=null, onText=null, onPitch=null}={}){
+async function startTake({video=false, lang=null, onLevel=null, onText=null, onPitch=null, capture=true}={}){
   if(typeof MIC!=="undefined" && MIC.stream) stopMic();
   const c=ac(); if(!c) throw new Error("noaudio");
-  const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},
-    video: video?{facingMode:"user",width:{ideal:640},height:{ideal:480}}:false});
-  const src=c.createMediaStreamSource(stream), proc=c.createScriptProcessor(4096,1,1), an=c.createAnalyser(); an.fftSize=2048;
+  const ac0={echoCancellation:false,noiseSuppression:false,autoGainControl:false}; if(SET.micId) ac0.deviceId={exact:SET.micId};
+  let stream; try{ stream=await navigator.mediaDevices.getUserMedia({audio:ac0,
+    video: video?{facingMode:"user",width:{ideal:640},height:{ideal:480}}:false}); }
+  catch(e){ if(SET.micId&&(e.name==="OverconstrainedError"||e.name==="NotFoundError")){ SET.micId=""; save(); delete ac0.deviceId; stream=await navigator.mediaDevices.getUserMedia({audio:ac0,video:video?{facingMode:"user"}:false}); } else throw e; }
+  // capture=false (live singing exercises): no PCM capture and no MediaRecorder → much less CPU, no audio crackle on phones
+  const src=c.createMediaStreamSource(stream), proc=capture?c.createScriptProcessor(4096,1,1):null, an=c.createAnalyser(), mute=c.createGain(); an.fftSize=2048; mute.gain.value=0;
   const chunks=[]; let capturing=true;
-  proc.onaudioprocess=e=>{ if(capturing) chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
-  src.connect(an); src.connect(proc); proc.connect(c.destination);
+  if(proc){ proc.onaudioprocess=e=>{ if(capturing) chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); }; src.connect(proc); proc.connect(mute); mute.connect(c.destination); }
+  src.connect(an);
   const cands=video?["video/webm;codecs=vp8,opus","video/webm","video/mp4"]:["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/ogg"];
   let mime=""; for(const m of cands){ try{ if(MediaRecorder.isTypeSupported(m)){ mime=m; break; } }catch(e){} }
   let mr=null; const parts=[];
-  try{ mr=new MediaRecorder(stream, mime?{mimeType:mime}:undefined); mr.ondataavailable=e=>{ if(e.data&&e.data.size) parts.push(e.data); }; mr.start(250); }catch(e){ mr=null; }
-  const t0=performance.now(), lb=new Float32Array(an.fftSize); let raf;
-  const lvl=()=>{ an.getFloatTimeDomainData(lb); let s=0; for(let i=0;i<lb.length;i++) s+=lb[i]*lb[i]; const dbv=10*Math.log10(s/lb.length+1e-10), sec=(performance.now()-t0)/1000; onLevel&&onLevel(dbv,sec);
-    if(onPitch){ const p=detectPitch(lb,c.sampleRate); onPitch(p.f,sec,dbv); } raf=requestAnimationFrame(lvl); }; lvl();
+  if(capture) try{ mr=new MediaRecorder(stream, mime?{mimeType:mime}:undefined); mr.ondataavailable=e=>{ if(e.data&&e.data.size) parts.push(e.data); }; mr.start(250); }catch(e){ mr=null; }
+  const t0=performance.now(), lb=new Float32Array(an.fftSize); let raf, fr=0;
+  const lvl=()=>{ raf=requestAnimationFrame(lvl); if(!capture&&(fr++&1)) return; an.getFloatTimeDomainData(lb); let s=0; for(let i=0;i<lb.length;i++) s+=lb[i]*lb[i]; const dbv=10*Math.log10(s/lb.length+1e-10), sec=(performance.now()-t0)/1000; onLevel&&onLevel(dbv,sec);
+    if(onPitch){ const p=detectPitch(lb,c.sampleRate); onPitch(p.f,sec,dbv); } }; lvl();
   const sr={text:"",confs:[],first:null,last:null,err:null,segs:0};
   let srOn=!!(lang && SR && !srBroken), srDone=Promise.resolve();
   const loop=()=>{ if(!srOn) return;
@@ -1519,7 +1523,7 @@ async function startTake({video=false, lang=null, onLevel=null, onText=null, onP
     srOn=false; stopRecognition(); cancelAnimationFrame(raf);
     if(mr&&mr.state!=="inactive") await new Promise(res=>{ mr.onstop=res; try{ mr.stop(); }catch(e){ res(); } });
     capturing=false;
-    try{ src.disconnect(); proc.disconnect(); an.disconnect(); }catch(e){}
+    try{ src.disconnect(); proc&&proc.disconnect(); an.disconnect(); mute.disconnect(); }catch(e){}
     stream.getTracks().forEach(t=>t.stop());
     await Promise.race([srDone.catch(()=>{}), new Promise(r=>setTimeout(r,2500))]);
     const blob=parts.length?new Blob(parts,{type:(mr&&mr.mimeType)||mime||(video?"video/webm":"audio/webm")}):null;
@@ -1872,6 +1876,7 @@ function renderSettings(){
   chipSet($("#setMode"),[["auto",t("mode_auto")],["rec",t("mode_rec")],["text",t("mode_text")]],SET.mode,v=>{ SET.mode=v; if(v==="auto") store.flags.conc=undefined; save(); renderSettings(); });
   if(typeof renderProfileForm==="function") renderProfileForm($("#setProf"),()=>{ renderTone(); renderRoutines(); renderSettings(); });
   if(typeof renderVoicePick==="function") renderVoicePick();
+  renderMicPick();
   $("#setRate").value=SET.rate; $("#rateVal").textContent="×"+(+SET.rate).toFixed(2);
 }
 function setTl(v){ SET.tl=v; save(); SP.snd=Object.keys(ART[v])[0]; SP.idx=0; renderSettings(); renderTalkChips(); renderSpeech(); renderPassages(); renderTwisters(); nextPair(); renderScenes(); renderToday(); $("#topicBox").textContent=t("imp_tap"); delete $("#topicBox").dataset.set; renderV3(); }
@@ -1991,13 +1996,15 @@ $("#micBtn").onclick=async()=>{
 };
 function stopMic(){ cancelAnimationFrame(MIC.raf); MIC.stream.getTracks().forEach(x=>x.stop()); MIC.stream=null; $("#micBtn").textContent=t("mic_on"); keepAwake(false); }
 function detectPitch(buf,sr){
-  const n=buf.length; let rms=0; for(let i=0;i<n;i++) rms+=buf[i]*buf[i]; rms=Math.sqrt(rms/n); if(rms<0.008) return {f:0,rms};
-  const minLag=Math.floor(sr/1000), maxLag=Math.floor(sr/65), size=n-maxLag, corr=new Float32Array(maxLag+2); let best=-1,bestLag=0;
-  for(let lag=minLag;lag<=maxLag+1;lag++){ let s=0,e1=0,e2=0; for(let i=0;i<size;i++){ const a=buf[i],b=buf[i+lag]; s+=a*b; e1+=a*a; e2+=b*b; } corr[lag]=s/Math.sqrt(e1*e2+1e-12); }
+  const n0=buf.length; let rms=0; for(let i=0;i<n0;i++) rms+=buf[i]*buf[i]; rms=Math.sqrt(rms/n0); if(rms<0.008) return {f:0,rms};
+  // decimate to ~24 kHz (2-tap average) – 4× less work, same accuracy for voice up to 1100 Hz
+  const d=sr>=32000?2:1, n=Math.floor(n0/d), x=d>1?new Float32Array(n):buf; if(d>1) for(let i=0;i<n;i++) x[i]=(buf[2*i]+buf[2*i+1])/2; const r=sr/d;
+  const minLag=Math.floor(r/1100), maxLag=Math.floor(r/65), size=n-maxLag, corr=new Float32Array(maxLag+2); let best=-1,bestLag=0;
+  for(let lag=minLag;lag<=maxLag+1;lag++){ let s=0,e1=0,e2=0; for(let i=0;i<size;i++){ const a=x[i],b=x[i+lag]; s+=a*b; e1+=a*a; e2+=b*b; } corr[lag]=s/Math.sqrt(e1*e2+1e-12); }
   for(let lag=minLag+1;lag<=maxLag;lag++){ if(corr[lag]>corr[lag-1]&&corr[lag]>=corr[lag+1]&&corr[lag]>best){ best=corr[lag]; bestLag=lag; if(best>0.93) break; } }
   if(best<0.75) return {f:0,rms};
-  const y1=corr[bestLag-1],y2=corr[bestLag],y3=corr[bestLag+1], den=2*(2*y2-y1-y3), d=den?(y3-y1)/den:0;
-  return {f:sr/(bestLag+(isFinite(d)?d:0)),rms};
+  const y1=corr[bestLag-1],y2=corr[bestLag],y3=corr[bestLag+1], den=2*(2*y2-y1-y3), dd=den?(y3-y1)/den:0;
+  return {f:r/(bestLag+(isFinite(dd)?dd:0)),rms};
 }
 function cssv(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 function drawPitch(){ const pc=$("#pitchCanvas"), dpr=window.devicePixelRatio||1, W=pc.clientWidth*dpr, H=170*dpr; if(pc.width!==W){pc.width=W;pc.height=H;}
@@ -2148,6 +2155,15 @@ $("#logClear").onclick=()=>$("#confirmClear").classList.remove("hidden");
 $("#ccNo").onclick=()=>$("#confirmClear").classList.add("hidden");
 $("#ccYes").onclick=()=>{ Object.assign(store,{sessions:[],mpt:[],sz:[],fill:[],conv:{},hist:[],art:{}}); save(); $("#confirmClear").classList.add("hidden"); refreshStats(); renderProgress(); renderScenes(); renderSpeech(); toast(t("toast_cleared")); };
 
+
+/* microphone choice: with Bluetooth headphones Android switches to "call quality" when their mic is used – choosing the phone's microphone can keep music quality */
+async function renderMicPick(){ const box=$("#setMic"); if(!box) return; let list=[];
+  try{ list=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="audioinput"); }catch(e){}
+  const items=[["",t("mic_default")]].concat(list.filter(d=>d.deviceId&&d.deviceId!=="default"&&d.deviceId!=="communications").map((d,i)=>[d.deviceId,d.label||(t("mic_n")+" "+(i+1))]));
+  box.innerHTML=`<h3>${t("mic_title")}</h3><p class="muted" style="font-size:.8rem">${t("mic_hint")}</p><div class="chips" data-m></div>${list.length&&!list.some(d=>d.label)?`<button class="b alt sm" data-perm>${t("mic_show")}</button>`:""}`;
+  chipSet(box.querySelector("[data-m]"),items,SET.micId||"",v=>{ SET.micId=v; save(); renderMicPick(); });
+  const pb=box.querySelector("[data-perm]"); if(pb) pb.onclick=async()=>{ try{ const st=await navigator.mediaDevices.getUserMedia({audio:true}); st.getTracks().forEach(x=>x.stop()); }catch(e){} renderMicPick(); };
+}
 
 /* ================= conversation player (v3) ================= */
 let ATT=null;
@@ -3207,7 +3223,7 @@ function patternPanel(box,tpl,{center=patternCenter(),band=voiceTarget(),relativ
   requestAnimationFrame(()=>draw(null));
   return {
     reset(){ P.live=[]; P.onset=null; P.user=null; P.ownMed=null; draw(null); },
-    pushAt(f,tt){ P.live.push({t:tt,f}); draw(Math.min(tt,tpl.dur+0.5)); },
+    pushAt(f,tt){ P.live.push({t:tt,f}); P.cur=Math.min(tt,tpl.dur+0.5); if(!P.pend){ P.pend=true; setTimeout(()=>{ P.pend=false; draw(P.cur); },50); } },
     onPitch(f,sec,db){ if(P.onset===null){ if(f>0&&db>-55) P.onset=sec; else return; } const tt=sec-P.onset; P.live.push({t:tt,f});
       if(relative&&!P.ownMed){ const v=P.live.filter(x=>x.f>0).map(x=>x.f); if(v.length>25) P.ownMed=pctl(v,0.5); } draw(Math.min(tt,tpl.dur+0.5)); },
     evaluate(an){
@@ -3300,7 +3316,7 @@ function wordDrill(box,{dw,tpl,center,relative,ownMed,lang,onBack}){
 }
 
 /* ================= Choir training (v3.9) ================= */
-Object.assign(T.en,{sess_stop:"Stop", sess_resume:"Continue", sess_stopped:"Stopped – nothing was scored.", nav_choir:"Choir",
+Object.assign(T.en,{mic_title:"Microphone", mic_default:"Automatic", mic_n:"Microphone", mic_show:"Show microphone names", mic_hint:"Bluetooth headphones: as soon as their microphone is used, Android switches them to call quality (music sounds muffled). Choose the phone’s built-in microphone here – or use wired headphones.", ch_bt:"🎧 Sound bad while singing? With Bluetooth headphones Android switches to call quality as soon as the microphone is on. Use wired headphones, or choose the phone microphone in Settings → Microphone.", sess_stop:"Stop", sess_resume:"Continue", sess_stopped:"Stopped – nothing was scored.", nav_choir:"Choir",
  ch_intro:"Singing practice for choir: find your voice type, warm up, hit notes accurately, sing your part in four-part harmony and hold your line in a round. Pitch accuracy is measured in cents (1 semitone = 100 cents); within ± 30 cents counts as in tune.",
  ch_hp:"🎧 Use headphones for part singing and the round – otherwise the microphone hears the accompaniment instead of you.",
  vt_title:"1 · Voice type", vt_desc:"Glide on “ah” from a comfortable middle note down to your lowest comfortable note (part 1), then up to your highest comfortable note (part 2). Never force – stop where it gets strained. The app classifies your voice type and transposes all exercises into your range.",
@@ -3315,7 +3331,7 @@ Object.assign(T.en,{sess_stop:"Stop", sess_resume:"Continue", sess_stopped:"Stop
  pt_title:"4 · Sing your part (four-part harmony)", pt_desc:"A short four-part chorale (soprano, alto, tenor, bass). The app plays the other three parts; you sing yours on “loo”. Green bars = your notes, orange = your pitch. Count-in: 4 clicks.", pt_part:"My part", pt_go:"▶ Sing my part", pt_res:"{c} of {n} chords in tune with your part.", pt_slow:"Tempo",
  cn_title:"5 · Round (“Are you sleeping”)", cn_desc:"The app sings voice 1. After 2 bars it is your turn: sing the whole melody as voice 2 and hold your line against the other voice. Lyrics and notes are shown; orange = your pitch.", cn_go:"▶ Start round", cn_res:"{c} of {n} notes in tune.", cn_errs:"Passages to practise:", cn_bar:"bar {b}: “{s}” {d}", cn_practise:"Practise these notes slowly",
  cnt_low:"too low", cnt_high:"too high"});
-Object.assign(T.de,{sess_stop:"Stopp", sess_resume:"Weiter", sess_stopped:"Gestoppt – es wurde nichts bewertet.", nav_choir:"Chor",
+Object.assign(T.de,{mic_title:"Mikrofon", mic_default:"Automatisch", mic_n:"Mikrofon", mic_show:"Mikrofonnamen anzeigen", mic_hint:"Bluetooth-Kopfhörer: Sobald ihr Mikrofon benutzt wird, schaltet Android sie auf Telefonqualität (Musik klingt dumpf). Wähle hier das eingebaute Mikrofon des Handys – oder nutze kabelgebundene Kopfhörer.", ch_bt:"🎧 Klang beim Singen schlecht? Mit Bluetooth-Kopfhörern schaltet Android auf Telefonqualität, sobald das Mikrofon an ist. Nimm kabelgebundene Kopfhörer oder wähle unter Einstellungen → Mikrofon das Handy-Mikrofon.", sess_stop:"Stopp", sess_resume:"Weiter", sess_stopped:"Gestoppt – es wurde nichts bewertet.", nav_choir:"Chor",
  ch_intro:"Gesangstraining für den Chor: Stimmlage finden, einsingen, Töne genau treffen, die eigene Stimme im vierstimmigen Satz singen und im Kanon die Linie halten. Die Tontreue wird in Cent gemessen (1 Halbton = 100 Cent); innerhalb von ± 30 Cent gilt ein Ton als sauber.",
  ch_hp:"🎧 Für mehrstimmiges Singen und den Kanon Kopfhörer benutzen – sonst hört das Mikrofon die Begleitung statt dich.",
  vt_title:"1 · Stimmlage", vt_desc:"Auf „ah“ von einem bequemen mittleren Ton nach unten zum tiefsten bequemen Ton gleiten (Teil 1), dann nach oben zum höchsten bequemen Ton (Teil 2). Nie forcieren – dort aufhören, wo es anstrengend wird. Die App bestimmt deine Stimmlage und transponiert alle Übungen in deinen Bereich.",
@@ -3330,7 +3346,7 @@ Object.assign(T.de,{sess_stop:"Stopp", sess_resume:"Weiter", sess_stopped:"Gesto
  pt_title:"4 · Die eigene Stimme singen (vierstimmig)", pt_desc:"Ein kurzer vierstimmiger Choralsatz (Sopran, Alt, Tenor, Bass). Die App spielt die drei anderen Stimmen, du singst deine auf „lu“. Grüne Balken = deine Töne, orange = deine Tonhöhe. Einzählen: 4 Klicks.", pt_part:"Meine Stimme", pt_go:"▶ Meine Stimme singen", pt_res:"{c} von {n} Akkorden mit deiner Stimme sauber.", pt_slow:"Tempo",
  cn_title:"5 · Kanon („Bruder Jakob“)", cn_desc:"Die App singt die 1. Stimme. Nach 2 Takten bist du dran: Sing die ganze Melodie als 2. Stimme und halte deine Linie gegen die andere Stimme. Text und Töne werden angezeigt; orange = deine Tonhöhe.", cn_go:"▶ Kanon starten", cn_res:"{c} von {n} Tönen sauber.", cn_errs:"Stellen zum Üben:", cn_bar:"Takt {b}: „{s}“ {d}", cn_practise:"Diese Töne langsam üben",
  cnt_low:"zu tief", cnt_high:"zu hoch"});
-Object.assign(T.fr,{sess_stop:"Arrêter", sess_resume:"Reprendre", sess_stopped:"Arrêté – rien n'a été évalué.", nav_choir:"Chorale",
+Object.assign(T.fr,{mic_title:"Microphone", mic_default:"Automatique", mic_n:"Microphone", mic_show:"Afficher les noms des micros", mic_hint:"Écouteurs Bluetooth : dès que leur micro est utilisé, Android passe en qualité téléphone (la musique sonne étouffée). Choisissez ici le micro intégré du téléphone – ou utilisez des écouteurs filaires.", ch_bt:"🎧 Son mauvais pendant le chant ? Avec des écouteurs Bluetooth, Android passe en qualité téléphone dès que le micro est actif. Utilisez des écouteurs filaires ou choisissez le micro du téléphone dans Réglages → Microphone.", sess_stop:"Arrêter", sess_resume:"Reprendre", sess_stopped:"Arrêté – rien n'a été évalué.", nav_choir:"Chorale",
  ch_intro:"Entraînement vocal pour la chorale : trouver sa tessiture, s'échauffer, chanter juste, chanter sa voix dans un choral à quatre voix et tenir sa ligne dans un canon. La justesse est mesurée en cents (1 demi-ton = 100 cents) ; à ± 30 cents, une note est juste.",
  ch_hp:"🎧 Utilisez des écouteurs pour le chant à plusieurs voix et le canon – sinon le micro entend l'accompagnement au lieu de vous.",
  vt_title:"1 · Tessiture", vt_desc:"Sur « a », glissez d'une note moyenne confortable vers votre note grave la plus basse confortable (partie 1), puis vers votre note aiguë la plus haute confortable (partie 2). Ne forcez jamais – arrêtez-vous là où cela devient difficile. L'appli détermine votre tessiture et transpose tous les exercices dans votre zone.",
@@ -3383,7 +3399,7 @@ function sessStop(){ if(!SESS.on) return; SESS.stopped=true; if(SESS.paused){ SE
 async function singSession({acc,targets,countIn=0,beat=0.6,total,onLive,onPhase,onStart,cues=[]}){
   if(SESS.on) sessStop(), await new Promise(r=>setTimeout(r,120));
   const c=ac(), pts=[]; let take, start=null;
-  try{ take=await startTake({onPitch:(f,sec,db)=>{ if(start===null||SESS.paused) return; const rel=c.currentTime-start; pts.push({t:rel,f:db>-58?f:0,db}); onLive&&onLive(f,rel,db); }}); }catch(e){ micError(e); toast(t("mic_fail")); return null; }
+  try{ take=await startTake({capture:false,onPitch:(f,sec,db)=>{ if(start===null||SESS.paused) return; const rel=c.currentTime-start; pts.push({t:rel,f:db>-58?f:0,db}); onLive&&onLive(f,rel,db); }}); }catch(e){ micError(e); toast(t("mic_fail")); return null; }
   AOUT=c.createGain(); AOUT.connect(c.destination); SESS.on=true; SESS.paused=false; SESS.stopped=false; sessBar(true);
   const lead=0.35+countIn*beat, cNow=c.currentTime; start=cNow+lead;
   for(let k=0;k<countIn;k++) click(c,cNow+0.35+k*beat,k===0);
