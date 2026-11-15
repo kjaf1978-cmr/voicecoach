@@ -70,7 +70,11 @@ function renderRef(){
       <p class="muted">${t("ref_rate")} ${f1(S.rate[0])}–${f1(S.rate[1])} · ${t("ref_pause")} ${Math.round(S.pause[0]*100)}–${Math.round(S.pause[1]*100)} · ${t("ref_mel")} ${f1(S.mel[0])}–${f1(S.mel[1])}</p>
       <div class="muted">${t("ref_text")} (${langIn(SET.tl)})</div><div class="card flat reader" ${tlAttr(SET.tl)} style="font-size:1.15rem;line-height:1.6">${markupText(S.txt[SET.tl])}</div>`;
   }
-  recControls(box.querySelector("[data-rec]"),{lang:srLang(),maxSec:120,label:t("ref_rec"),onDone:r=>refCompare(r,box.querySelector("[data-out]"))});
+  const pbox=el("div",{style:"margin-top:6px"}); box.querySelector("[data-rec]").before(pbox);
+  const isImp=REF.style==="imp"&&REF.imp, tpl=isImp?clipTemplate(REF.imp.an):textTemplate(S.txt[SET.tl],SET.tl,(S.rate[0]+S.rate[1])/2);
+  if(isImp) pbox.append(el("p",{class:"muted"},t("pat_ref")));
+  const pdiv=el("div"); pbox.append(pdiv); REF.pan=tpl?patternPanel(pdiv,tpl,{relative:!!isImp,band:null}):null;
+  recControls(box.querySelector("[data-rec]"),{lang:srLang(),maxSec:120,label:t("ref_rec"),onStart:()=>REF.pan&&REF.pan.reset(),onPitch:REF.pan?(f,s,db)=>REF.pan.onPitch(f,s,db):null,onDone:r=>refCompare(r,box.querySelector("[data-out]"))});
   box.querySelector("[data-file]").onchange=async e=>{ const f=e.target.files[0]; if(!f) return; e.target.value=""; toast(t("analysing"));
     try{ const pcm=await decodeFile(f), an=analyze(pcm); if(!an.ok){ toast(t("tip_short")); return; } if(REF.imp&&REF.imp.url) URL.revokeObjectURL(REF.imp.url);
       REF.imp={name:f.name,an,url:URL.createObjectURL(f)}; REF.style="imp"; saveTake({blob:f,video:f.type.startsWith("video"),an,tips:{fix:[],good:[]},kind:"reference",title:f.name,lang:SET.tl}).catch(()=>{}); renderRef(); }
@@ -93,6 +97,7 @@ function refCompare(r,out){
   if(gaps.length) coachRegister(gaps,t("ref_title")+" – "+title);
   const extra=`<h3>${t("ref_cmp")} – ${esc(title)}</h3><table><tr><th></th><th>${t("ref_you")}</th><th>${t("ref_target")}</th><th></th></tr>${rows.map(x=>`<tr><td>${x[0]}</td><td><b>${x[1]}</b></td><td>${x[2]}</td><td>${x[3]>=1?"✓":"–"}</td></tr>`).join("")}</table>
     <p><b>${t("ref_sim")}: ${sim} %</b></p>${gaps.length?`<p class="muted">🏋 ${t("ref_gaps")}</p>`:""}`;
+  const pres=REF.pan?REF.pan.evaluate(an):null;
   const take={blob:r.blob,an,tips,score:sim,kind:"style-"+REF.style,title,lang:SET.tl,text:sr?sr.text:""};
-  out.innerHTML=""; out.append(replayView(take,{onSave:()=>saveTake(take),extra})); logSession(t("ref_title"),Math.max(0.5,an.dur/60));
+  out.innerHTML=""; out.append(replayView(take,{onSave:()=>saveTake(take),extra:extra+patternResultHtml(pres)})); logSession(t("ref_title"),Math.max(0.5,an.dur/60));
 }

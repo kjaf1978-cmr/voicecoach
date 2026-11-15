@@ -84,7 +84,7 @@ function toneMetric(an){
 }
 DRILLS.tone={dim:"melody",kind:"read",model:true,texts:l=>SET.gender==="f"?CT.melody[l].concat(CT.pauses[l]):CT.statements[l].concat(CT.endings[l]),metric:toneMetric,
   goal:()=>{ const tg=voiceTarget(); return tg?t(SET.gender==="f"?"cg_tone_f":"cg_tone_m",tg):t("tone_target_none"); },
-  how:()=>t(SET.gender==="f"?"ch_tone_f":"ch_tone_m"), next:"cn_tone"};
+  how:()=>t(SET.gender==="f"?"ch_tone_f":"ch_tone_m"), next:"cn_tone", prate:4.0};
 
 /* ---- guided resonance routines (shown only for the matching gender) ---- */
 ROUTINES.push({g:"m",name:{en:"Resonance – masculine voice",de:"Resonanz – männlicher Klang",fr:"Résonance – voix masculine"},steps:[
@@ -125,7 +125,8 @@ function renderTone(){
     h+=`<p><b>${tg?t("tone_target",tg):t("tone_target_none")}</b></p>`;
     const f=SET.natF0||(store.profile&&store.profile.f0);
     if(f&&tg) h+=`<p>${t("tone_last",{f:Math.round(f),state:t(f<tg.lo?"tone_low":f>tg.hi?"tone_high":"tone_in")})}</p>`; }
-  box.innerHTML=h+`<div id="toneFind"></div><div class="row" style="margin-top:8px" data-b></div><div id="toneOut"></div>`;
+  box.innerHTML=h+`<div id="toneFind"></div><div class="row" style="margin-top:8px" data-b></div><div id="toneOut"></div><h3>📈 ${t("pat_title")}</h3><div id="patBody"></div>`;
+  setTimeout(()=>typeof renderPatternTrainer==="function"&&renderPatternTrainer(),0);
   const row=box.querySelector("[data-b]");
   if(tg){ const tb=el("button",{class:"b warm grow"},t("tone_train")); tb.onclick=()=>{ coachRegisterExt("tone",t("tone_title")); openCoach("tone"); }; row.append(tb);
     const ri=ROUTINES.findIndex(r=>r.g===g); if(ri>=0){ const rb=el("button",{class:"b alt grow"},"▶ "+ROUTINES[ri].name[SET.ui]); rb.onclick=()=>{ show("today"); openRoutine(ri); }; row.append(rb); } }

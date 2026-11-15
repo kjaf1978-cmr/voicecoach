@@ -24,6 +24,7 @@ const CT={
 };
 const ctPassages=l=>CTXS.map(c=>PASSAGES[l][c][1]).concat(REC_SENT[l]);
 /* drill definitions. kind: read (read a text), prompt (answer a question / speak on a topic), words (word list) */
+const DRILL_PRATE={fast:4.4,slow:4.6,pauses:4.3,melody:4.2,uptalk:4.0,trail:4.2};
 const DRILLS={
  fast:   {dim:"pace",       kind:"read",   texts:l=>ctPassages(l), guide:130, metric:(an)=>({v:an.rate,pass:an.rate>=3.5&&an.rate<=5.2,txt:t("cm_rate",{v:f1(an.rate)})})},
  slow:   {dim:"pace",       kind:"read",   texts:l=>ctPassages(l), guide:150, metric:(an)=>({v:an.rate,pass:an.rate>=3.5&&an.rate<=5.2,txt:t("cm_rate",{v:f1(an.rate)})})},
@@ -38,6 +39,7 @@ const DRILLS={
  fillers:{dim:"fluency",    kind:"prompt", texts:l=>TOPICS[l][SET.ctx], maxSec:60, needSR:true, metric:(an,x)=>{ const fi=fillerInfo(x.sr.text,x.lang); return {v:fi.n,pass:fi.n===0&&an.speak>=12,txt:t("cm_fillers",{n:fi.n,s:Math.round(an.speak)})}; }},
  clarity:{dim:"clarity",    kind:"words",  texts:(l,a)=>(a&&a.words&&a.words.length&&a.wordsLang===l?[a.words.slice(0,6).join(" · ")]:[]).concat(TWISTERS[l]), needSR:true, metric:(an,x)=>{ const cl=srClarity(x.sr,x.text.replace(/·/g," ")); const v=cl?cl.score:0; return {v,pass:v>=0.9,txt:t("cm_clarity",{p:Math.round(v*100)}),miss:cl?cl.miss:[]}; }}
 };
+Object.keys(DRILL_PRATE).forEach(k=>DRILLS[k].prate=DRILL_PRATE[k]);
 const COACH_OF={fast:"fast",slow:"slow",nopause:"pauses",manypause:"fluent",longpause:"fluent",mono:"melody",uptalk:"uptalk",trail:"trail",quiet:"quiet",clip:"clip",late:"late",fillers:"fillers",clarity:"clarity"};
 const STREAK=3, RECHECK=[3,14];
 const f1=x=>(Math.round((x||0)*10)/10).toLocaleString(SET.ui);
@@ -105,13 +107,14 @@ function renderCoach(res){
     <div class="muted" style="margin-top:8px">${t(def.kind==="prompt"?"coach_answer":"coach_read",{l:langIn(R.lang)})} (${(R.i%texts.length)+1}/${texts.length})</div>
     <div class="card flat reader" ${tlAttr(R.lang)} id="coachText" style="font-size:1.25rem;line-height:1.6">${def.kind==="prompt"?`<b>${esc(text)}</b>`:markupText(text)}</div>
     <div class="row">${def.model||def.kind==="prompt"?`<button class="b sm alt" id="coachModel">🔊 ${t(def.kind==="prompt"?"coach_hear_q":"coach_model")}</button>`:""}${def.guide?`<button class="b sm alt" id="coachGuide">▶ ${t("coach_guide",{w:def.guide})}</button>`:""}<button class="b sm alt" id="coachOther">↻ ${t("coach_other")}</button></div>
-    <div id="coachRec" style="margin-top:8px"></div><div id="coachRes"></div>`;
+    <div id="coachPat" style="margin-top:6px"></div><div id="coachRec" style="margin-top:8px"></div><div id="coachRes"></div>`;
   $("#coachClose").onclick=closeCoach;
   $("#coachOther").onclick=()=>{ R.i++; renderCoach(); };
   if($("#coachModel")) $("#coachModel").onclick=()=>speak(plainText(text),R.lang,null,def.kind==="prompt"?null:0.9,def.kind==="prompt"?null:"model");
   if($("#coachGuide")) $("#coachGuide").onclick=()=>guideText(def.guide);
   const recBox=$("#coachRec");
-  const ctl=recControls(recBox,{lang:srLang()?R.lang:null,maxSec:def.maxSec||60,onDone:r=>coachDone(r,text)});
+  R.pan=null; if(def.prate&&typeof textTemplate==="function"){ const tpl=textTemplate(text,R.lang,def.prate); R.pan=patternPanel($("#coachPat"),tpl,{band:R.id==="tone"?voiceTarget():null}); }
+  const ctl=recControls(recBox,{lang:srLang()?R.lang:null,maxSec:def.maxSec||60,onStart:()=>R.pan&&R.pan.reset(),onPitch:R.pan?(f,s,db)=>R.pan.onPitch(f,s,db):null,onDone:r=>coachDone(r,text)});
   if(def.auto&&!res){ /* quick-start drill: question is spoken, recording starts by itself */
     const go=el("button",{class:"b warm",style:"width:100%;margin-top:6px"},"▶ "+t("coach_q_start")); recBox.prepend(go); recBox.querySelector("[data-rec]").classList.add("hidden");
     go.onclick=()=>{ go.disabled=true; speak(text,R.lang,()=>{ if(CR===R){ recBox.querySelector("[data-rec]").classList.remove("hidden"); go.remove(); recBox.querySelector("[data-rec]").click(); } }); };
@@ -138,7 +141,8 @@ function coachDone(r,text){
     const nxt=el("button",{class:"b grow"},t("coach_next_text")); nxt.onclick=()=>{ R.i++; if(a) a.ti=R.i; save(); renderCoach(); };
     const same=el("button",{class:"b alt grow"},t("coach_same")); same.onclick=()=>renderCoach();
     nb.append(same,nxt); wrap.append(nb); renderCoach(wrap); $("#coachRes").scrollIntoView({behavior:"smooth"}); };
-  wrap.append(replayView(take,{onSave:()=>saveTake(take),noRegister:true}));
+  const pres=R.pan&&an.ok?R.pan.evaluate(an):null;
+  wrap.append(replayView(take,{onSave:()=>saveTake(take),noRegister:true,extra:pres?patternResultHtml(pres):""}));
   if(!an.ok){ finish({pass:false,v:null,txt:an.noVoice?t("tip_noise"):t("tip_short")}); return; }
   if(def.needSR&&!sr){ /* self-assessment fallback */
     const q=el("div",{class:"card",style:"margin-top:8px"},`<p><b>${t(R.id==="fillers"?"coach_self_fill":"coach_self_clear")}</b></p><div class="chips"></div>`);

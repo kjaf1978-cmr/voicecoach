@@ -15,12 +15,12 @@ function concatChunks(chunks){ const len=chunks.reduce((a,c)=>a+c.length,0), o=n
 
 /* ---------- live take: recording + optional speech recognition ---------- */
 const FATAL_SR=["not-allowed","service-not-allowed","audio-capture","unsupported","start-failed"];
-async function startTake({video=false, lang=null, onLevel=null, onText=null}={}){
+async function startTake({video=false, lang=null, onLevel=null, onText=null, onPitch=null}={}){
   if(typeof MIC!=="undefined" && MIC.stream) stopMic();
   const c=ac(); if(!c) throw new Error("noaudio");
   const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},
     video: video?{facingMode:"user",width:{ideal:640},height:{ideal:480}}:false});
-  const src=c.createMediaStreamSource(stream), proc=c.createScriptProcessor(4096,1,1), an=c.createAnalyser(); an.fftSize=1024;
+  const src=c.createMediaStreamSource(stream), proc=c.createScriptProcessor(4096,1,1), an=c.createAnalyser(); an.fftSize=2048;
   const chunks=[]; let capturing=true;
   proc.onaudioprocess=e=>{ if(capturing) chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
   src.connect(an); src.connect(proc); proc.connect(c.destination);
@@ -29,7 +29,8 @@ async function startTake({video=false, lang=null, onLevel=null, onText=null}={})
   let mr=null; const parts=[];
   try{ mr=new MediaRecorder(stream, mime?{mimeType:mime}:undefined); mr.ondataavailable=e=>{ if(e.data&&e.data.size) parts.push(e.data); }; mr.start(250); }catch(e){ mr=null; }
   const t0=performance.now(), lb=new Float32Array(an.fftSize); let raf;
-  const lvl=()=>{ an.getFloatTimeDomainData(lb); let s=0; for(let i=0;i<lb.length;i++) s+=lb[i]*lb[i]; onLevel&&onLevel(10*Math.log10(s/lb.length+1e-10),(performance.now()-t0)/1000); raf=requestAnimationFrame(lvl); }; lvl();
+  const lvl=()=>{ an.getFloatTimeDomainData(lb); let s=0; for(let i=0;i<lb.length;i++) s+=lb[i]*lb[i]; const dbv=10*Math.log10(s/lb.length+1e-10), sec=(performance.now()-t0)/1000; onLevel&&onLevel(dbv,sec);
+    if(onPitch){ const p=detectPitch(lb,c.sampleRate); onPitch(p.f,sec,dbv); } raf=requestAnimationFrame(lvl); }; lvl();
   const sr={text:"",confs:[],first:null,last:null,err:null,segs:0};
   let srOn=!!(lang && SR && !srBroken), srDone=Promise.resolve();
   const loop=()=>{ if(!srOn) return;
@@ -259,7 +260,7 @@ async function shareTake(take){
 }
 
 /* ---------- recorder button helper (shared UI) ---------- */
-function recControls(box,{video=false, lang=null, maxSec=120, onDone, onStart=null, label}){
+function recControls(box,{video=false, lang=null, maxSec=120, onDone, onStart=null, onPitch=null, label}){
   box.innerHTML=`<div class="row"><button class="b warm grow" data-rec>${label||t("rec_start")}</button><span class="big" data-tm style="font-size:1.3rem;margin:0">0:00</span></div>
     <div class="meter" style="margin-top:6px"><i data-lv></i></div><div data-pv></div><div class="bubble me hidden" data-tx></div><p class="muted hidden" data-an>${t("analysing")}</p>`;
   const btn=box.querySelector("[data-rec]"), tm=box.querySelector("[data-tm]"), lv=box.querySelector("[data-lv]"), tx=box.querySelector("[data-tx]"), pv=box.querySelector("[data-pv]");
@@ -269,7 +270,7 @@ function recControls(box,{video=false, lang=null, maxSec=120, onDone, onStart=nu
       const r=await tk.stop(); pv.innerHTML=""; keepAwake(false); btn.disabled=false; btn.textContent=label||t("rec_start"); box.querySelector("[data-an]").classList.add("hidden"); lv.style.width="0";
       setTimeout(()=>onDone(r),30); return; }
     try{ try{ speechSynthesis.cancel(); }catch(e){} ac(); onStart&&onStart(performance.now()); tx.textContent=""; tx.classList.add("hidden");
-      take=await startTake({video,lang,onLevel:(d,s)=>{ lv.style.width=Math.max(0,Math.min(100,(d+70)/60*100))+"%"; tm.textContent=fmtT(s); },
+      take=await startTake({video,lang,onPitch,onLevel:(d,s)=>{ lv.style.width=Math.max(0,Math.min(100,(d+70)/60*100))+"%"; tm.textContent=fmtT(s); },
         onText:txt=>{ tx.classList.remove("hidden"); tx.textContent=txt; }});
       if(video){ const v=el("video",{playsinline:"",muted:"",autoplay:"",style:"width:100%;border-radius:12px;margin-top:6px;transform:scaleX(-1);max-height:40vh;background:#000"}); v.muted=true; v.srcObject=take.stream; pv.append(v); }
       btn.textContent=t("rec_stop"); keepAwake(true); timer=setTimeout(()=>{ if(take) btn.onclick(); },maxSec*1000);

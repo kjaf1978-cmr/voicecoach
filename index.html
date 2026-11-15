@@ -98,7 +98,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
 </head>
 <body>
 <header>
-  <h1>VoiceCoach <span class="ver">v3.6</span></h1>
+  <h1>VoiceCoach <span class="ver">v3.7</span></h1>
   <span class="badge" id="streakBadge"></span>
   <button class="pill hidden" id="installBtn" data-t="install"></button>
   <button class="pill" id="setBtn">⚙ <span id="setSummary"></span></button>
@@ -317,7 +317,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
 <nav id="nav"></nav>
 <div class="toast" id="toast"></div>
 <script>
-/* VoiceCoach v3.6 */
+/* VoiceCoach v3.7 */
 /* UI strings – en / de / fr */
 const T = {
 en:{
@@ -1481,12 +1481,12 @@ function concatChunks(chunks){ const len=chunks.reduce((a,c)=>a+c.length,0), o=n
 
 /* ---------- live take: recording + optional speech recognition ---------- */
 const FATAL_SR=["not-allowed","service-not-allowed","audio-capture","unsupported","start-failed"];
-async function startTake({video=false, lang=null, onLevel=null, onText=null}={}){
+async function startTake({video=false, lang=null, onLevel=null, onText=null, onPitch=null}={}){
   if(typeof MIC!=="undefined" && MIC.stream) stopMic();
   const c=ac(); if(!c) throw new Error("noaudio");
   const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},
     video: video?{facingMode:"user",width:{ideal:640},height:{ideal:480}}:false});
-  const src=c.createMediaStreamSource(stream), proc=c.createScriptProcessor(4096,1,1), an=c.createAnalyser(); an.fftSize=1024;
+  const src=c.createMediaStreamSource(stream), proc=c.createScriptProcessor(4096,1,1), an=c.createAnalyser(); an.fftSize=2048;
   const chunks=[]; let capturing=true;
   proc.onaudioprocess=e=>{ if(capturing) chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
   src.connect(an); src.connect(proc); proc.connect(c.destination);
@@ -1495,7 +1495,8 @@ async function startTake({video=false, lang=null, onLevel=null, onText=null}={})
   let mr=null; const parts=[];
   try{ mr=new MediaRecorder(stream, mime?{mimeType:mime}:undefined); mr.ondataavailable=e=>{ if(e.data&&e.data.size) parts.push(e.data); }; mr.start(250); }catch(e){ mr=null; }
   const t0=performance.now(), lb=new Float32Array(an.fftSize); let raf;
-  const lvl=()=>{ an.getFloatTimeDomainData(lb); let s=0; for(let i=0;i<lb.length;i++) s+=lb[i]*lb[i]; onLevel&&onLevel(10*Math.log10(s/lb.length+1e-10),(performance.now()-t0)/1000); raf=requestAnimationFrame(lvl); }; lvl();
+  const lvl=()=>{ an.getFloatTimeDomainData(lb); let s=0; for(let i=0;i<lb.length;i++) s+=lb[i]*lb[i]; const dbv=10*Math.log10(s/lb.length+1e-10), sec=(performance.now()-t0)/1000; onLevel&&onLevel(dbv,sec);
+    if(onPitch){ const p=detectPitch(lb,c.sampleRate); onPitch(p.f,sec,dbv); } raf=requestAnimationFrame(lvl); }; lvl();
   const sr={text:"",confs:[],first:null,last:null,err:null,segs:0};
   let srOn=!!(lang && SR && !srBroken), srDone=Promise.resolve();
   const loop=()=>{ if(!srOn) return;
@@ -1725,7 +1726,7 @@ async function shareTake(take){
 }
 
 /* ---------- recorder button helper (shared UI) ---------- */
-function recControls(box,{video=false, lang=null, maxSec=120, onDone, onStart=null, label}){
+function recControls(box,{video=false, lang=null, maxSec=120, onDone, onStart=null, onPitch=null, label}){
   box.innerHTML=`<div class="row"><button class="b warm grow" data-rec>${label||t("rec_start")}</button><span class="big" data-tm style="font-size:1.3rem;margin:0">0:00</span></div>
     <div class="meter" style="margin-top:6px"><i data-lv></i></div><div data-pv></div><div class="bubble me hidden" data-tx></div><p class="muted hidden" data-an>${t("analysing")}</p>`;
   const btn=box.querySelector("[data-rec]"), tm=box.querySelector("[data-tm]"), lv=box.querySelector("[data-lv]"), tx=box.querySelector("[data-tx]"), pv=box.querySelector("[data-pv]");
@@ -1735,7 +1736,7 @@ function recControls(box,{video=false, lang=null, maxSec=120, onDone, onStart=nu
       const r=await tk.stop(); pv.innerHTML=""; keepAwake(false); btn.disabled=false; btn.textContent=label||t("rec_start"); box.querySelector("[data-an]").classList.add("hidden"); lv.style.width="0";
       setTimeout(()=>onDone(r),30); return; }
     try{ try{ speechSynthesis.cancel(); }catch(e){} ac(); onStart&&onStart(performance.now()); tx.textContent=""; tx.classList.add("hidden");
-      take=await startTake({video,lang,onLevel:(d,s)=>{ lv.style.width=Math.max(0,Math.min(100,(d+70)/60*100))+"%"; tm.textContent=fmtT(s); },
+      take=await startTake({video,lang,onPitch,onLevel:(d,s)=>{ lv.style.width=Math.max(0,Math.min(100,(d+70)/60*100))+"%"; tm.textContent=fmtT(s); },
         onText:txt=>{ tx.classList.remove("hidden"); tx.textContent=txt; }});
       if(video){ const v=el("video",{playsinline:"",muted:"",autoplay:"",style:"width:100%;border-radius:12px;margin-top:6px;transform:scaleX(-1);max-height:40vh;background:#000"}); v.muted=true; v.srcObject=take.stream; pv.append(v); }
       btn.textContent=t("rec_stop"); keepAwake(true); timer=setTimeout(()=>{ if(take) btn.onclick(); },maxSec*1000);
@@ -2602,6 +2603,7 @@ const CT={
 };
 const ctPassages=l=>CTXS.map(c=>PASSAGES[l][c][1]).concat(REC_SENT[l]);
 /* drill definitions. kind: read (read a text), prompt (answer a question / speak on a topic), words (word list) */
+const DRILL_PRATE={fast:4.4,slow:4.6,pauses:4.3,melody:4.2,uptalk:4.0,trail:4.2};
 const DRILLS={
  fast:   {dim:"pace",       kind:"read",   texts:l=>ctPassages(l), guide:130, metric:(an)=>({v:an.rate,pass:an.rate>=3.5&&an.rate<=5.2,txt:t("cm_rate",{v:f1(an.rate)})})},
  slow:   {dim:"pace",       kind:"read",   texts:l=>ctPassages(l), guide:150, metric:(an)=>({v:an.rate,pass:an.rate>=3.5&&an.rate<=5.2,txt:t("cm_rate",{v:f1(an.rate)})})},
@@ -2616,6 +2618,7 @@ const DRILLS={
  fillers:{dim:"fluency",    kind:"prompt", texts:l=>TOPICS[l][SET.ctx], maxSec:60, needSR:true, metric:(an,x)=>{ const fi=fillerInfo(x.sr.text,x.lang); return {v:fi.n,pass:fi.n===0&&an.speak>=12,txt:t("cm_fillers",{n:fi.n,s:Math.round(an.speak)})}; }},
  clarity:{dim:"clarity",    kind:"words",  texts:(l,a)=>(a&&a.words&&a.words.length&&a.wordsLang===l?[a.words.slice(0,6).join(" · ")]:[]).concat(TWISTERS[l]), needSR:true, metric:(an,x)=>{ const cl=srClarity(x.sr,x.text.replace(/·/g," ")); const v=cl?cl.score:0; return {v,pass:v>=0.9,txt:t("cm_clarity",{p:Math.round(v*100)}),miss:cl?cl.miss:[]}; }}
 };
+Object.keys(DRILL_PRATE).forEach(k=>DRILLS[k].prate=DRILL_PRATE[k]);
 const COACH_OF={fast:"fast",slow:"slow",nopause:"pauses",manypause:"fluent",longpause:"fluent",mono:"melody",uptalk:"uptalk",trail:"trail",quiet:"quiet",clip:"clip",late:"late",fillers:"fillers",clarity:"clarity"};
 const STREAK=3, RECHECK=[3,14];
 const f1=x=>(Math.round((x||0)*10)/10).toLocaleString(SET.ui);
@@ -2683,13 +2686,14 @@ function renderCoach(res){
     <div class="muted" style="margin-top:8px">${t(def.kind==="prompt"?"coach_answer":"coach_read",{l:langIn(R.lang)})} (${(R.i%texts.length)+1}/${texts.length})</div>
     <div class="card flat reader" ${tlAttr(R.lang)} id="coachText" style="font-size:1.25rem;line-height:1.6">${def.kind==="prompt"?`<b>${esc(text)}</b>`:markupText(text)}</div>
     <div class="row">${def.model||def.kind==="prompt"?`<button class="b sm alt" id="coachModel">🔊 ${t(def.kind==="prompt"?"coach_hear_q":"coach_model")}</button>`:""}${def.guide?`<button class="b sm alt" id="coachGuide">▶ ${t("coach_guide",{w:def.guide})}</button>`:""}<button class="b sm alt" id="coachOther">↻ ${t("coach_other")}</button></div>
-    <div id="coachRec" style="margin-top:8px"></div><div id="coachRes"></div>`;
+    <div id="coachPat" style="margin-top:6px"></div><div id="coachRec" style="margin-top:8px"></div><div id="coachRes"></div>`;
   $("#coachClose").onclick=closeCoach;
   $("#coachOther").onclick=()=>{ R.i++; renderCoach(); };
   if($("#coachModel")) $("#coachModel").onclick=()=>speak(plainText(text),R.lang,null,def.kind==="prompt"?null:0.9,def.kind==="prompt"?null:"model");
   if($("#coachGuide")) $("#coachGuide").onclick=()=>guideText(def.guide);
   const recBox=$("#coachRec");
-  const ctl=recControls(recBox,{lang:srLang()?R.lang:null,maxSec:def.maxSec||60,onDone:r=>coachDone(r,text)});
+  R.pan=null; if(def.prate&&typeof textTemplate==="function"){ const tpl=textTemplate(text,R.lang,def.prate); R.pan=patternPanel($("#coachPat"),tpl,{band:R.id==="tone"?voiceTarget():null}); }
+  const ctl=recControls(recBox,{lang:srLang()?R.lang:null,maxSec:def.maxSec||60,onStart:()=>R.pan&&R.pan.reset(),onPitch:R.pan?(f,s,db)=>R.pan.onPitch(f,s,db):null,onDone:r=>coachDone(r,text)});
   if(def.auto&&!res){ /* quick-start drill: question is spoken, recording starts by itself */
     const go=el("button",{class:"b warm",style:"width:100%;margin-top:6px"},"▶ "+t("coach_q_start")); recBox.prepend(go); recBox.querySelector("[data-rec]").classList.add("hidden");
     go.onclick=()=>{ go.disabled=true; speak(text,R.lang,()=>{ if(CR===R){ recBox.querySelector("[data-rec]").classList.remove("hidden"); go.remove(); recBox.querySelector("[data-rec]").click(); } }); };
@@ -2716,7 +2720,8 @@ function coachDone(r,text){
     const nxt=el("button",{class:"b grow"},t("coach_next_text")); nxt.onclick=()=>{ R.i++; if(a) a.ti=R.i; save(); renderCoach(); };
     const same=el("button",{class:"b alt grow"},t("coach_same")); same.onclick=()=>renderCoach();
     nb.append(same,nxt); wrap.append(nb); renderCoach(wrap); $("#coachRes").scrollIntoView({behavior:"smooth"}); };
-  wrap.append(replayView(take,{onSave:()=>saveTake(take),noRegister:true}));
+  const pres=R.pan&&an.ok?R.pan.evaluate(an):null;
+  wrap.append(replayView(take,{onSave:()=>saveTake(take),noRegister:true,extra:pres?patternResultHtml(pres):""}));
   if(!an.ok){ finish({pass:false,v:null,txt:an.noVoice?t("tip_noise"):t("tip_short")}); return; }
   if(def.needSR&&!sr){ /* self-assessment fallback */
     const q=el("div",{class:"card",style:"margin-top:8px"},`<p><b>${t(R.id==="fillers"?"coach_self_fill":"coach_self_clear")}</b></p><div class="chips"></div>`);
@@ -2812,7 +2817,7 @@ function toneMetric(an){
 }
 DRILLS.tone={dim:"melody",kind:"read",model:true,texts:l=>SET.gender==="f"?CT.melody[l].concat(CT.pauses[l]):CT.statements[l].concat(CT.endings[l]),metric:toneMetric,
   goal:()=>{ const tg=voiceTarget(); return tg?t(SET.gender==="f"?"cg_tone_f":"cg_tone_m",tg):t("tone_target_none"); },
-  how:()=>t(SET.gender==="f"?"ch_tone_f":"ch_tone_m"), next:"cn_tone"};
+  how:()=>t(SET.gender==="f"?"ch_tone_f":"ch_tone_m"), next:"cn_tone", prate:4.0};
 
 /* ---- guided resonance routines (shown only for the matching gender) ---- */
 ROUTINES.push({g:"m",name:{en:"Resonance – masculine voice",de:"Resonanz – männlicher Klang",fr:"Résonance – voix masculine"},steps:[
@@ -2853,7 +2858,8 @@ function renderTone(){
     h+=`<p><b>${tg?t("tone_target",tg):t("tone_target_none")}</b></p>`;
     const f=SET.natF0||(store.profile&&store.profile.f0);
     if(f&&tg) h+=`<p>${t("tone_last",{f:Math.round(f),state:t(f<tg.lo?"tone_low":f>tg.hi?"tone_high":"tone_in")})}</p>`; }
-  box.innerHTML=h+`<div id="toneFind"></div><div class="row" style="margin-top:8px" data-b></div><div id="toneOut"></div>`;
+  box.innerHTML=h+`<div id="toneFind"></div><div class="row" style="margin-top:8px" data-b></div><div id="toneOut"></div><h3>📈 ${t("pat_title")}</h3><div id="patBody"></div>`;
+  setTimeout(()=>typeof renderPatternTrainer==="function"&&renderPatternTrainer(),0);
   const row=box.querySelector("[data-b]");
   if(tg){ const tb=el("button",{class:"b warm grow"},t("tone_train")); tb.onclick=()=>{ coachRegisterExt("tone",t("tone_title")); openCoach("tone"); }; row.append(tb);
     const ri=ROUTINES.findIndex(r=>r.g===g); if(ri>=0){ const rb=el("button",{class:"b alt grow"},"▶ "+ROUTINES[ri].name[SET.ui]); rb.onclick=()=>{ show("today"); openRoutine(ri); }; row.append(rb); } }
@@ -3040,7 +3046,11 @@ function renderRef(){
       <p class="muted">${t("ref_rate")} ${f1(S.rate[0])}–${f1(S.rate[1])} · ${t("ref_pause")} ${Math.round(S.pause[0]*100)}–${Math.round(S.pause[1]*100)} · ${t("ref_mel")} ${f1(S.mel[0])}–${f1(S.mel[1])}</p>
       <div class="muted">${t("ref_text")} (${langIn(SET.tl)})</div><div class="card flat reader" ${tlAttr(SET.tl)} style="font-size:1.15rem;line-height:1.6">${markupText(S.txt[SET.tl])}</div>`;
   }
-  recControls(box.querySelector("[data-rec]"),{lang:srLang(),maxSec:120,label:t("ref_rec"),onDone:r=>refCompare(r,box.querySelector("[data-out]"))});
+  const pbox=el("div",{style:"margin-top:6px"}); box.querySelector("[data-rec]").before(pbox);
+  const isImp=REF.style==="imp"&&REF.imp, tpl=isImp?clipTemplate(REF.imp.an):textTemplate(S.txt[SET.tl],SET.tl,(S.rate[0]+S.rate[1])/2);
+  if(isImp) pbox.append(el("p",{class:"muted"},t("pat_ref")));
+  const pdiv=el("div"); pbox.append(pdiv); REF.pan=tpl?patternPanel(pdiv,tpl,{relative:!!isImp,band:null}):null;
+  recControls(box.querySelector("[data-rec]"),{lang:srLang(),maxSec:120,label:t("ref_rec"),onStart:()=>REF.pan&&REF.pan.reset(),onPitch:REF.pan?(f,s,db)=>REF.pan.onPitch(f,s,db):null,onDone:r=>refCompare(r,box.querySelector("[data-out]"))});
   box.querySelector("[data-file]").onchange=async e=>{ const f=e.target.files[0]; if(!f) return; e.target.value=""; toast(t("analysing"));
     try{ const pcm=await decodeFile(f), an=analyze(pcm); if(!an.ok){ toast(t("tip_short")); return; } if(REF.imp&&REF.imp.url) URL.revokeObjectURL(REF.imp.url);
       REF.imp={name:f.name,an,url:URL.createObjectURL(f)}; REF.style="imp"; saveTake({blob:f,video:f.type.startsWith("video"),an,tips:{fix:[],good:[]},kind:"reference",title:f.name,lang:SET.tl}).catch(()=>{}); renderRef(); }
@@ -3063,8 +3073,9 @@ function refCompare(r,out){
   if(gaps.length) coachRegister(gaps,t("ref_title")+" – "+title);
   const extra=`<h3>${t("ref_cmp")} – ${esc(title)}</h3><table><tr><th></th><th>${t("ref_you")}</th><th>${t("ref_target")}</th><th></th></tr>${rows.map(x=>`<tr><td>${x[0]}</td><td><b>${x[1]}</b></td><td>${x[2]}</td><td>${x[3]>=1?"✓":"–"}</td></tr>`).join("")}</table>
     <p><b>${t("ref_sim")}: ${sim} %</b></p>${gaps.length?`<p class="muted">🏋 ${t("ref_gaps")}</p>`:""}`;
+  const pres=REF.pan?REF.pan.evaluate(an):null;
   const take={blob:r.blob,an,tips,score:sim,kind:"style-"+REF.style,title,lang:SET.tl,text:sr?sr.text:""};
-  out.innerHTML=""; out.append(replayView(take,{onSave:()=>saveTake(take),extra})); logSession(t("ref_title"),Math.max(0.5,an.dur/60));
+  out.innerHTML=""; out.append(replayView(take,{onSave:()=>saveTake(take),extra:extra+patternResultHtml(pres)})); logSession(t("ref_title"),Math.max(0.5,an.dur/60));
 }
 
 /* ================= Model voice matched to the user's profile (v3.6) =================
@@ -3110,6 +3121,116 @@ function renderVoicePick(){
   info();
 }
 try{ speechSynthesis.addEventListener("voiceschanged",()=>{ if(!$("#settings").classList.contains("hidden")) renderVoicePick(); }); }catch(e){}
+
+/* ================= Pattern trainer (v3.7): live pitch & pace against a target contour =================
+   Template = target melody over time in semitones (st) around a centre pitch.
+   From text: syllables at a target rate, declination per phrase, stress peaks (*word*), falling statement ends,
+   rising question ends, continuation rise at commas/⏸, pauses. From a reference clip: its real pitch curve. */
+Object.assign(T.en,{pat_title:"Melody & pace pattern", pat_desc:"Green band = target melody, grey = pauses, words below. Start speaking: the line moves at the target pace from your first sound – keep up with it and follow the curve with your voice (orange dots = your pitch, live).",
+ pat_score:"Pattern match", pat_tempo:"Pace: you took {u} s, the pattern {p} s – {s}.", pat_faster:"too fast, slow down", pat_slower:"too slow, keep up with the line", pat_ok:"matches",
+ pat_shape:"Melody shape: {p} % similar to the pattern.", pat_dev:"Biggest difference around “{w}”: your voice was {d} than the pattern – follow the curve there.", pat_higher:"higher", pat_lower:"lower",
+ pat_level:"Pitch level: median {f} Hz, target {lo}–{hi} Hz.", pat_text:"Text", pat_ref:"Pattern from your reference clip", pat_center:"0 = {f} Hz"});
+Object.assign(T.de,{pat_title:"Melodie- & Tempomuster", pat_desc:"Grünes Band = Ziel-Melodie, grau = Pausen, Wörter darunter. Fang an zu sprechen: Die Linie läuft ab deinem ersten Laut im Zieltempo – halte Schritt und folge der Kurve mit deiner Stimme (orange Punkte = deine Tonhöhe, live).",
+ pat_score:"Musterübereinstimmung", pat_tempo:"Tempo: du hast {u} s gebraucht, das Muster {p} s – {s}.", pat_faster:"zu schnell, langsamer sprechen", pat_slower:"zu langsam, mit der Linie Schritt halten", pat_ok:"passt",
+ pat_shape:"Melodieform: {p} % ähnlich zum Muster.", pat_dev:"Größte Abweichung bei „{w}“: deine Stimme war {d} als das Muster – folge dort der Kurve.", pat_higher:"höher", pat_lower:"tiefer",
+ pat_level:"Tonlage: Median {f} Hz, Ziel {lo}–{hi} Hz.", pat_text:"Text", pat_ref:"Muster aus deiner Referenzaufnahme", pat_center:"0 = {f} Hz"});
+Object.assign(T.fr,{pat_title:"Modèle de mélodie & de débit", pat_desc:"Bande verte = mélodie cible, gris = pauses, mots en dessous. Commencez à parler : la ligne avance au débit cible dès votre premier son – suivez-la et suivez la courbe avec votre voix (points orange = votre hauteur, en direct).",
+ pat_score:"Correspondance au modèle", pat_tempo:"Débit : vous avez mis {u} s, le modèle {p} s – {s}.", pat_faster:"trop rapide, ralentissez", pat_slower:"trop lent, suivez la ligne", pat_ok:"correspond",
+ pat_shape:"Forme mélodique : {p} % de ressemblance avec le modèle.", pat_dev:"Plus grand écart vers « {w} » : votre voix était plus {d} que le modèle – suivez la courbe à cet endroit.", pat_higher:"aiguë", pat_lower:"grave",
+ pat_level:"Hauteur : médiane {f} Hz, cible {lo}–{hi} Hz.", pat_text:"Texte", pat_ref:"Modèle tiré de votre extrait de référence", pat_center:"0 = {f} Hz"});
+
+function textTemplate(text,lang,rate,amp){
+  amp=amp||(SET.gender==="f"?1.25:SET.gender==="m"?0.9:1);
+  const toks=text.split(/\s+/).filter(Boolean), syl=[], words=[], pauses=[]; let t=0, phrase=[];
+  const flush=type=>{ const n=phrase.length; phrase.forEach((s,i)=>{ let st=1.5-2.5*(i/Math.max(1,n-1)); if(s.stress) st+=4;
+      if(i===n-1){ if(type==="?") st+=5; else if(type===",") st+=1; else st-=2.5; } s.st=st*amp; }); phrase=[]; };
+  toks.forEach(tok=>{
+    if(tok==="/"){ flush(","); pauses.push({s:t,e:t+0.8}); t+=0.8; return; }
+    if(/^[–—-]$/.test(tok)){ flush(","); pauses.push({s:t,e:t+0.3}); t+=0.3; return; }
+    const stress=tok.includes("*"), w=tok.replace(/\*/g,""), clean=w.replace(/[^\p{L}\p{N}'’-]/gu,""); if(!clean) return;
+    const n=Math.max(1,sylCount(clean,lang)); words.push({t,w:clean});
+    for(let k=0;k<n;k++){ const s={t0:t,t1:t+1/rate,stress:stress&&k===0}; syl.push(s); phrase.push(s); t+=1/rate; }
+    const pm=w.match(/[.!?,;:]$/);
+    if(pm){ const ty=pm[0]==="?"?"?":/[,;:]/.test(pm[0])?",":"."; flush(ty); const pd=ty===","?0.3:0.6; pauses.push({s:t,e:t+pd}); t+=pd; }
+  });
+  flush(".");
+  let end=t; while(pauses.length&&Math.abs(pauses[pauses.length-1].e-end)<1e-6){ end=pauses.pop().s; }
+  const pts=[]; syl.forEach(s=>{ const d=s.t1-s.t0; pts.push({t:s.t0+d*0.15,st:s.st},{t:s.t0+d*0.5,st:s.st},{t:s.t0+d*0.85,st:s.st}); });
+  return {dur:end,pts,words,pauses,src:"text"};
+}
+function clipTemplate(an){
+  if(!an||!an.ok) return null; const S=an.series, med=an.f0med, pts=[];
+  S.f0.forEach((f,k)=>{ const tt=k*S.hop-an.first; if(f>0&&tt>=0&&tt<=an.total) pts.push({t:tt,st:12*Math.log2(f/med)}); });
+  return {dur:an.total,pts,words:[],pauses:(an.pauses||[]).map(p=>({s:p.s-an.first,e:p.e-an.first})),src:"clip"};
+}
+function tplAt(tpl,tt){ const P=tpl.pts; let best=null,bd=1e9; for(const p of P){ const d=Math.abs(p.t-tt); if(d<bd){ bd=d; best=p; } } return bd<0.25?best.st:null; }
+function patternCenter(){ const vt=voiceTarget(); if(vt) return Math.round(Math.sqrt(vt.lo*vt.hi)); return SET.natF0||(store.profile&&store.profile.f0)||(SET.gender==="f"?200:SET.gender==="m"?115:150); }
+
+/* panel: canvas + live drawing + evaluation */
+function patternPanel(box,tpl,{center=patternCenter(),band=voiceTarget(),relative=false}={}){
+  box.innerHTML=`<div class="muted" style="font-size:.8rem">${t("pat_desc")}</div><canvas height="190" style="margin-top:4px"></canvas>`;
+  const cv=box.querySelector("canvas"), P={tpl,center,band,live:[],onset:null,user:null,relative,ownMed:null};
+  const draw=(cursor)=>{
+    const dpr=window.devicePixelRatio||1, W=cv.clientWidth*dpr, H=190*dpr; if(!W) return; if(cv.width!==W){ cv.width=W; cv.height=H; }
+    const g=cv.getContext("2d"); g.clearRect(0,0,W,H);
+    const maxT=Math.max(tpl.dur+0.6, P.user?P.user.dur+0.3:0, P.live.length?P.live[P.live.length-1].t+0.3:0);
+    const X=tt=>8*dpr+tt/maxT*(W-16*dpr), lab=24*dpr, Y=st=>(H-lab)/2-st/12*((H-lab)/2-6*dpr);
+    g.font=(10*dpr)+"px system-ui";
+    tpl.pauses.forEach(p=>{ g.fillStyle="rgba(120,120,120,.15)"; g.fillRect(X(p.s),0,X(p.e)-X(p.s),H-lab); });
+    if(band&&!relative){ g.fillStyle="rgba(47,138,77,.07)"; const y1=Y(12*Math.log2(band.hi/center)), y2=Y(12*Math.log2(band.lo/center)); g.fillRect(0,y1,W,y2-y1); }
+    g.strokeStyle=cssv("--line"); g.setLineDash([4*dpr,4*dpr]); g.beginPath(); g.moveTo(0,Y(0)); g.lineTo(W,Y(0)); g.stroke(); g.setLineDash([]);
+    g.fillStyle=cssv("--muted"); { const lb=relative?"0":t("pat_center",{f:center}); g.fillText(lb,W-g.measureText(lb).width-4*dpr,12*dpr); }
+    // target ribbon
+    g.strokeStyle="rgba(47,138,77,.35)"; g.lineWidth=10*dpr; g.lineCap="round"; g.lineJoin="round";
+    let prev=null; g.beginPath(); tpl.pts.forEach(p=>{ if(prev&&p.t-prev.t>0.3){ g.stroke(); g.beginPath(); g.moveTo(X(p.t),Y(p.st)); } else if(!prev) g.moveTo(X(p.t),Y(p.st)); else g.lineTo(X(p.t),Y(p.st)); prev=p; }); g.stroke();
+    g.lineWidth=1; g.fillStyle=cssv("--ink"); let lastEnd=[-1e9,-1e9]; tpl.words.forEach(w=>{ const x=X(w.t), wd=g.measureText(w.w).width+4*dpr, row=x>lastEnd[0]?0:(x>lastEnd[1]?1:0); g.fillText(w.w,x,H-(row?2:10)*dpr); lastEnd[row]=x+wd; });
+    // user (after recording) and live dots
+    const rel=f=>12*Math.log2(f/(relative?(P.ownMed||center):center));
+    g.fillStyle=cssv("--accent2");
+    if(P.user) P.user.pts.forEach(p=>{ g.beginPath(); g.arc(X(p.t),Y(p.st),2*dpr,0,7); g.fill(); });
+    else P.live.forEach(p=>{ if(p.f>0){ g.beginPath(); g.arc(X(p.t),Y(rel(p.f)),2.2*dpr,0,7); g.fill(); } });
+    if(cursor!=null){ g.strokeStyle=cssv("--ink"); g.lineWidth=2*dpr; g.beginPath(); g.moveTo(X(cursor),0); g.lineTo(X(cursor),H-lab); g.stroke(); g.lineWidth=1; }
+  };
+  requestAnimationFrame(()=>draw(null));
+  return {
+    reset(){ P.live=[]; P.onset=null; P.user=null; P.ownMed=null; draw(null); },
+    onPitch(f,sec,db){ if(P.onset===null){ if(f>0&&db>-55) P.onset=sec; else return; } const tt=sec-P.onset; P.live.push({t:tt,f});
+      if(relative&&!P.ownMed){ const v=P.live.filter(x=>x.f>0).map(x=>x.f); if(v.length>25) P.ownMed=pctl(v,0.5); } draw(Math.min(tt,tpl.dur+0.5)); },
+    evaluate(an){
+      if(!an||!an.ok) return null; const S=an.series, base=relative?an.f0med:center, pts=[];
+      S.f0.forEach((f,k)=>{ const tt=k*S.hop-an.first; if(f>0&&tt>=0) pts.push({t:tt,st:12*Math.log2(f/base)}); });
+      P.user={dur:an.total,pts}; draw(null);
+      const ratio=an.total/Math.max(0.5,tpl.dur), tempo=Math.max(0,1-Math.abs(ratio-1)*2.5);
+      // shape: compare mean-normalised curves on a normalised time axis
+      const N=60, a=[], b=[], at=[];
+      for(let i=0;i<N;i++){ const x=i/(N-1), tv=tplAt(tpl,x*tpl.dur); let uv=null,bd=1e9; for(const p of pts){ const d=Math.abs(p.t-x*an.total); if(d<bd){ bd=d; uv=p.st; } } if(tv!=null&&uv!=null&&bd<0.15){ a.push(tv); b.push(uv); at.push(x*tpl.dur); } }
+      let shape=0, dev=null;
+      if(a.length>=10){ const ma=a.reduce((x,y)=>x+y,0)/a.length, mb=b.reduce((x,y)=>x+y,0)/b.length; let sab=0,saa=0,sbb=0,mx=0;
+        a.forEach((v,i)=>{ const da=v-ma, db_=b[i]-mb; sab+=da*db_; saa+=da*da; sbb+=db_*db_; const d=db_-da; if(Math.abs(d)>Math.abs(mx)){ mx=d; dev={t:at[i],d}; } });
+        shape=Math.max(0,sab/Math.sqrt(saa*sbb+1e-9)); }
+      let level=null; if(band&&!relative){ const f=an.f0med; level=f>=band.lo&&f<=band.hi?1:Math.max(0,1-Math.min(Math.abs(f-band.lo),Math.abs(f-band.hi))/((band.hi-band.lo)/2)); }
+      const parts=[tempo,shape].concat(level!=null?[level]:[]), score=Math.round(100*parts.reduce((x,y)=>x+y,0)/parts.length);
+      const lines=[t("pat_tempo",{u:f1(an.total),p:f1(tpl.dur),s:ratio<0.88?t("pat_faster"):ratio>1.12?t("pat_slower"):t("pat_ok")}),t("pat_shape",{p:Math.round(shape*100)})];
+      if(dev&&Math.abs(dev.d)>2.5){ const w=tpl.words.slice().reverse().find(x=>x.t<=dev.t); if(w) lines.push(t("pat_dev",{w:w.w,d:t(dev.d>0?"pat_higher":"pat_lower")})); }
+      if(level!=null) lines.push(t("pat_level",{f:Math.round(an.f0med),lo:band.lo,hi:band.hi}));
+      return {score,tempo,shape,level,lines,ratio};
+    }
+  };
+}
+function patternResultHtml(res){ if(!res) return ""; return `<div class="card flat" style="margin-top:8px"><b>📈 ${t("pat_score")}: ${res.score} %</b><ul class="list">${res.lines.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`; }
+
+/* standalone pattern trainer in the voice-tone card */
+let PT={i:0};
+function renderPatternTrainer(){
+  const box=$("#patBody"); if(!box) return; const l=SET.tl, texts=CT.statements[l].concat(CT.melody[l],CT.endings[l]), text=texts[PT.i%texts.length];
+  box.innerHTML=`<div class="card flat reader" ${tlAttr(l)} style="font-size:1.15rem">${markupText(text)}</div><div class="row"><button class="b sm alt" data-n>↻ ${t("coach_other")}</button></div><div data-p style="margin-top:6px"></div><div data-r></div><div data-o></div>`;
+  box.querySelector("[data-n]").onclick=()=>{ PT.i++; renderPatternTrainer(); };
+  const tpl=textTemplate(text,l,4.0), pan=patternPanel(box.querySelector("[data-p]"),tpl);
+  recControls(box.querySelector("[data-r]"),{lang:srLang(),maxSec:30,onStart:()=>pan.reset(),onPitch:(f,s,db)=>pan.onPitch(f,s,db),onDone:r=>{
+    const an=analyze(r.pcm), res=pan.evaluate(an), tips=makeTips(an,{sr:r.sr.text?r.sr:null,expected:plainText(text)});
+    const take={blob:r.blob,an,tips,score:res?res.score:null,kind:"pattern",title:t("pat_title"),lang:l};
+    const o=box.querySelector("[data-o]"); o.innerHTML=""; o.append(replayView(take,{onSave:()=>saveTake(take),extra:patternResultHtml(res)})); logSession(t("pat_title"),0.5); }});
+}
 
 /* ================= v3: plan, lessons, voice test, studio, drills, library ================= */
 const DIMS6=["pace","pauses","melody","projection","clarity","fluency"];
