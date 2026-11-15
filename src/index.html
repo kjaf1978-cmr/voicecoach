@@ -80,12 +80,21 @@ table{width:100%;border-collapse:collapse;font-size:.82rem} td,th{border-bottom:
 .sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:15;display:flex;align-items:flex-end;justify-content:center}
 .sheet .card{width:100%;max-width:720px;margin:0;border-radius:20px 20px 0 0;padding-bottom:calc(18px + env(safe-area-inset-bottom));max-height:85vh;overflow:auto}
 .rate-row{margin:8px 0} .rate-row .chips{margin:3px 0}
+.tiprow{display:flex;gap:8px;align-items:flex-start;margin:6px 0;font-size:.92rem} .tiprow button{flex:none;min-height:30px!important;padding:3px 8px!important}
+.cal{display:grid;grid-template-columns:repeat(14,1fr);gap:3px;margin:8px 0} .cal i{aspect-ratio:1;border-radius:4px;background:var(--line);position:relative;overflow:hidden}
+.cal i b{position:absolute;left:0;right:0;bottom:0;background:var(--ok)} .cal i.today{outline:2px solid var(--accent)}
+.planitem{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)} .planitem .ck{font-size:1.3rem;width:28px;text-align:center}
+.planitem.done .grow{opacity:.55;text-decoration:line-through}
+.lesson{border-top:1px solid var(--line);padding:6px 0}
+.check{display:flex;gap:8px;align-items:flex-start;margin:5px 0;font-size:.92rem} .check input{width:20px;height:20px;flex:none}
+textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 </style>
 </head>
 <body>
 <header>
   <h1>VoiceCoach</h1>
   <span class="badge" id="streakBadge"></span>
+  <button class="pill hidden" id="installBtn" data-t="install"></button>
   <button class="pill" id="setBtn">⚙ <span id="setSummary"></span></button>
 </header>
 
@@ -94,6 +103,7 @@ table{width:100%;border-collapse:collapse;font-size:.82rem} td,th{border-bottom:
   <h3 data-t="set_ui"></h3><div class="chips" id="setUi"></div>
   <h3 data-t="set_train"></h3><div class="chips" id="setTl"></div>
   <h3 data-t="set_ctx"></h3><div class="chips" id="setCtx"></div>
+  <h3 data-t="set_mode"></h3><div class="chips" id="setMode"></div>
   <h3><span data-t="set_rate"></span>: <span id="rateVal"></span></h3>
   <input type="range" id="setRate" min="0.6" max="1.3" step="0.05">
   <div class="row" style="margin-top:12px"><span class="grow"></span><button class="b" id="setClose" data-t="set_close"></button></div>
@@ -102,6 +112,9 @@ table{width:100%;border-collapse:collapse;font-size:.82rem} td,th{border-bottom:
 <main>
 <!-- TODAY -->
 <section class="view on" id="v-today">
+  <div class="card"><div class="row"><h2 class="grow" style="margin:0" data-t="plan_title"></h2><b id="planCount"></b></div>
+    <p class="muted" data-t="plan_desc"></p><div id="planList"></div><p class="muted hidden" id="planNoTest" data-t="plan_notest"></p>
+    <div class="cal" id="planCal"></div><p class="muted" style="font-size:.75rem" data-t="plan_cal"></p></div>
   <div class="card"><h2 data-t="due_title"></h2><div id="dueList"></div></div>
   <div class="card"><h2 data-t="next_title"></h2><div id="nextBox"></div></div>
   <div class="card">
@@ -114,6 +127,7 @@ table{width:100%;border-collapse:collapse;font-size:.82rem} td,th{border-bottom:
     </div>
     <p class="muted" data-t="week_note"></p>
   </div>
+  <div class="card" id="lessonCard"><h2 data-t="lessons_title"></h2><p class="muted" data-t="lessons_desc"></p><div id="lessonList"></div></div>
   <div class="card"><h2 data-t="routines_title"></h2><p class="muted" data-t="routines_desc"></p><div id="routineList"></div></div>
   <div class="card hidden" id="routinePlayer">
     <div class="row"><b class="grow" id="rpTitle"></b><button class="b sm alt" id="rpClose" data-t="close"></button></div>
@@ -138,12 +152,13 @@ table{width:100%;border-collapse:collapse;font-size:.82rem} td,th{border-bottom:
       <details><summary data-t="grading_title"></summary><div data-t="grading_html" class="muted"></div></details>
     </div>
     <div id="sceneList"></div>
-    <div class="card">
+    <div class="card" id="impCard">
       <h2 data-t="imp_title"></h2><p class="muted" data-t="imp_desc"></p>
       <div class="huge" id="topicBox" style="font-size:1.3rem"></div>
       <div class="chips" id="topicDur"></div>
       <div class="big" id="topicTime">1:00</div>
       <div class="row"><button class="b alt grow" id="topicNew" data-t="imp_new"></button><button class="b grow" id="topicStart" data-t="startb"></button></div>
+      <div id="impRec" style="margin-top:8px"></div><div id="impOut"></div>
     </div>
     <div class="card">
       <h2 data-t="filler_title"></h2><p class="muted" data-t="filler_desc"></p>
@@ -165,7 +180,7 @@ table{width:100%;border-collapse:collapse;font-size:.82rem} td,th{border-bottom:
 
 <!-- SPEECH -->
 <section class="view" id="v-speech">
-  <div class="card">
+  <div class="card" id="artCard">
     <div class="row"><h2 class="grow" style="margin:0" data-t="art_title"></h2><div class="chips" id="speechTl"></div></div>
     <p class="muted" data-t="art_desc"></p>
     <div class="chips" id="soundChips"></div>
@@ -192,15 +207,16 @@ table{width:100%;border-collapse:collapse;font-size:.82rem} td,th{border-bottom:
     <div class="row"><button class="b grow" id="pairNext" data-t="pairs_new"></button><button class="b alt grow" id="pairPick" data-t="pairs_pick"></button></div>
     <p class="muted" id="pairPicked"></p>
   </div>
-  <div class="card">
+  <div class="card" id="twCard">
     <h2 data-t="tw_title"></h2><p class="muted" data-t="tw_desc"></p>
     <select id="twSelect" style="width:100%"></select>
     <div class="reader card" id="twReader" style="margin-top:10px"></div>
     <label class="muted"><span data-t="speed"></span>: <span id="twWpmVal">60</span> WPM</label>
     <input type="range" id="twWpm" min="30" max="200" step="5" value="60">
     <div class="row"><label class="muted grow"><input type="checkbox" id="twClick"> <span data-t="metronome"></span></label><button class="b" id="twStart" data-t="startb"></button></div>
+    <div id="twRec" style="margin-top:8px"></div><div id="twOut"></div>
   </div>
-  <div class="card">
+  <div class="card" id="paceCard">
     <h2 data-t="read_title"></h2><p class="muted" data-t="read_desc"></p>
     <select id="paceSelect" style="width:100%"></select>
     <div class="reader card" id="paceReader" style="margin-top:10px"></div>
@@ -212,6 +228,20 @@ table{width:100%;border-collapse:collapse;font-size:.82rem} td,th{border-bottom:
 
 <!-- VOICE -->
 <section class="view" id="v-voice">
+  <div class="card" id="testCard"><h2 data-t="test_title"></h2><p class="muted" data-t="test_desc"></p><div id="testBody"></div>
+    <details><summary>ⓘ</summary><div class="muted" data-t="dims_help"></div></details></div>
+  <div class="card" id="studioCard"><h2 data-t="studio_title"></h2><p class="muted" data-t="studio_desc"></p>
+    <label class="muted" data-t="studio_prompt"></label><select id="studioPrompt" style="width:100%"></select>
+    <div class="card flat hidden" id="studioTask" style="margin-top:8px"></div>
+    <label class="check"><input type="checkbox" id="studioVideo"> <span data-t="studio_video"></span></label>
+    <div id="studioRec"></div>
+    <label class="b sm alt" style="display:inline-flex;align-items:center;margin-top:8px">📂 <span data-t="studio_import"></span><input type="file" id="studioFile" accept="audio/*,video/*" class="hidden"></label>
+    <div id="studioOut"></div></div>
+  <div class="card" id="intoCard"><h2 data-t="into_title"></h2><p class="muted" data-t="into_desc"></p>
+    <div class="huge" id="intoSent" style="font-size:1.5rem;font-weight:500"></div><button class="b sm alt" id="intoNew" data-t="into_new"></button>
+    <div id="intoRec" style="margin-top:8px"></div><div id="intoOut"></div></div>
+  <div class="card" id="projCard"><h2 data-t="proj_title"></h2><p class="muted" data-t="proj_desc"></p>
+    <div class="huge" id="projText" style="font-size:1.2rem;font-weight:500"></div><div id="projRec"></div><div id="projOut"></div></div>
   <div class="card"><h2 data-t="mic_title"></h2><p class="muted" data-t="mic_desc"></p>
     <button class="b" style="width:100%" id="micBtn" data-t="mic_on"></button>
     <div class="warnbox hidden" id="micErr" style="margin-top:8px"></div></div>
@@ -231,10 +261,7 @@ table{width:100%;border-collapse:collapse;font-size:.82rem} td,th{border-bottom:
     <div class="big" id="sustainTime">0.0 s</div>
     <p class="muted"><span data-t="best_sustain"></span>: <b id="sustainBest">0.0 s</b> <button class="b alt sm" id="sustainSave" data-t="save_mpt"></button></p>
     <p class="muted" data-t="steady_note"></p></div>
-  <div class="card"><h2 data-t="rec_title"></h2><p class="muted" data-t="rec_desc"></p>
-    <div class="row"><button class="b warm grow" id="recBtn" data-t="rec_btn"></button><span class="big" id="recTime" style="font-size:1.4rem">0:00</span></div>
-    <p class="muted"><span data-t="rec_sentence"></span> <i id="recSentence"></i></p><div id="takes"></div></div>
-</section>
+  </section>
 
 <!-- BREATH -->
 <section class="view" id="v-breath">
@@ -257,6 +284,8 @@ table{width:100%;border-collapse:collapse;font-size:.82rem} td,th{border-bottom:
 <!-- PROGRESS -->
 <section class="view" id="v-progress">
   <div class="card"><h2 id="prMastTitle"></h2><div id="prMastery"></div><p class="muted" data-t="pr_mastery_note"></p><div id="prLangTable"></div></div>
+  <div class="card"><h2 data-t="test_hist"></h2><canvas id="testChart" height="150"></canvas><div id="testDims"></div></div>
+  <div class="card"><h2 data-t="lib_title"></h2><p class="muted" data-t="lib_desc"></p><div id="libList"></div><div id="libOut"></div></div>
   <div class="card"><h2 data-t="pr_scores"></h2><canvas id="scoreChart" height="170"></canvas><p class="muted" data-t="pr_scores_note"></p></div>
   <div class="card"><h2 id="prArtTitle"></h2><div id="prArt"></div></div>
   <div class="card"><h2 data-t="pr_meas"></h2><canvas id="measChart" height="150"></canvas><p class="muted" data-t="pr_meas_note"></p></div>
