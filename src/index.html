@@ -90,6 +90,9 @@ table{width:100%;border-collapse:collapse;font-size:.82rem} td,th{border-bottom:
 .check{display:flex;gap:8px;align-items:flex-start;margin:5px 0;font-size:.92rem} .check input{width:20px;height:20px;flex:none}
 .beatdot{width:120px;height:120px;margin:12px auto;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;transition:transform .08s,background .08s}
 .beatdot.on{background:var(--accent2);color:#fff;transform:scale(1.15)}
+.dots{display:inline-flex;gap:4px;vertical-align:middle} .dots i{width:12px;height:12px;border-radius:50%;background:var(--line);display:inline-block} .dots i.on{background:var(--ok)} .dots.big i{width:20px;height:20px}
+b.stress{color:var(--accent2);text-decoration:underline} .pmark{color:var(--accent);font-weight:700}
+.tipbtn{flex:none;min-height:30px!important;padding:3px 8px!important;margin-left:auto}
 textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 </style>
 </head>
@@ -106,18 +109,23 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
   <h3 data-t="set_ui"></h3><div class="chips" id="setUi"></div>
   <h3 data-t="set_train"></h3><div class="chips" id="setTl"></div>
   <h3 data-t="set_ctx"></h3><div class="chips" id="setCtx"></div>
+  <div id="setProf"></div>
   <h3 data-t="set_mode"></h3><div class="chips" id="setMode"></div>
   <h3><span data-t="set_rate"></span>: <span id="rateVal"></span></h3>
   <input type="range" id="setRate" min="0.6" max="1.3" step="0.05">
   <div class="row" style="margin-top:12px"><span class="grow"></span><button class="b" id="setClose" data-t="set_close"></button></div>
 </div></div>
 
+<div class="sheet hidden" id="coachSheet"><div class="card" id="coachBody" style="max-height:92vh"></div></div>
+
 <main>
 <!-- TODAY -->
 <section class="view on" id="v-today">
+  <div class="card" id="goalCard"><h2 data-t="goal_title"></h2><p class="muted" data-t="goal_desc"></p><div id="goalBody"></div></div>
   <div class="card"><div class="row"><h2 class="grow" style="margin:0" data-t="plan_title"></h2><b id="planCount"></b></div>
     <p class="muted" data-t="plan_desc"></p><div id="planList"></div><p class="muted hidden" id="planNoTest" data-t="plan_notest"></p>
     <div class="cal" id="planCal"></div><p class="muted" style="font-size:.75rem" data-t="plan_cal"></p></div>
+  <div class="card" id="coachCard"><h2 data-t="coach_title"></h2><p class="muted" data-t="coach_desc"></p><div id="coachList"></div></div>
   <div class="card"><h2 data-t="due_title"></h2><div id="dueList"></div></div>
   <div class="card"><h2 data-t="next_title"></h2><div id="nextBox"></div></div>
   <div class="card">
@@ -232,6 +240,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
 
 <!-- VOICE -->
 <section class="view" id="v-voice">
+  <div class="card" id="toneCard"><h2><span data-t="tone_title"></span> <span class="muted" style="font-size:.85rem;font-weight:400" id="toneSub"></span></h2><div id="toneBody"></div></div>
   <div class="card" id="testCard"><h2 data-t="test_title"></h2><p class="muted" data-t="test_desc"></p><div id="testBody"></div>
     <details><summary data-t="dims_info"></summary><div class="muted" data-t="dims_help"></div></details></div>
   <div class="card" id="studioCard"><h2 data-t="studio_title"></h2><p class="muted" data-t="studio_desc"></p>
@@ -241,6 +250,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
     <div id="studioRec"></div>
     <label class="b sm alt" style="display:inline-flex;align-items:center;margin-top:8px">📂 <span data-t="studio_import"></span><input type="file" id="studioFile" accept="audio/*,video/*" class="hidden"></label>
     <div id="studioOut"></div></div>
+  <div class="card" id="refCard"><h2 data-t="ref_title"></h2><p class="muted" data-t="ref_desc"></p><div id="refBody"></div></div>
   <div class="card" id="intoCard"><h2 data-t="into_title"></h2><p class="muted" data-t="into_desc"></p>
     <div class="huge tl" id="intoSent" style="font-size:1.5rem;font-weight:500"></div><button class="b sm alt" id="intoNew" data-t="into_new"></button>
     <div id="intoRec" style="margin-top:8px"></div><div id="intoOut"></div></div>

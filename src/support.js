@@ -107,5 +107,6 @@ function supResult({r,an,fix,good,scores,score,ex,title,extra=""}){
   const bars=Object.keys(sc).map(k=>{ const v=sc[k]; return `<div class="sc"><span>${t(k)}</span><div class="bar"><i style="width:${Math.round(v*100)}%;background:${v>=.8?'var(--ok)':v>=.5?'var(--accent2)':'var(--warn)'}"></i></div><b>${Math.round(v*100)}</b></div>`; }).join("");
   store.support=(store.support||[]); store.support.push({d:today(),t:Date.now(),ex,score}); store.support=store.support.slice(-200); save();
   markPlan("drill","support"); logSession(title,1);
+  if(ex!=="ab"){ const cid="sup:"+ex; if(score<80&&!coachStore()[cid]) coachRegisterExt(cid,title); if(coachStore()[cid]) coachAttempt(cid,score>=80,score); }
   const o=$("#supOut"); o.innerHTML=""; const v=replayView(take,{onSave:()=>saveTake(take),extra:bars+extra}); o.append(v); return o;
 }

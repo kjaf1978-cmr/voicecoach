@@ -7,9 +7,12 @@ function scrollToId(id){ const e=document.getElementById(id); if(e){ setTimeout(
 function nextScene(){ return SCENES.filter(s=>s.ctx===SET.ctx).map(sc=>({sc,s:getConv(sc.id,SET.tl)})).find(x=>!x.s.mastered); }
 function planFor(date){
   if(store.plan[date]) return store.plan[date];
+  const gi=typeof goalPlanItems==="function"?goalPlanItems():null;
+  if(gi){ store.plan[date]={items:gi,done:{},goal:true}; save(); return store.plan[date]; }
   const dayN=Math.floor(Date.now()/DAY), prof=store.profile;
   const focus=prof&&prof.focus&&prof.focus.length?prof.focus[dayN%prof.focus.length]:DIMS6[dayN%6];
   const items=[{k:"warm",r:dayN%ROUTINES.length},{k:"drill",dim:focus,act:FOCUS_DRILL[focus]},{k:"diction",tw:dayN%6}];
+  const co=typeof coachOpen==="function"?coachOpen():[]; if(co.length) items.splice(1,0,{k:"coach",id:co[0].id});
   const due=dueList(); if(due.length) items.push({k:"review",id:due[0].sc.id,l:due[0].l});
   const nx=nextScene(); if(nx) items.push({k:"talk",id:nx.sc.id,l:SET.tl});
   const ls=LESSONS.find(l=>!store.lessons[l.id]&&l.dim===focus)||LESSONS.find(l=>!store.lessons[l.id])||LESSONS[dayN%LESSONS.length];
@@ -19,7 +22,7 @@ function planFor(date){
   save(); return store.plan[date];
 }
 function markPlan(k,x){ const p=planFor(today()); let ch=false;
-  p.items.forEach((it,i)=>{ if(p.done[i]||it.k!==k) return; if(k==="drill"&&it.act!==x) return; if(k==="lesson"&&x&&it.id!==x) return; p.done[i]=true; ch=true; });
+  p.items.forEach((it,i)=>{ if(p.done[i]||it.k!==k) return; if(k==="drill"&&it.act!==x) return; if(k==="lesson"&&x&&it.id!==x) return; if(k==="coach"&&x&&it.id!==x) return; if(k==="art"&&x&&it.snd!==x) return; p.done[i]=true; ch=true; });
   if(ch){ save(); renderPlan(); const n=Object.keys(p.done).length; if(n===p.items.length){ beep(1320,.3,.12); toast("🎉 "+t("plan_done",{d:n,n:p.items.length})); } } }
 const lessonOf=id=>LESSONS.find(l=>l.id===id);
 const drillName=act=>act.startsWith("lesson:")?lessonOf(act.slice(7)).txt[SET.ui][0]:({pace:t("read_title"),into:t("into_title"),proj:t("proj_title"),art:t("art_title"),imp:t("imp_title"),studio:t("studio_title"),support:t("sup_title")}[act]||act);
@@ -29,9 +32,11 @@ function planLabel(it){
     case "warm": return t("pk_warm")+": "+ROUTINES[it.r].name[SET.ui];
     case "drill": return t("pk_drill")+" – "+t("d_"+it.dim)+": "+drillName(it.act);
     case "diction": { const x=TWISTERS[SET.tl][it.tw]; return esc(t("pk_diction"))+": <span "+tlAttr(SET.tl)+">"+esc(x.length>40?x.slice(0,38)+"…":x)+"</span>"; }
-    case "review": return t("pk_review")+": "+sc(it.id).title[SET.ui]+" ("+it.l.toUpperCase()+")";
-    case "talk": { const s=getConv(it.id,it.l); return t("pk_talk")+": "+sc(it.id).title[SET.ui]+" ("+it.l.toUpperCase()+") – "+t("lvl")+" "+(s.mastered?3:s.lvl); }
+    case "review": return t("pk_review")+": "+sc(it.id).title[SET.ui]+" ("+SET.tl.toUpperCase()+")";
+    case "talk": { const s=getConv(it.id,SET.tl); return t("pk_talk")+": "+sc(it.id).title[SET.ui]+" ("+SET.tl.toUpperCase()+") – "+t("lvl")+" "+(s.mastered?3:s.lvl); }
     case "lesson": return t("pk_lesson")+": "+lessonOf(it.id).txt[SET.ui][0];
+    case "coach": return t("pk_coach")+": "+coachName(it.id);
+    case "art": return t("ser_title")+": "+(ART[SET.tl][it.snd]?it.snd:Object.keys(ART[SET.tl])[0])+" ("+langIn(SET.tl)+")";
   } }
 function planGo(it){
   switch(it.k){
@@ -46,15 +51,21 @@ function planGo(it){
       else if(a.startsWith("lesson:")){ openLesson(a.slice(7)); }
       break; }
     case "diction": show("speech"); $("#twSelect").value=it.tw; tw.load(); scrollToId("twCard"); break;
-    case "review": { const sc=SCENES.find(s=>s.id===it.id); startAttempt(sc,it.l,3,"review"); break; }
-    case "talk": { const sc=SCENES.find(s=>s.id===it.id), s=getConv(it.id,it.l); startAttempt(sc,it.l,s.mastered?3:s.lvl,s.mastered?"review":"level"); break; }
+    case "review": { const sc=SCENES.find(s=>s.id===it.id), s=getConv(it.id,SET.tl); startAttempt(sc,SET.tl,s.mastered?3:s.lvl,s.mastered?"review":"level"); break; }
+    case "talk": { const sc=SCENES.find(s=>s.id===it.id), s=getConv(it.id,SET.tl); startAttempt(sc,SET.tl,s.mastered?3:s.lvl,s.mastered?"review":"level"); break; }
     case "lesson": openLesson(it.id); break;
+    case "coach": coachGo(it.id); break;
+    case "art": show("speech"); SP.snd=ART[SET.tl][it.snd]?it.snd:Object.keys(ART[SET.tl])[0]; SP.pos="i"; SP.idx=0; renderSpeech(); scrollToId("serBox"); break;
   } }
 function renderPlan(){
   const box=$("#planList"); if(!box) return; const p=planFor(today()); box.innerHTML="";
-  p.items.forEach((it,i)=>{ const d=!!p.done[i]; const r=el("div",{class:"planitem"+(d?" done":"")},`<span class="ck">${d?"✅":"⬜"}</span><span class="grow">${it.k==="diction"?planLabel(it):esc(planLabel(it))}</span>`);
+  if(!p.goal&&typeof coachOpen==="function"&&!p.items.some(x=>x.k==="coach")){ const co=coachOpen(); if(co.length){ p.items.splice(1,0,{k:"coach",id:co[0].id}); const nd={}; Object.keys(p.done).forEach(i=>nd[+i>=1?+i+1:i]=true); p.done=nd; save(); } }
+  let lastS=-1; const G=store.goal;
+  p.items.forEach((it,i)=>{ if(p.goal&&it.s!==undefined&&it.s!==lastS){ lastS=it.s; box.append(el("h3",{style:"margin:10px 0 2px"},`${t("goal_session",{i:it.s+1})} <span class="muted" style="font-weight:400">${G?t("unit_min",{m:G.per}):""}</span>`)); }
+    const d=!!p.done[i]; const r=el("div",{class:"planitem"+(d?" done":"")},`<span class="ck">${d?"✅":"⬜"}</span><span class="grow">${it.k==="diction"?planLabel(it):esc(planLabel(it))}</span>`);
     const b=el("button",{class:"b sm"+(d?" alt":"")},t("go")); b.onclick=()=>planGo(it); r.append(b); box.append(r); });
   $("#planCount").textContent=t("plan_done",{d:Object.keys(p.done).length,n:p.items.length});
+  if(p.goal&&lastS>0) box.append(el("p",{class:"muted"},"⏸ "+t("goal_rest")));
   $("#planNoTest").classList.toggle("hidden",!!store.profile);
   const cal=$("#planCal"); cal.innerHTML="";
   for(let k=13;k>=0;k--){ const d=new Date(Date.now()-k*DAY).toISOString().slice(0,10), pl=store.plan[d], f=pl?Object.keys(pl.done).length/pl.items.length:0;
@@ -164,6 +175,7 @@ function testFinish(){
   if(p2.r.sr.text){ const fi=fillerInfo(p2.r.sr.text,SET.tl); dims.fluency=clamp01(1-0.2*fi.n-0.1*(p2.an.longPauses||[]).length); }
   else if(p2.an.ok) dims.fluency=clamp01(1-0.15*p2.an.longPauses.length-(p2.an.first>4?0.2:0));
   Object.keys(dims).forEach(k=>{ if(dims[k]==null) delete dims[k]; });
+  { const vt=typeof voiceTarget==="function"&&voiceTarget(), f0=p1.an.f0med||p2.an.f0med; if(vt&&f0&&(f0<vt.lo||f0>vt.hi)) coachRegisterExt("tone",t("test_title")); }
   if(!Object.keys(dims).length){ TEST=null; renderTest(); toast(t("tip_noise")); return; }
   const ranked=Object.entries(dims).sort((a,b)=>b[1]-a[1]), score=avgScore(dims);
   const pr={d:today(),t:Date.now(),score,dims,f0:p1.an.f0med||p2.an.f0med||0,strengths:ranked.slice(0,2).map(x=>x[0]),focus:ranked.slice(-2).reverse().map(x=>x[0])};
@@ -174,7 +186,7 @@ function testFinish(){
   [[p1,passage,"test-1"],[p2,null,"test-2"]].forEach(([p,exp,k],i)=>{ const tips=makeTips(p.an,{sr:p.r.sr.text?p.r.sr:null,expected:exp}), sc=tips.scores;
     const take={blob:p.r.blob,an:p.an,tips,scores:sc,score:avgScore(sc),kind:k,title:t("test_title")+" "+(i+1)+"/2",lang:SET.tl,text:p.r.sr.text||""};
     const det=el("details",{},`<summary>${t("replay_title")} – ${i+1}/2</summary>`); det.append(replayView(take,{saved:true})); box.append(det);
-    saveTake(take).catch(()=>{}); });
+    saveTake(take).catch(()=>{}); coachRegister(tips.fix,t("test_title")); });
   const again=el("button",{class:"b alt",style:"width:100%;margin-top:8px"},t("test_retake")); again.onclick=()=>testStep(1); box.append(again);
 }
 
@@ -208,9 +220,9 @@ window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); deferredI
 $("#installBtn").onclick=async()=>{ if(!deferredInstall) return; deferredInstall.prompt(); try{ await deferredInstall.userChoice; }catch(e){} deferredInstall=null; $("#installBtn").classList.add("hidden"); };
 
 /* ---------- re-render everything that depends on language / mode ---------- */
-function renderV3(){ renderPlan(); renderLessons(); renderTest(); renderStudioPrompts(); renderStudio(); renderInto(); renderProj(); renderImpRec(); renderTwRec(); renderSupport(); }
+function renderV3(){ renderPlan(); renderLessons(); renderTest(); renderStudioPrompts(); renderStudio(); renderInto(); renderProj(); renderImpRec(); renderTwRec(); renderSupport(); renderCoachList(); renderTone(); renderGoal(); renderRef(); }
 
 /* ================= init ================= */
-applyI18n(); nextPair();
+applyI18n(); nextPair(); maybeAskProfile();
 { const h=location.hash.slice(1); show(VIEWS.includes(h)?h:"today"); }
 if("serviceWorker" in navigator && location.protocol==="https:" && topLevel && document.querySelector('link[rel=manifest]')){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }

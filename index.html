@@ -90,12 +90,15 @@ table{width:100%;border-collapse:collapse;font-size:.82rem} td,th{border-bottom:
 .check{display:flex;gap:8px;align-items:flex-start;margin:5px 0;font-size:.92rem} .check input{width:20px;height:20px;flex:none}
 .beatdot{width:120px;height:120px;margin:12px auto;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;transition:transform .08s,background .08s}
 .beatdot.on{background:var(--accent2);color:#fff;transform:scale(1.15)}
+.dots{display:inline-flex;gap:4px;vertical-align:middle} .dots i{width:12px;height:12px;border-radius:50%;background:var(--line);display:inline-block} .dots i.on{background:var(--ok)} .dots.big i{width:20px;height:20px}
+b.stress{color:var(--accent2);text-decoration:underline} .pmark{color:var(--accent);font-weight:700}
+.tipbtn{flex:none;min-height:30px!important;padding:3px 8px!important;margin-left:auto}
 textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 </style>
 </head>
 <body>
 <header>
-  <h1>VoiceCoach <span class="ver">v3.4</span></h1>
+  <h1>VoiceCoach <span class="ver">v3.5</span></h1>
   <span class="badge" id="streakBadge"></span>
   <button class="pill hidden" id="installBtn" data-t="install"></button>
   <button class="pill" id="setBtn">⚙ <span id="setSummary"></span></button>
@@ -106,18 +109,23 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
   <h3 data-t="set_ui"></h3><div class="chips" id="setUi"></div>
   <h3 data-t="set_train"></h3><div class="chips" id="setTl"></div>
   <h3 data-t="set_ctx"></h3><div class="chips" id="setCtx"></div>
+  <div id="setProf"></div>
   <h3 data-t="set_mode"></h3><div class="chips" id="setMode"></div>
   <h3><span data-t="set_rate"></span>: <span id="rateVal"></span></h3>
   <input type="range" id="setRate" min="0.6" max="1.3" step="0.05">
   <div class="row" style="margin-top:12px"><span class="grow"></span><button class="b" id="setClose" data-t="set_close"></button></div>
 </div></div>
 
+<div class="sheet hidden" id="coachSheet"><div class="card" id="coachBody" style="max-height:92vh"></div></div>
+
 <main>
 <!-- TODAY -->
 <section class="view on" id="v-today">
+  <div class="card" id="goalCard"><h2 data-t="goal_title"></h2><p class="muted" data-t="goal_desc"></p><div id="goalBody"></div></div>
   <div class="card"><div class="row"><h2 class="grow" style="margin:0" data-t="plan_title"></h2><b id="planCount"></b></div>
     <p class="muted" data-t="plan_desc"></p><div id="planList"></div><p class="muted hidden" id="planNoTest" data-t="plan_notest"></p>
     <div class="cal" id="planCal"></div><p class="muted" style="font-size:.75rem" data-t="plan_cal"></p></div>
+  <div class="card" id="coachCard"><h2 data-t="coach_title"></h2><p class="muted" data-t="coach_desc"></p><div id="coachList"></div></div>
   <div class="card"><h2 data-t="due_title"></h2><div id="dueList"></div></div>
   <div class="card"><h2 data-t="next_title"></h2><div id="nextBox"></div></div>
   <div class="card">
@@ -232,6 +240,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
 
 <!-- VOICE -->
 <section class="view" id="v-voice">
+  <div class="card" id="toneCard"><h2><span data-t="tone_title"></span> <span class="muted" style="font-size:.85rem;font-weight:400" id="toneSub"></span></h2><div id="toneBody"></div></div>
   <div class="card" id="testCard"><h2 data-t="test_title"></h2><p class="muted" data-t="test_desc"></p><div id="testBody"></div>
     <details><summary data-t="dims_info"></summary><div class="muted" data-t="dims_help"></div></details></div>
   <div class="card" id="studioCard"><h2 data-t="studio_title"></h2><p class="muted" data-t="studio_desc"></p>
@@ -241,6 +250,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
     <div id="studioRec"></div>
     <label class="b sm alt" style="display:inline-flex;align-items:center;margin-top:8px">📂 <span data-t="studio_import"></span><input type="file" id="studioFile" accept="audio/*,video/*" class="hidden"></label>
     <div id="studioOut"></div></div>
+  <div class="card" id="refCard"><h2 data-t="ref_title"></h2><p class="muted" data-t="ref_desc"></p><div id="refBody"></div></div>
   <div class="card" id="intoCard"><h2 data-t="into_title"></h2><p class="muted" data-t="into_desc"></p>
     <div class="huge tl" id="intoSent" style="font-size:1.5rem;font-weight:500"></div><button class="b sm alt" id="intoNew" data-t="into_new"></button>
     <div id="intoRec" style="margin-top:8px"></div><div id="intoOut"></div></div>
@@ -306,7 +316,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
 <nav id="nav"></nav>
 <div class="toast" id="toast"></div>
 <script>
-/* VoiceCoach v3.4 */
+/* VoiceCoach v3.5 */
 /* UI strings – en / de / fr */
 const T = {
 en:{
@@ -1361,6 +1371,98 @@ Object.assign(T.en,{"lvl2": "Key points", "level": "Input level", "pos_i": "Star
 Object.assign(T.de,{"level": "Eingangspegel", "pos_i": "Wortanfang", "pos_m": "Wortmitte", "pos_f": "Wortende", "metronome": "Metronom-Klick bei jedem Wort", "toast_logged": "Im Verlauf eingetragen: {n}", "c_delivery": "Sprechweise", "finish": "Zum Ergebnis ▶", "retry_turn": "Nochmal versuchen", "best": "Bestwert", "save_best": "Bestwert speichern", "pairs_pick": "Eins heimlich auswählen", "dims_info": "ⓘ So werden die Werte berechnet", "mic_fail": "Mikrofon nicht verfügbar – siehe Hinweis im Reiter „Stimme“.", "test_score": "Stimmwert"});
 Object.assign(T.fr,{"level": "Niveau d'entrée", "pos_i": "Début du mot", "pos_m": "Milieu", "pos_f": "Fin du mot", "metronome": "Clic de métronome à chaque mot", "toast_logged": "Ajouté à l'historique : {n}", "go": "Lancer", "best": "Meilleur score", "start_timer": "Démarrer le chrono", "studio_prompt": "Consigne", "sup_A": "A habituel", "match_title": "Justesse de la note", "dims_info": "ⓘ Comment les mesures sont calculées", "mic_fail": "Micro indisponible – voir la remarque dans l'onglet Voix.", "finish": "Voir le résultat ▶", "c_complete": "Longueur"});
 
+/* v3.5 – training coach texts */
+Object.assign(T.en,{
+ coach_title:"Training assignments", coach_desc:"Every weakness the app detects in your recordings becomes an assignment with a matching exercise. Repeat it until you reach the goal 3 times in a row; then it comes back for a check after 3 and 14 days.",
+ coach_none:"No open assignments. Record yourself (conversation, studio, voice test …) – the app turns every weakness it finds into an exercise here.",
+ coach_new:"New training assignment: {n}", coach_train:"Train", coach_recheck:"check due", coach_tries:"{n} attempts", coach_done_list:"Achieved ({n})", coach_next_check:"next check {d}", coach_retired:"consolidated",
+ coach_why:"Detected in: {s}", coach_goal:"Goal", coach_goal_n:"– reach it {n}× in a row.", coach_goal_rc:"– check: reach it once.", coach_streak:"{a} of {n} in a row", coach_how:"How to do it",
+ coach_read:"Read aloud ({l})", coach_answer:"Answer aloud ({l})", coach_model:"Listen to a model", coach_hear_q:"Hear the question", coach_guide:"Pace guide {w} WPM", coach_other:"Other text",
+ coach_q_start:"Start: the question is read out, then recording starts automatically", coach_nosr:"Speech recognition is not available here – after the recording you judge this point yourself.",
+ coach_pass:"Goal reached", coach_fail:"Not yet", coach_next_pass:"Next step:", coach_next_fail:"Do this now:", coach_next_text:"Next text ▶", coach_same:"↻ Same text again",
+ coach_achieved:"Assignment achieved – 3 times in a row! It comes back for a check in {d} days.", coach_rc_ok:"Check passed. Next check in {d} days (0 = consolidated).",
+ coach_self_fill:"Listen to your recording: how many filler words (uhm, äh, euh …) did you hear?", coach_self_clear:"Listen to your recording: was every word clearly understandable?",
+ pk_coach:"Assignment", cg_art:"9 of the last 10 words correct in the series check", cg_sup:"score ≥ 80 three times in a row", cd_art:"Sound {s} ({l})",
+ cd_fast:"Slow down", cd_slow:"More flow and speed", cd_pauses:"Pause after each idea", cd_fluent:"Fewer hesitations", cd_melody:"More melody", cd_uptalk:"Let statements fall", cd_trail:"Support to the last word", cd_quiet:"More projection", cd_clip:"Avoid distortion", cd_late:"Start promptly", cd_fillers:"Without filler words", cd_clarity:"Clear articulation",
+ cg_fast:"pace 3.5–5.2 syllables/s", cg_slow:"pace 3.5–5.2 syllables/s", cg_pauses:"a pause at the ⏸ marks (pauses ≥ 8 % of the time)", cg_fluent:"no silence longer than 1.2 s, pauses ≤ 30 %", cg_melody:"pitch variation ≥ 2.5 semitones", cg_uptalk:"no rising ending in statements", cg_trail:"no fading phrase ends", cg_quiet:"average loudness ≥ −36 dBFS without distortion (phone 30 cm away)", cg_clip:"no distortion", cg_late:"start speaking within 2 s after the question", cg_fillers:"0 filler words in at least 12 s of speech", cg_clarity:"≥ 90 % of the words understood",
+ ch_fast:"Tap “Pace guide”: the words light up at 130 words per minute – read along exactly.|Breathe at every comma and full stop.|Lengthen the stressed vowels; pronounce word endings completely.",
+ ch_slow:"Tap “Pace guide” (150 WPM) and keep up with the highlighting.|Link the words of a phrase together – no gaps between words.|Keep energy and breath going to the end of the phrase.",
+ ch_pauses:"Pause for 1–2 seconds at every ⏸ mark – silently, mouth closed.|Breathe in through the nose during the pause.|Look up from the text at the pause, as if checking your listeners.",
+ ch_fluent:"Read the text once silently first.|Pause only at punctuation, never in the middle of a phrase.|If you lose the thread, continue with the next word instead of stopping.",
+ ch_melody:"Stress the bold words: a little higher, louder and longer.|Exaggerate first – it always sounds less dramatic than it feels.|Listen to the model, then copy the melody.",
+ ch_uptalk:"Let your voice clearly go down on the last word (↘).|Imagine putting a full stop on the table with your hand.|Listen to the model first if needed.",
+ ch_trail:"Breathe in low (belly out) before the sentence.|Keep the belly pulling in slowly until the last word.|The bold final words must be as loud as the start of the sentence.",
+ ch_quiet:"Hold the phone about 30 cm from your mouth.|Breathe low, open your mouth wider and speak to someone 3 m away.|Volume comes from the belly, not from pushing in the throat.",
+ ch_clip:"Hold the phone about 30 cm away, not directly in front of the mouth.|Speak at a carrying but relaxed volume – no shouting.",
+ ch_late:"Tap Start: the question is read out and recording starts by itself.|Begin answering within 2 seconds – a bridge like “Good question …” is fine.|Then keep talking for about 10 seconds.",
+ ch_fillers:"Plan your first sentence before you start.|When you feel an “uhm” coming, close your mouth and pause silently.|Speak for at least 15 seconds about the topic.",
+ ch_clarity:"Say each word slowly, with exaggerated mouth movements, first.|Pronounce word endings fully.|Then say the text at normal speed.",
+ cn_fast:"Repeat with the next text until you have 3 in a row; then try without the pace guide.", cn_slow:"Continue with the next text; then try without the pace guide.", cn_pauses:"Next text – keep the same calm pauses.", cn_fluent:"Next text – read it fluently from the first attempt.", cn_melody:"Next sentence – stress the bold words just as clearly.", cn_uptalk:"Next statement – again a clear falling end.", cn_trail:"Next sentence – support to the last word again.", cn_quiet:"Next text at the same carrying volume.", cn_clip:"Keep this distance in all recordings.", cn_late:"Next question – start just as quickly.", cn_fillers:"Next topic – again without fillers.", cn_clarity:"Next text – same precise articulation.",
+ cf_fast:"Same text again with the pace guide; make a pause at every punctuation mark.", cf_slow:"Same text again with the pace guide; link the words more.", cf_pauses:"Same text again: stop completely at every ⏸ and count “one-two” silently.", cf_fluent:"Read the text silently once, then aloud again – pause only at punctuation.", cf_melody:"Listen to the model, then say the bold words much higher and longer – exaggerate.", cf_uptalk:"Listen to the model; say only the last word several times with a falling voice, then the whole sentence.", cf_trail:"Breathe in deeply, then say the sentence again and make the bold final words the loudest.", cf_quiet:"Do 3 diaphragm impulses (“ha – ha – ha”), then read the text again from the belly, towards someone 3 m away.", cf_clip:"Increase the distance to the phone and record again.", cf_late:"Repeat: start immediately with a bridge phrase (“Good question …”).", cf_fillers:"Same topic again: whenever an “uhm” comes, close your mouth and pause.", cf_clarity:"Say each word slowly and exaggerated three times, then the whole text again.",
+ cm_rate:"Measured: {v} syllables/s (goal 3.5–5.2).", cm_pauses:"Measured: {n} pauses (goal ≥ {k}), pauses {p} % of the time.", cm_fluent:"Measured: longest silence {s} s (goal < 1.2 s), pauses {p} %.", cm_melody:"Measured: pitch variation {v} semitones (goal ≥ 2.5).", cm_uptalk:"Measured: {n} rising ending(s) (goal 0).", cm_trail:"Measured: {n} fading phrase end(s) (goal 0).", cm_quiet:"Measured: {v} dBFS (goal ≥ −36).", cm_clip_yes:"Measured: distortion detected.", cm_clip_no:"Measured: no distortion.", cm_late:"Measured: you started after {s} s (goal ≤ 2 s).", cm_fillers:"Measured: {n} filler word(s) in {s} s of speech (goal 0 in ≥ 12 s).", cm_clarity:"Measured: {p} % of the words understood (goal ≥ 90 %).",
+ train_this:"Train this"
+});
+Object.assign(T.de,{
+ coach_title:"Trainingsaufträge", coach_desc:"Jede Schwäche, die die App in deinen Aufnahmen erkennt, wird zu einem Auftrag mit passender Übung. Wiederhole ihn, bis du das Ziel 3-mal hintereinander erreichst; danach kommt er nach 3 und 14 Tagen zur Kontrolle zurück.",
+ coach_none:"Keine offenen Aufträge. Nimm dich auf (Gespräch, Studio, Stimmtest …) – jede gefundene Schwäche erscheint hier als Übung.",
+ coach_new:"Neuer Trainingsauftrag: {n}", coach_train:"Trainieren", coach_recheck:"Kontrolle fällig", coach_tries:"{n} Versuche", coach_done_list:"Erreicht ({n})", coach_next_check:"nächste Kontrolle {d}", coach_retired:"gefestigt",
+ coach_why:"Erkannt bei: {s}", coach_goal:"Ziel", coach_goal_n:"– {n}-mal hintereinander erreichen.", coach_goal_rc:"– Kontrolle: einmal erreichen.", coach_streak:"{a} von {n} hintereinander", coach_how:"So geht's",
+ coach_read:"Laut vorlesen ({l})", coach_answer:"Laut antworten ({l})", coach_model:"Vorsprechen anhören", coach_hear_q:"Frage anhören", coach_guide:"Tempohilfe {w} WPM", coach_other:"Anderer Text",
+ coach_q_start:"Start: die Frage wird vorgelesen, danach startet die Aufnahme automatisch", coach_nosr:"Spracherkennung ist hier nicht verfügbar – nach der Aufnahme beurteilst du diesen Punkt selbst.",
+ coach_pass:"Ziel erreicht", coach_fail:"Noch nicht", coach_next_pass:"Nächster Schritt:", coach_next_fail:"Mach jetzt Folgendes:", coach_next_text:"Nächster Text ▶", coach_same:"↻ Gleicher Text nochmal",
+ coach_achieved:"Auftrag erreicht – 3-mal hintereinander! Er kommt in {d} Tagen zur Kontrolle zurück.", coach_rc_ok:"Kontrolle bestanden. Nächste Kontrolle in {d} Tagen (0 = gefestigt).",
+ coach_self_fill:"Hör deine Aufnahme an: Wie viele Füllwörter (äh, ähm, also …) hast du gehört?", coach_self_clear:"Hör deine Aufnahme an: War jedes Wort klar verständlich?",
+ pk_coach:"Auftrag", cg_art:"9 der letzten 10 Wörter in der Serienprüfung richtig", cg_sup:"3-mal hintereinander mindestens 80 Punkte", cd_art:"Laut {s} ({l})",
+ cd_fast:"Langsamer sprechen", cd_slow:"Mehr Fluss und Tempo", cd_pauses:"Pause nach jedem Gedanken", cd_fluent:"Weniger Zögern", cd_melody:"Mehr Sprechmelodie", cd_uptalk:"Aussagen fallen lassen", cd_trail:"Stütze bis zum letzten Wort", cd_quiet:"Mehr Tragfähigkeit", cd_clip:"Übersteuerung vermeiden", cd_late:"Zügig beginnen", cd_fillers:"Ohne Füllwörter", cd_clarity:"Deutliche Artikulation",
+ cg_fast:"Tempo 3,5–5,2 Silben/s", cg_slow:"Tempo 3,5–5,2 Silben/s", cg_pauses:"eine Pause an den ⏸-Zeichen (Pausen ≥ 8 % der Zeit)", cg_fluent:"keine Stille länger als 1,2 s, Pausen ≤ 30 %", cg_melody:"Tonhöhenvariation ≥ 2,5 Halbtöne", cg_uptalk:"kein steigendes Ende bei Aussagen", cg_trail:"kein Abfallen am Phrasenende", cg_quiet:"mittlere Lautstärke ≥ −36 dBFS ohne Übersteuerung (Handy 30 cm entfernt)", cg_clip:"keine Übersteuerung", cg_late:"innerhalb von 2 s nach der Frage zu sprechen beginnen", cg_fillers:"0 Füllwörter in mindestens 12 s Sprechzeit", cg_clarity:"≥ 90 % der Wörter verstanden",
+ ch_fast:"Tippe „Tempohilfe“: Die Wörter leuchten mit 130 Wörtern pro Minute auf – lies genau mit.|Atme an jedem Komma und Punkt.|Dehne die betonten Vokale und sprich die Wortendungen vollständig.",
+ ch_slow:"Tippe „Tempohilfe“ (150 WPM) und halte mit der Markierung Schritt.|Verbinde die Wörter einer Phrase – keine Lücken zwischen den Wörtern.|Halte Energie und Atem bis zum Phrasenende.",
+ ch_pauses:"Mach an jedem ⏸ 1–2 Sekunden Pause – still, Mund geschlossen.|Atme in der Pause durch die Nase ein.|Schau in der Pause vom Text auf, als ob du deine Zuhörer ansiehst.",
+ ch_fluent:"Lies den Text zuerst einmal still.|Pausiere nur an Satzzeichen, nie mitten in einer Phrase.|Wenn du den Faden verlierst, mach mit dem nächsten Wort weiter, statt anzuhalten.",
+ ch_melody:"Betone die fett gedruckten Wörter: etwas höher, lauter und länger.|Übertreibe zuerst – es klingt immer weniger dramatisch, als es sich anfühlt.|Hör dir das Vorsprechen an und ahme die Melodie nach.",
+ ch_uptalk:"Lass die Stimme auf dem letzten Wort deutlich nach unten gehen (↘).|Stell dir vor, du setzt mit der Hand einen Punkt auf den Tisch.|Hör dir bei Bedarf zuerst das Vorsprechen an.",
+ ch_trail:"Atme vor dem Satz tief in den Bauch ein (Bauch nach außen).|Zieh den Bauch bis zum letzten Wort langsam nach innen.|Die fetten Schlusswörter müssen so laut sein wie der Satzanfang.",
+ ch_quiet:"Halte das Handy etwa 30 cm vom Mund entfernt.|Atme tief, öffne den Mund weiter und sprich zu jemandem in 3 m Entfernung.|Die Lautstärke kommt aus dem Bauch, nicht aus Druck im Hals.",
+ ch_clip:"Halte das Handy etwa 30 cm entfernt, nicht direkt vor den Mund.|Sprich tragfähig, aber entspannt – nicht schreien.",
+ ch_late:"Tippe Start: Die Frage wird vorgelesen, und die Aufnahme startet von selbst.|Beginne innerhalb von 2 Sekunden zu antworten – eine Überleitung wie „Gute Frage …“ ist in Ordnung.|Sprich dann etwa 10 Sekunden weiter.",
+ ch_fillers:"Plane deinen ersten Satz, bevor du beginnst.|Wenn ein „äh“ kommt: Mund schließen und still pausieren.|Sprich mindestens 15 Sekunden zum Thema.",
+ ch_clarity:"Sprich jedes Wort zuerst langsam mit übertriebenen Mundbewegungen.|Sprich die Wortendungen vollständig aus.|Dann den Text in normalem Tempo.",
+ cn_fast:"Wiederhole mit dem nächsten Text, bis du 3 hintereinander hast; danach ohne Tempohilfe versuchen.", cn_slow:"Weiter mit dem nächsten Text; danach ohne Tempohilfe versuchen.", cn_pauses:"Nächster Text – mit den gleichen ruhigen Pausen.", cn_fluent:"Nächster Text – gleich beim ersten Versuch flüssig lesen.", cn_melody:"Nächster Satz – betone die fetten Wörter genauso deutlich.", cn_uptalk:"Nächste Aussage – wieder mit klar fallendem Ende.", cn_trail:"Nächster Satz – wieder Stütze bis zum letzten Wort.", cn_quiet:"Nächster Text mit derselben tragfähigen Lautstärke.", cn_clip:"Halte diesen Abstand bei allen Aufnahmen.", cn_late:"Nächste Frage – genauso zügig beginnen.", cn_fillers:"Nächstes Thema – wieder ohne Füllwörter.", cn_clarity:"Nächster Text – gleich präzise artikulieren.",
+ cf_fast:"Denselben Text nochmal mit Tempohilfe; an jedem Satzzeichen eine Pause machen.", cf_slow:"Denselben Text nochmal mit Tempohilfe; die Wörter stärker verbinden.", cf_pauses:"Denselben Text nochmal: an jedem ⏸ ganz anhalten und still „eins-zwei“ zählen.", cf_fluent:"Den Text einmal still lesen, dann nochmal laut – nur an Satzzeichen pausieren.", cf_melody:"Vorsprechen anhören, dann die fetten Wörter deutlich höher und länger sagen – übertreiben.", cf_uptalk:"Vorsprechen anhören; nur das letzte Wort mehrmals mit fallender Stimme sagen, dann den ganzen Satz.", cf_trail:"Tief einatmen, den Satz nochmal sagen und die fetten Schlusswörter am lautesten machen.", cf_quiet:"Mach 3 Zwerchfell-Impulse („ha – ha – ha“), dann den Text nochmal aus dem Bauch lesen, zu jemandem in 3 m Entfernung.", cf_clip:"Abstand zum Handy vergrößern und nochmal aufnehmen.", cf_late:"Nochmal: sofort mit einer Überleitung beginnen („Gute Frage …“).", cf_fillers:"Gleiches Thema nochmal: Bei jedem „äh“ den Mund schließen und pausieren.", cf_clarity:"Jedes Wort dreimal langsam und übertrieben sagen, dann den ganzen Text nochmal.",
+ cm_rate:"Gemessen: {v} Silben/s (Ziel 3,5–5,2).", cm_pauses:"Gemessen: {n} Pausen (Ziel ≥ {k}), Pausen {p} % der Zeit.", cm_fluent:"Gemessen: längste Stille {s} s (Ziel < 1,2 s), Pausen {p} %.", cm_melody:"Gemessen: Tonhöhenvariation {v} Halbtöne (Ziel ≥ 2,5).", cm_uptalk:"Gemessen: {n} steigende(s) Ende(n) (Ziel 0).", cm_trail:"Gemessen: {n} abfallende(s) Phrasenende(n) (Ziel 0).", cm_quiet:"Gemessen: {v} dBFS (Ziel ≥ −36).", cm_clip_yes:"Gemessen: Übersteuerung erkannt.", cm_clip_no:"Gemessen: keine Übersteuerung.", cm_late:"Gemessen: Beginn nach {s} s (Ziel ≤ 2 s).", cm_fillers:"Gemessen: {n} Füllwort/-wörter in {s} s Sprechzeit (Ziel 0 in ≥ 12 s).", cm_clarity:"Gemessen: {p} % der Wörter verstanden (Ziel ≥ 90 %).",
+ train_this:"Trainieren"
+});
+Object.assign(T.fr,{
+ coach_title:"Missions d'entraînement", coach_desc:"Chaque faiblesse détectée dans vos enregistrements devient une mission avec un exercice adapté. Répétez-la jusqu'à atteindre l'objectif 3 fois de suite ; elle revient ensuite pour un contrôle après 3 et 14 jours.",
+ coach_none:"Aucune mission en cours. Enregistrez-vous (dialogue, studio, test vocal…) – chaque faiblesse détectée apparaîtra ici sous forme d'exercice.",
+ coach_new:"Nouvelle mission : {n}", coach_train:"S'entraîner", coach_recheck:"contrôle dû", coach_tries:"{n} essais", coach_done_list:"Réussies ({n})", coach_next_check:"prochain contrôle {d}", coach_retired:"consolidée",
+ coach_why:"Détecté dans : {s}", coach_goal:"Objectif", coach_goal_n:"– l'atteindre {n} fois de suite.", coach_goal_rc:"– contrôle : l'atteindre une fois.", coach_streak:"{a} sur {n} de suite", coach_how:"Comment faire",
+ coach_read:"Lisez à voix haute ({l})", coach_answer:"Répondez à voix haute ({l})", coach_model:"Écouter le modèle", coach_hear_q:"Écouter la question", coach_guide:"Guide de débit {w} WPM", coach_other:"Autre texte",
+ coach_q_start:"Démarrer : la question est lue, puis l'enregistrement démarre tout seul", coach_nosr:"La reconnaissance vocale n'est pas disponible ici – après l'enregistrement, vous évaluez ce point vous-même.",
+ coach_pass:"Objectif atteint", coach_fail:"Pas encore", coach_next_pass:"Étape suivante :", coach_next_fail:"À faire maintenant :", coach_next_text:"Texte suivant ▶", coach_same:"↻ Même texte",
+ coach_achieved:"Mission réussie – 3 fois de suite ! Elle reviendra pour un contrôle dans {d} jours.", coach_rc_ok:"Contrôle réussi. Prochain contrôle dans {d} jours (0 = consolidée).",
+ coach_self_fill:"Réécoutez-vous : combien de mots de remplissage (euh, ben…) avez-vous entendus ?", coach_self_clear:"Réécoutez-vous : chaque mot était-il bien compréhensible ?",
+ pk_coach:"Mission", cg_art:"9 des 10 derniers mots corrects dans le contrôle en série", cg_sup:"au moins 80 points 3 fois de suite", cd_art:"Son {s} ({l})",
+ cd_fast:"Ralentir", cd_slow:"Plus de fluidité et de rythme", cd_pauses:"Une pause après chaque idée", cd_fluent:"Moins d'hésitations", cd_melody:"Plus de mélodie", cd_uptalk:"Faire descendre les affirmations", cd_trail:"Soutenir jusqu'au dernier mot", cd_quiet:"Plus de projection", cd_clip:"Éviter la saturation", cd_late:"Démarrer rapidement", cd_fillers:"Sans mots de remplissage", cd_clarity:"Articulation claire",
+ cg_fast:"débit 3,5–5,2 syllabes/s", cg_slow:"débit 3,5–5,2 syllabes/s", cg_pauses:"une pause aux signes ⏸ (pauses ≥ 8 % du temps)", cg_fluent:"aucun silence de plus de 1,2 s, pauses ≤ 30 %", cg_melody:"variation de hauteur ≥ 2,5 demi-tons", cg_uptalk:"aucune fin montante dans les affirmations", cg_trail:"aucune baisse en fin de phrase", cg_quiet:"intensité moyenne ≥ −36 dBFS sans saturation (téléphone à 30 cm)", cg_clip:"aucune saturation", cg_late:"commencer à parler dans les 2 s après la question", cg_fillers:"0 mot de remplissage en au moins 12 s de parole", cg_clarity:"≥ 90 % des mots compris",
+ ch_fast:"Touchez « Guide de débit » : les mots s'allument à 130 mots par minute – lisez exactement avec.|Respirez à chaque virgule et chaque point.|Allongez les voyelles accentuées ; prononcez entièrement les fins de mots.",
+ ch_slow:"Touchez « Guide de débit » (150 WPM) et suivez le surlignage.|Enchaînez les mots d'un même groupe – pas de trous entre les mots.|Gardez énergie et souffle jusqu'à la fin du groupe.",
+ ch_pauses:"Faites 1 à 2 secondes de pause à chaque ⏸ – en silence, bouche fermée.|Inspirez par le nez pendant la pause.|Levez les yeux du texte pendant la pause, comme pour regarder votre public.",
+ ch_fluent:"Lisez d'abord le texte une fois en silence.|Ne faites de pause qu'à la ponctuation, jamais au milieu d'un groupe.|Si vous perdez le fil, continuez avec le mot suivant au lieu de vous arrêter.",
+ ch_melody:"Accentuez les mots en gras : un peu plus haut, plus fort et plus long.|Exagérez d'abord – cela paraît toujours moins dramatique qu'on ne le pense.|Écoutez le modèle, puis imitez la mélodie.",
+ ch_uptalk:"Faites nettement descendre la voix sur le dernier mot (↘).|Imaginez que vous posez un point sur la table avec la main.|Écoutez d'abord le modèle si besoin.",
+ ch_trail:"Inspirez bas (ventre qui sort) avant la phrase.|Rentrez lentement le ventre jusqu'au dernier mot.|Les mots finaux en gras doivent être aussi forts que le début de la phrase.",
+ ch_quiet:"Tenez le téléphone à environ 30 cm de la bouche.|Respirez bas, ouvrez davantage la bouche et parlez à quelqu'un à 3 m.|Le volume vient du ventre, pas d'une poussée de la gorge.",
+ ch_clip:"Tenez le téléphone à environ 30 cm, pas juste devant la bouche.|Parlez avec une voix qui porte mais détendue – sans crier.",
+ ch_late:"Touchez Démarrer : la question est lue et l'enregistrement démarre tout seul.|Commencez à répondre dans les 2 secondes – une transition comme « Bonne question… » convient.|Puis parlez environ 10 secondes.",
+ ch_fillers:"Préparez votre première phrase avant de commencer.|Quand un « euh » arrive, fermez la bouche et faites une pause silencieuse.|Parlez au moins 15 secondes sur le sujet.",
+ ch_clarity:"Dites d'abord chaque mot lentement, en exagérant les mouvements de la bouche.|Prononcez entièrement les fins de mots.|Puis dites le texte à vitesse normale.",
+ cn_fast:"Recommencez avec le texte suivant jusqu'à 3 réussites de suite ; ensuite, essayez sans le guide.", cn_slow:"Continuez avec le texte suivant ; ensuite, essayez sans le guide.", cn_pauses:"Texte suivant – avec les mêmes pauses calmes.", cn_fluent:"Texte suivant – lisez-le de façon fluide dès le premier essai.", cn_melody:"Phrase suivante – accentuez les mots en gras aussi nettement.", cn_uptalk:"Affirmation suivante – de nouveau une fin bien descendante.", cn_trail:"Phrase suivante – soutenez de nouveau jusqu'au dernier mot.", cn_quiet:"Texte suivant avec la même voix qui porte.", cn_clip:"Gardez cette distance pour tous les enregistrements.", cn_late:"Question suivante – commencez aussi vite.", cn_fillers:"Sujet suivant – de nouveau sans « euh ».", cn_clarity:"Texte suivant – articulez aussi précisément.",
+ cf_fast:"Même texte avec le guide de débit ; faites une pause à chaque signe de ponctuation.", cf_slow:"Même texte avec le guide de débit ; enchaînez davantage les mots.", cf_pauses:"Même texte : arrêtez-vous complètement à chaque ⏸ et comptez « un-deux » en silence.", cf_fluent:"Lisez le texte une fois en silence, puis à voix haute – pauses seulement à la ponctuation.", cf_melody:"Écoutez le modèle, puis dites les mots en gras nettement plus haut et plus long – exagérez.", cf_uptalk:"Écoutez le modèle ; dites plusieurs fois seulement le dernier mot avec une voix descendante, puis toute la phrase.", cf_trail:"Inspirez profondément, redites la phrase et rendez les mots finaux en gras les plus forts.", cf_quiet:"Faites 3 impulsions du diaphragme (« ha – ha – ha »), puis relisez le texte avec le ventre, vers quelqu'un à 3 m.", cf_clip:"Éloignez le téléphone et enregistrez à nouveau.", cf_late:"Recommencez : démarrez tout de suite avec une transition (« Bonne question… »).", cf_fillers:"Même sujet : à chaque « euh », fermez la bouche et faites une pause.", cf_clarity:"Dites chaque mot trois fois lentement et en exagérant, puis tout le texte.",
+ cm_rate:"Mesuré : {v} syllabes/s (objectif 3,5–5,2).", cm_pauses:"Mesuré : {n} pauses (objectif ≥ {k}), pauses {p} % du temps.", cm_fluent:"Mesuré : plus long silence {s} s (objectif < 1,2 s), pauses {p} %.", cm_melody:"Mesuré : variation de hauteur {v} demi-tons (objectif ≥ 2,5).", cm_uptalk:"Mesuré : {n} fin(s) montante(s) (objectif 0).", cm_trail:"Mesuré : {n} fin(s) de phrase qui baisse(nt) (objectif 0).", cm_quiet:"Mesuré : {v} dBFS (objectif ≥ −36).", cm_clip_yes:"Mesuré : saturation détectée.", cm_clip_no:"Mesuré : aucune saturation.", cm_late:"Mesuré : début après {s} s (objectif ≤ 2 s).", cm_fillers:"Mesuré : {n} mot(s) de remplissage en {s} s de parole (objectif 0 en ≥ 12 s).", cm_clarity:"Mesuré : {p} % des mots compris (objectif ≥ 90 %).",
+ train_this:"S'entraîner"
+});
+
 "use strict";
 /* ============================================================
    MEDIA: capture (mic / camera), acoustic analysis, tips,
@@ -1522,23 +1624,23 @@ function makeTips(an, {sr=null, lang=SET.tl, expected=null, statements=true, lat
   if(!an.ok){ fix.push({txt:an.noVoice?t("tip_noise"):t("tip_short")}); return {fix,good,scores:null}; }
   if(sr&&sr.text) applySrRate(an,sr,lang);
   const sc=deliveryScores(an,{statements});
-  if(an.rate>5.2) fix.push({txt:t("tip_fast",{v:f1(an.rate)})}); else if(an.rate<3.5) fix.push({txt:t("tip_slow",{v:f1(an.rate)})}); else good.push(t("tip_pace_ok",{v:f1(an.rate)}));
-  if(an.pauseShare<0.08) fix.push({txt:t("tip_nopause",{v:Math.round(an.pauseShare*100)})});
-  else if(an.pauseShare>0.30) fix.push({txt:t("tip_manypause",{v:Math.round(an.pauseShare*100)})});
+  if(an.rate>5.2) fix.push({code:"fast",txt:t("tip_fast",{v:f1(an.rate)})}); else if(an.rate<3.5) fix.push({code:"slow",txt:t("tip_slow",{v:f1(an.rate)})}); else good.push(t("tip_pace_ok",{v:f1(an.rate)}));
+  if(an.pauseShare<0.08) fix.push({code:"nopause",txt:t("tip_nopause",{v:Math.round(an.pauseShare*100)})});
+  else if(an.pauseShare>0.30) fix.push({code:"manypause",txt:t("tip_manypause",{v:Math.round(an.pauseShare*100)})});
   else if(!an.longPauses.length) good.push(t("tip_pause_ok"));
-  an.longPauses.slice(0,3).forEach(p=>fix.push({t:p.s,txt:t("tip_longpause",{s:f1(p.e-p.s)})}));
-  if(an.sdSt<2) fix.push({txt:t("tip_mono",{v:f1(an.sdSt)})}); else good.push(t("tip_melody_ok",{v:f1(an.sdSt)}));
-  if(statements) an.uptalk.slice(0,3).forEach(x=>fix.push({t:x,txt:t("tip_uptalk")}));
-  an.trail.slice(0,3).forEach(x=>fix.push({t:x,txt:t("tip_trail")}));
-  if(an.clipping) fix.push({txt:t("tip_clip")});
-  else if(an.meanDb<-40) fix.push({txt:t("tip_quiet",{v:Math.round(an.meanDb)})}); else if(!an.trail.length) good.push(t("tip_loud_ok"));
+  an.longPauses.slice(0,3).forEach(p=>fix.push({code:"longpause",t:p.s,txt:t("tip_longpause",{s:f1(p.e-p.s)})}));
+  if(an.sdSt<2) fix.push({code:"mono",txt:t("tip_mono",{v:f1(an.sdSt)})}); else good.push(t("tip_melody_ok",{v:f1(an.sdSt)}));
+  if(statements) an.uptalk.slice(0,3).forEach(x=>fix.push({code:"uptalk",t:x,txt:t("tip_uptalk")}));
+  an.trail.slice(0,3).forEach(x=>fix.push({code:"trail",t:x,txt:t("tip_trail")}));
+  if(an.clipping) fix.push({code:"clip",txt:t("tip_clip")});
+  else if(an.meanDb<-40) fix.push({code:"quiet",txt:t("tip_quiet",{v:Math.round(an.meanDb)})}); else if(!an.trail.length) good.push(t("tip_loud_ok"));
   const lat = latency!=null ? latency : an.first;
-  if(lat>4) fix.push({t:0,txt:t("tip_late",{s:f1(lat)})});
+  if(lat>4) fix.push({code:"late",t:0,txt:t("tip_late",{s:f1(lat)})});
   let fluency=null, clarity=null;
   if(sr&&sr.text){
     const fi=fillerInfo(sr.text,lang); fluency=clamp01(1-0.2*fi.n-0.1*an.longPauses.length);
-    if(fi.n) fix.push({txt:t("tip_fillers",{n:fi.n,w:fi.words.join(", ")})}); else good.push(t("tip_nofill"));
-    const cl=srClarity(sr,expected); if(cl){ clarity=cl.score; if(cl.score<0.85&&cl.miss.length) fix.push({txt:t("tip_clarity",{w:cl.miss.join(", ")})}); else if(cl.score>=0.85) good.push(t("tip_clarity_ok")); }
+    if(fi.n) fix.push({code:"fillers",txt:t("tip_fillers",{n:fi.n,w:fi.words.join(", ")})}); else good.push(t("tip_nofill"));
+    const cl=srClarity(sr,expected); if(cl){ clarity=cl.score; if(cl.score<0.85&&cl.miss.length) fix.push({code:"clarity",miss:cl.miss,txt:t("tip_clarity",{w:cl.miss.join(", ")})}); else if(cl.score>=0.85) good.push(t("tip_clarity_ok")); }
   }
   const scores=Object.assign({},sc); if(fluency!=null) scores.fluency=fluency; if(clarity!=null) scores.clarity=clarity;
   fix.sort((a,b)=>(a.t??-1)-(b.t??-1));
@@ -1552,7 +1654,7 @@ function scoreBars(sc){ return DIM_KEYS.filter(k=>sc&&sc[k]!=null).map(k=>{ cons
 function metricLine(an){ if(!an||!an.ok) return ""; const f1=x=>(Math.round(x*10)/10).toLocaleString(SET.ui);
   return `<p class="muted">${t("m_dur")}: ${f1(an.total)} s · ${t("m_rate")}: ${f1(an.rate)} ${t("m_syl")} · ${t("m_pause")}: ${Math.round(an.pauseShare*100)} % · ${t("m_pitch")}: ${Math.round(an.f0med)} Hz · ${t("m_var")}: ${f1(an.sdSt)} ${t("m_st")} · ${t("m_loud")}: ${Math.round(an.meanDb)} dBFS</p>`; }
 function fixDuration(m){ m.addEventListener("loadedmetadata",()=>{ if(m.duration===Infinity||isNaN(m.duration)){ const h=()=>{ m.removeEventListener("timeupdate",h); m.currentTime=0; }; m.addEventListener("timeupdate",h); m.currentTime=1e7; } },{once:true}); }
-function replayView(take, {onSave=null, saved=false, extra=""}={}){
+function replayView(take, {onSave=null, saved=false, extra="", noRegister=false}={}){
   const an=take.an, tips=take.tips||{fix:[],good:[]}, box=el("div",{class:"card flat replay"});
   const url=take.url||(take.blob?URL.createObjectURL(take.blob):null);
   const isV=!!take.video;
@@ -1568,7 +1670,9 @@ function replayView(take, {onSave=null, saved=false, extra=""}={}){
   const media=box.querySelector("audio,video"), cv=box.querySelector("canvas");
   if(media) fixDuration(media);
   const tf=box.querySelector(".tips-fix");
-  if(tf) tips.fix.forEach(x=>{ const r=el("div",{class:"tiprow"},`${x.t!=null&&media?`<button class="b sm alt">▶ ${fmtT(x.t)}</button>`:"•"} <span>${esc(x.txt)}</span>`); const b=r.querySelector("button"); if(b) b.onclick=()=>{ media.currentTime=Math.max(0,x.t-1); media.play().catch(()=>{}); }; tf.append(r); });
+  if(tf) tips.fix.forEach(x=>{ const r=el("div",{class:"tiprow"},`${x.t!=null&&media?`<button class="b sm alt">▶ ${fmtT(x.t)}</button>`:"•"} <span>${esc(x.txt)}</span>`); const b=r.querySelector("button"); if(b) b.onclick=()=>{ media.currentTime=Math.max(0,x.t-1); media.play().catch(()=>{}); };
+    const cid=typeof COACH_OF!=="undefined"&&COACH_OF[x.code]; if(cid&&!noRegister){ const tb=el("button",{class:"b sm warm tipbtn"},"🏋 "+t("train_this")); tb.onclick=()=>{ coachRegister([x],take.title); openCoach(cid); }; r.append(tb); } tf.append(r); });
+  if(!saved&&!noRegister&&tips.fix&&tips.fix.length&&typeof coachRegister==="function") coachRegister(tips.fix,take.title);
   const draw=()=>drawTimeline(cv,an,media?media.currentTime:null,tips);
   requestAnimationFrame(draw);
   if(media){ let raf; const loop=()=>{ draw(); if(!media.paused) raf=requestAnimationFrame(loop); }; media.addEventListener("play",loop); media.addEventListener("seeked",draw);
@@ -1753,6 +1857,7 @@ function renderSettings(){
   chipSet($("#setTl"),LANGS.map(l=>[l,LANG_NAMES[l]]),SET.tl,v=>setTl(v));
   chipSet($("#setCtx"),CTXS.map(c=>[c,t("ctx_"+c)]),SET.ctx,v=>setCtx(v));
   chipSet($("#setMode"),[["auto",t("mode_auto")],["rec",t("mode_rec")],["text",t("mode_text")]],SET.mode,v=>{ SET.mode=v; if(v==="auto") store.flags.conc=undefined; save(); renderSettings(); });
+  if(typeof renderProfileForm==="function") renderProfileForm($("#setProf"),()=>{ renderTone(); renderRoutines(); renderSettings(); });
   $("#setRate").value=SET.rate; $("#rateVal").textContent="×"+(+SET.rate).toFixed(2);
 }
 function setTl(v){ SET.tl=v; save(); SP.snd=Object.keys(ART[v])[0]; SP.idx=0; renderSettings(); renderTalkChips(); renderSpeech(); renderPassages(); renderTwisters(); nextPair(); renderScenes(); renderToday(); $("#topicBox").textContent=t("imp_tap"); delete $("#topicBox").dataset.set; renderV3(); }
@@ -1772,7 +1877,7 @@ function renderGlossary(){ const g=$("#glossary"); g.innerHTML=""; GLOSS[SET.ui]
 function cKey(id,lang){ return id+"."+lang; }
 function getConv(id,lang){ return store.conv[cKey(id,lang)]||{lvl:1,mastered:false,box:0,due:0,best:{},n:0}; }
 function setConv(id,lang,s){ store.conv[cKey(id,lang)]=s; save(); }
-function dueList(){ const now=Date.now(), out=[]; SCENES.forEach(sc=>LANGS.forEach(l=>{ const s=getConv(sc.id,l); if(s.mastered&&s.due<=now) out.push({sc,l,s}); })); return out; }
+function dueList(all){ const now=Date.now(), out=[]; SCENES.forEach(sc=>(all?LANGS:[SET.tl]).forEach(l=>{ const s=getConv(sc.id,l); if(s.mastered&&s.due<=now) out.push({sc,l,s}); })); return out; }
 function stepsPassed(s){ return s.mastered?3:Math.max(0,s.lvl-1); }
 
 function renderScenes(){
@@ -1806,7 +1911,7 @@ function renderToday(){
 }
 
 /* ================= routines ================= */
-function renderRoutines(){ const L=$("#routineList"); L.innerHTML=""; ROUTINES.forEach((r,i)=>{ const tot=r.steps.reduce((a,s)=>a+s[0],0); const b=el("button",{class:"b alt full"},`${esc(r.name[SET.ui])} <span class="muted">(${fmt(tot)} min · ${r.steps.length})</span>`); b.onclick=()=>openRoutine(i); L.append(b); }); }
+function renderRoutines(){ const L=$("#routineList"); L.innerHTML=""; ROUTINES.forEach((r,i)=>{ if(r.g&&r.g!==SET.gender) return; const tot=r.steps.reduce((a,s)=>a+s[0],0); const b=el("button",{class:"b alt full"},`${esc(r.name[SET.ui])} <span class="muted">(${fmt(tot)} min · ${r.steps.length})</span>`); b.onclick=()=>openRoutine(i); L.append(b); }); }
 let RP={r:null,i:0,left:0,running:false,h:null,startT:0};
 function openRoutine(i){ stopRoutine(); RP.r=ROUTINES[i]; RP.i=0; RP.startT=Date.now(); $("#routinePlayer").classList.remove("hidden"); $("#rpTitle").textContent=RP.r.name[SET.ui]; loadStep(); $("#routinePlayer").scrollIntoView({behavior:"smooth"}); }
 function loadStep(){ const s=RP.r.steps[RP.i], tx=s[1][SET.ui]; RP.left=s[0]; $("#rpStepTitle").textContent=(RP.i+1)+". "+tx[0]; $("#rpStepText").textContent=tx[1]; $("#rpStepWhy").textContent=t("why")+" "+tx[2]; $("#rpTime").textContent=fmt(RP.left); $("#rpSteps").innerHTML=RP.r.steps.map((_,k)=>`<i class="${k<=RP.i?'d':''}"></i>`).join(""); }
@@ -1885,6 +1990,7 @@ function drawPitch(){ const pc=$("#pitchCanvas"), dpr=window.devicePixelRatio||1
   const g=pc.getContext("2d"); g.clearRect(0,0,W,H); const lo=hzToMidi(70),hi=hzToMidi(700),yOf=m=>H-(m-lo)/(hi-lo)*H;
   g.font=(10*dpr)+"px system-ui"; g.fillStyle=cssv("--muted"); g.strokeStyle=cssv("--line"); g.lineWidth=1;
   [100,150,200,300,400,600].forEach(f=>{ const y=yOf(hzToMidi(f)); g.beginPath(); g.moveTo(0,y); g.lineTo(W,y); g.stroke(); g.fillText(f+" Hz",4,y-3); });
+  const vt=typeof voiceTarget==="function"&&voiceTarget(); if(vt){ g.fillStyle="rgba(47,138,77,.12)"; const y1=yOf(hzToMidi(vt.hi)), y2=yOf(hzToMidi(vt.lo)); g.fillRect(0,y1,W,y2-y1); }
   const tg=+$("#targetNote").value; g.strokeStyle=cssv("--ok"); g.setLineDash([6*dpr,4*dpr]); g.beginPath(); g.moveTo(0,yOf(tg)); g.lineTo(W,yOf(tg)); g.stroke(); g.setLineDash([]);
   const now=performance.now(); g.fillStyle=cssv("--accent2"); MIC.pH.forEach(p=>{ g.beginPath(); g.arc(W-(now-p.t)/8000*W,yOf(hzToMidi(p.f)),2.2*dpr,0,7); g.fill(); }); }
 function loopMic(){
@@ -2307,7 +2413,7 @@ function evalWord(w,r){
   beep(res.ok===false?440:res.ok?990:700,.1,.08);
   S.i++; setTimeout(serWord,res.ok===null?500:1100);
 }
-function finishSeries(){ logSession(t("ser_title")+" "+SER.snd,Math.max(0.5,(Date.now()-SER.t0)/60000)); markPlan("drill","art"); renderSerSummary(); showArtMastery(); renderSpeech(); }
+function finishSeries(){ markPlan("art",SER.snd); if(SER.results.some(r=>r.ok===false)) coachRegisterExt("art:"+SER.lang+"|"+SER.snd,t("ser_title")); logSession(t("ser_title")+" "+SER.snd,Math.max(0.5,(Date.now()-SER.t0)/60000)); markPlan("drill","art"); renderSerSummary(); showArtMastery(); renderSpeech(); }
 function renderSerSummary(){
   const S=SER, box=$("#serBox"); if(!S) return;
   const judged=S.results.filter(r=>r.ok!==null), ok=judged.filter(r=>r.ok).length, open=S.results.filter(r=>r.ok===null).length;
@@ -2463,7 +2569,499 @@ function supResult({r,an,fix,good,scores,score,ex,title,extra=""}){
   const bars=Object.keys(sc).map(k=>{ const v=sc[k]; return `<div class="sc"><span>${t(k)}</span><div class="bar"><i style="width:${Math.round(v*100)}%;background:${v>=.8?'var(--ok)':v>=.5?'var(--accent2)':'var(--warn)'}"></i></div><b>${Math.round(v*100)}</b></div>`; }).join("");
   store.support=(store.support||[]); store.support.push({d:today(),t:Date.now(),ex,score}); store.support=store.support.slice(-200); save();
   markPlan("drill","support"); logSession(title,1);
+  if(ex!=="ab"){ const cid="sup:"+ex; if(score<80&&!coachStore()[cid]) coachRegisterExt(cid,title); if(coachStore()[cid]) coachAttempt(cid,score>=80,score); }
   const o=$("#supOut"); o.innerHTML=""; const v=replayView(take,{onSave:()=>saveTake(take),extra:bars+extra}); o.append(v); return o;
+}
+
+/* ================= Training coach (v3.5): issue → targeted drill, repeated until the goal is reached ================= */
+/* Practice texts in the training language. Markup: *word* = stress / emphasis, " / " = planned pause */
+const CT={
+ pauses:{
+  en:["Today I want to talk about three things. / First, the problem. / Second, our solution. / And finally, the next steps.","Thank you for coming. / My name is Alex, / and I work as a project engineer. / Let me start with a question.","We tested the filter for six months. / The results were clear. / The water was cleaner, / and the costs were low."],
+  de:["Heute möchte ich über drei Dinge sprechen. / Erstens, das Problem. / Zweitens, unsere Lösung. / Und schließlich, die nächsten Schritte.","Danke, dass Sie gekommen sind. / Mein Name ist Alex, / und ich arbeite als Projektingenieur. / Ich beginne mit einer Frage.","Wir haben den Filter sechs Monate getestet. / Die Ergebnisse waren eindeutig. / Das Wasser war sauberer, / und die Kosten waren niedrig."],
+  fr:["Aujourd'hui, je voudrais parler de trois choses. / D'abord, le problème. / Ensuite, notre solution. / Et enfin, les prochaines étapes.","Merci d'être venus. / Je m'appelle Alex, / et je travaille comme ingénieur de projet. / Je commence par une question.","Nous avons testé le filtre pendant six mois. / Les résultats étaient clairs. / L'eau était plus propre, / et les coûts étaient faibles."]},
+ melody:{
+  en:["This is the *best* idea I have heard *all year*!","I *didn't* say *you* were wrong – I said we need *more time*.","Imagine: *clean* water for *every* school – *that* is our goal.","Would you like *tea* or *coffee*?","We were *so* close – just *two* days late!"],
+  de:["Das ist die *beste* Idee, die ich *dieses Jahr* gehört habe!","Ich habe *nicht* gesagt, dass *du* falsch liegst – wir brauchen *mehr Zeit*.","Stell dir vor: *sauberes* Wasser für *jede* Schule – *das* ist unser Ziel.","Möchtest du *Tee* oder *Kaffee*?","Wir waren *so* nah dran – nur *zwei* Tage zu spät!"],
+  fr:["C'est la *meilleure* idée que j'ai entendue *cette année* !","Je n'ai *pas* dit que *tu* avais tort – il nous faut *plus de temps*.","Imaginez : de l'eau *propre* pour *chaque* école – *voilà* notre objectif.","Tu veux du *thé* ou du *café* ?","On était *si* près du but – seulement *deux* jours de retard !"]},
+ statements:{
+  en:["My name is Alex Meyer.","I have eight years of experience.","The project will be finished on Friday.","I recommend the second option.","This is my final offer."],
+  de:["Mein Name ist Alex Meyer.","Ich habe acht Jahre Berufserfahrung.","Das Projekt ist am Freitag fertig.","Ich empfehle die zweite Option.","Das ist mein letztes Angebot."],
+  fr:["Je m'appelle Alex Meyer.","J'ai huit ans d'expérience.","Le projet sera terminé vendredi.","Je recommande la deuxième option.","C'est ma dernière offre."]},
+ endings:{
+  en:["Please send the report to everyone by *Friday afternoon*.","Our results show that the filter works in *every school*.","Thank you all for your attention and your *questions*.","We will meet again next week to discuss the *budget*."],
+  de:["Bitte schickt den Bericht bis *Freitagnachmittag* an alle.","Unsere Ergebnisse zeigen, dass der Filter in *jeder Schule* funktioniert.","Vielen Dank für Ihre Aufmerksamkeit und Ihre *Fragen*.","Wir treffen uns nächste Woche wieder, um das *Budget* zu besprechen."],
+  fr:["Merci d'envoyer le rapport à tout le monde avant *vendredi après-midi*.","Nos résultats montrent que le filtre fonctionne dans *chaque école*.","Merci à tous pour votre attention et vos *questions*.","Nous nous reverrons la semaine prochaine pour discuter du *budget*."]},
+ questions:{
+  en:["What did you have for breakfast today?","What is your favourite season, and why?","What do you do for a living?","Where would you like to travel next?","What do you do to relax?"],
+  de:["Was hast du heute gefrühstückt?","Was ist deine Lieblingsjahreszeit und warum?","Was machst du beruflich?","Wohin möchtest du als Nächstes reisen?","Was tust du, um dich zu entspannen?"],
+  fr:["Qu'avez-vous mangé au petit-déjeuner aujourd'hui ?","Quelle est votre saison préférée, et pourquoi ?","Quel est votre métier ?","Où aimeriez-vous voyager la prochaine fois ?","Que faites-vous pour vous détendre ?"]}
+};
+const ctPassages=l=>CTXS.map(c=>PASSAGES[l][c][1]).concat(REC_SENT[l]);
+/* drill definitions. kind: read (read a text), prompt (answer a question / speak on a topic), words (word list) */
+const DRILLS={
+ fast:   {dim:"pace",       kind:"read",   texts:l=>ctPassages(l), guide:130, metric:(an)=>({v:an.rate,pass:an.rate>=3.5&&an.rate<=5.2,txt:t("cm_rate",{v:f1(an.rate)})})},
+ slow:   {dim:"pace",       kind:"read",   texts:l=>ctPassages(l), guide:150, metric:(an)=>({v:an.rate,pass:an.rate>=3.5&&an.rate<=5.2,txt:t("cm_rate",{v:f1(an.rate)})})},
+ pauses: {dim:"pauses",     kind:"read",   texts:l=>CT.pauses[l],  metric:(an,x)=>{ const need=Math.max(1,(x.text.match(/ \/ /g)||[]).length-1); return {v:an.pauses.length,pass:an.pauses.length>=need&&an.pauseShare>=0.08,txt:t("cm_pauses",{n:an.pauses.length,k:need,p:Math.round(an.pauseShare*100)})}; }},
+ fluent: {dim:"pauses",     kind:"read",   texts:l=>ctPassages(l), metric:(an)=>{ const mx=an.pauses.reduce((m,p)=>Math.max(m,p.e-p.s),0); return {v:mx,pass:mx<1.2&&an.pauseShare<=0.30,txt:t("cm_fluent",{s:f1(mx),p:Math.round(an.pauseShare*100)})}; }},
+ melody: {dim:"melody",     kind:"read",   texts:l=>CT.melody[l],  model:true, metric:(an)=>({v:an.sdSt,pass:an.sdSt>=2.5,txt:t("cm_melody",{v:f1(an.sdSt)})})},
+ uptalk: {dim:"melody",     kind:"read",   texts:l=>CT.statements[l], model:true, metric:(an)=>({v:an.uptalk.length,pass:an.uptalk.length===0,txt:t("cm_uptalk",{n:an.uptalk.length})})},
+ trail:  {dim:"projection", kind:"read",   texts:l=>CT.endings[l], metric:(an)=>({v:an.trail.length,pass:an.trail.length===0&&an.meanDb>-42,txt:t("cm_trail",{n:an.trail.length})})},
+ quiet:  {dim:"projection", kind:"read",   texts:l=>CT.endings[l].concat(CT.pauses[l]), metric:(an)=>({v:an.meanDb,pass:an.meanDb>=-36&&!an.clipping,txt:t("cm_quiet",{v:Math.round(an.meanDb)})})},
+ clip:   {dim:"projection", kind:"read",   texts:l=>CT.endings[l], metric:(an)=>({v:an.clipping?1:0,pass:!an.clipping,txt:an.clipping?t("cm_clip_yes"):t("cm_clip_no")})},
+ late:   {dim:"fluency",    kind:"prompt", texts:l=>CT.questions[l], auto:true, maxSec:25, metric:(an)=>({v:an.first,pass:an.first<=2,txt:t("cm_late",{s:f1(an.first)})})},
+ fillers:{dim:"fluency",    kind:"prompt", texts:l=>TOPICS[l][SET.ctx], maxSec:60, needSR:true, metric:(an,x)=>{ const fi=fillerInfo(x.sr.text,x.lang); return {v:fi.n,pass:fi.n===0&&an.speak>=12,txt:t("cm_fillers",{n:fi.n,s:Math.round(an.speak)})}; }},
+ clarity:{dim:"clarity",    kind:"words",  texts:(l,a)=>(a&&a.words&&a.words.length&&a.wordsLang===l?[a.words.slice(0,6).join(" · ")]:[]).concat(TWISTERS[l]), needSR:true, metric:(an,x)=>{ const cl=srClarity(x.sr,x.text.replace(/·/g," ")); const v=cl?cl.score:0; return {v,pass:v>=0.9,txt:t("cm_clarity",{p:Math.round(v*100)}),miss:cl?cl.miss:[]}; }}
+};
+const COACH_OF={fast:"fast",slow:"slow",nopause:"pauses",manypause:"fluent",longpause:"fluent",mono:"melody",uptalk:"uptalk",trail:"trail",quiet:"quiet",clip:"clip",late:"late",fillers:"fillers",clarity:"clarity"};
+const STREAK=3, RECHECK=[3,14];
+const f1=x=>(Math.round((x||0)*10)/10).toLocaleString(SET.ui);
+
+/* ---------- assignments ---------- */
+function coachStore(){ return store.coach||(store.coach={}); }
+function coachRegister(fix,src){
+  if(!fix||!fix.length) return; const C=coachStore(), added=[];
+  fix.forEach(f=>{ const id=COACH_OF[f.code]; if(!id) return; let a=C[id];
+    if(!a){ a=C[id]={id,created:Date.now(),streak:0,attempts:0,done:false,hist:[],src:"",words:[]}; added.push(id); }
+    else if(a.done&&!a.recheckDue){ a.done=false; a.streak=0; a.reopened=Date.now(); added.push(id); }
+    if(src){ a.src=src; a.srcLang=SET.ui; } a.lastSeen=Date.now(); if(f.miss){ if(a.wordsLang!==SET.tl) a.words=[]; a.wordsLang=SET.tl; a.words=[...new Set(f.miss.concat(a.words||[]))].slice(0,8); } });
+  save(); if(added.length){ renderCoachList(); toast("🏋 "+t("coach_new",{n:added.map(id=>t("cd_"+id)).join(", ")})); }
+}
+function coachRegisterExt(id,src,extra){ const C=coachStore(); let a=C[id]; if(!a){ a=C[id]=Object.assign({id,created:Date.now(),streak:0,attempts:0,done:false,hist:[],src:src||"",srcLang:SET.ui},extra||{}); save(); renderCoachList(); toast("🏋 "+t("coach_new",{n:coachName(id)})); } else if(a.done){ a.done=false; a.streak=0; save(); renderCoachList(); } }
+function coachName(id){ if(id.startsWith("art:")){ const [l,s]=id.slice(4).split("|"); return t("cd_art",{s,l:langIn(l)}); } if(id.startsWith("sup:")) return t(id==="sup:pulse"?"sup_pulse":"sup_flow"); return t("cd_"+id); }
+function coachOpen(){ const C=coachStore(), now=Date.now(); return Object.values(C).filter(a=>!a.done||(a.recheckAt&&a.recheckAt<=now)); }
+function coachAttempt(id,pass,val){ const a=coachStore()[id]; if(!a) return null; const rc=a.done&&a.recheckAt&&a.recheckAt<=Date.now();
+  a.attempts++; a.hist.push({t:Date.now(),v:val,p:pass}); a.hist=a.hist.slice(-40); a.streak=pass?a.streak+1:0;
+  let achieved=false; const need=rc?1:STREAK;
+  if(a.streak>=need){ achieved=true; a.streak=0; if(rc){ a.rechecks=(a.rechecks||0)+1; a.recheckAt=a.rechecks<RECHECK.length?Date.now()+RECHECK[a.rechecks]*DAY:null; } else { a.done=true; a.doneAt=Date.now(); a.rechecks=0; a.recheckAt=Date.now()+RECHECK[0]*DAY; } markPlan("coach",id); }
+  else if(rc&&!pass){ a.done=false; a.recheckAt=null; }
+  save(); renderCoachList(); return {achieved,rc,a,need};
+}
+
+/* ---------- Today card ---------- */
+function renderCoachList(){
+  const box=$("#coachList"); if(!box) return; const C=coachStore(), now=Date.now(); box.innerHTML="";
+  Object.values(C).forEach(a=>{ if(a.id.startsWith("art:")&&!a.done){ const [l,s]=a.id.slice(4).split("|"); if(ART[l]&&ART[l][s]&&artStats(l,s).mastered){ a.done=true; a.doneAt=now; a.rechecks=0; a.recheckAt=now+RECHECK[0]*DAY; markPlan("coach",a.id); save(); } } });
+  const open=Object.values(C).filter(a=>!a.done), due=Object.values(C).filter(a=>a.done&&a.recheckAt&&a.recheckAt<=now), done=Object.values(C).filter(a=>a.done&&!(a.recheckAt&&a.recheckAt<=now));
+  if(!open.length&&!due.length) box.append(el("p",{class:"muted"},t("coach_none")));
+  [...due,...open].forEach(a=>{ const rc=a.done; const need=rc?1:STREAK;
+    const r=el("div",{class:"planitem"},`<span class="ck">${rc?"🔁":"🏋"}</span><span class="grow"><b>${esc(coachName(a.id))}</b>${rc?` <span class="tag due">${t("coach_recheck")}</span>`:""}<br>
+      <span class="muted">${esc(coachGoalShort(a.id))}</span><br><span class="dots">${[...Array(need)].map((_,k)=>`<i class="${k<a.streak?'on':''}"></i>`).join("")}</span> <span class="muted">${t("coach_tries",{n:a.attempts})}</span></span>`);
+    const b=el("button",{class:"b sm warm"},t("coach_train")); b.onclick=()=>coachGo(a.id); r.append(b); box.append(r); });
+  if(done.length){ const d=el("details",{},`<summary>✓ ${t("coach_done_list",{n:done.length})}</summary>`); done.forEach(a=>d.append(el("p",{class:"muted"},`✓ ${esc(coachName(a.id))}${a.recheckAt?" – "+t("coach_next_check",{d:new Date(a.recheckAt).toLocaleDateString(SET.ui)}):" – "+t("coach_retired")}`))); box.append(d); }
+}
+function coachGoalShort(id){ if(DRILLS[id]&&DRILLS[id].goal) return DRILLS[id].goal(); if(id.startsWith("art:")) return t("cg_art"); if(id.startsWith("sup:")) return t("cg_sup"); return t("cg_"+id); }
+function coachGo(id){
+  if(id.startsWith("art:")){ const [l,s]=id.slice(4).split("|"); if(SET.tl!==l) setTl(l); SP.snd=s; SP.pos="i"; SP.idx=0; show("speech"); renderSpeech(); scrollToId("serBox"); return; }
+  if(id.startsWith("sup:")){ SUP.ex=id.slice(4); show("breath"); renderSupport(); scrollToId("supCard"); return; }
+  openCoach(id);
+}
+
+/* ---------- drill runner (overlay) ---------- */
+let CR=null;
+function markupText(s){ return esc(s).replace(/\*([^*]+)\*/g,"<b class='stress'>$1</b>").replace(/ \/ /g," <span class='pmark'>⏸</span> "); }
+const plainText=s=>s.replace(/\*/g,"").replace(/ \/ /g," ");
+function openCoach(id){
+  const def=DRILLS[id]; if(!def) return; const a=coachStore()[id]||null;
+  CR={id,def,lang:SET.tl,i:a&&a.ti?a.ti%def.texts(SET.tl,a).length:0};
+  $("#coachSheet").classList.remove("hidden"); document.body.style.overflow="hidden"; renderCoach();
+}
+function closeCoach(){ stopRecognition(); try{speechSynthesis.cancel();}catch(e){} if(CR&&CR.guide) clearInterval(CR.guide); CR=null; $("#coachSheet").classList.add("hidden"); document.body.style.overflow=""; renderCoachList(); renderPlan(); }
+function renderCoach(res){
+  const R=CR, def=R.def, a=coachStore()[R.id], texts=def.texts(R.lang,a), text=texts[R.i%texts.length];
+  const rc=a&&a.done&&a.recheckAt&&a.recheckAt<=Date.now(), need=rc?1:STREAK, streak=a?a.streak:0;
+  const box=$("#coachBody");
+  box.innerHTML=`<div class="row"><h2 class="grow" style="margin:0">🏋 ${esc(t("cd_"+R.id))}</h2><button class="b sm alt" id="coachClose">${t("close")}</button></div>
+    ${a&&a.src&&(!a.srcLang||a.srcLang===SET.ui)?`<p class="muted">${t("coach_why",{s:esc(a.src)})}</p>`:""}
+    <div class="okbox"><b>${t("coach_goal")}:</b> ${esc(coachGoalShort(R.id))} ${rc?t("coach_goal_rc"):t("coach_goal_n",{n:need})}</div>
+    <div class="row" style="margin:8px 0"><span class="dots big">${[...Array(need)].map((_,k)=>`<i class="${k<streak?'on':''}"></i>`).join("")}</span><span class="muted">${t("coach_streak",{a:streak,n:need})} · ${t("coach_tries",{n:a?a.attempts:0})}</span></div>
+    <details ${a&&a.attempts?"":"open"}><summary>${t("coach_how")}</summary><ul class="list">${(def.how?def.how():t("ch_"+R.id)).split("|").map(x=>`<li>${esc(x)}</li>`).join("")}</ul></details>
+    ${!def.needSR||srLang()?"":`<div class="warnbox">${t("coach_nosr")}</div>`}
+    <div class="muted" style="margin-top:8px">${t(def.kind==="prompt"?"coach_answer":"coach_read",{l:langIn(R.lang)})} (${(R.i%texts.length)+1}/${texts.length})</div>
+    <div class="card flat reader" ${tlAttr(R.lang)} id="coachText" style="font-size:1.25rem;line-height:1.6">${def.kind==="prompt"?`<b>${esc(text)}</b>`:markupText(text)}</div>
+    <div class="row">${def.model||def.kind==="prompt"?`<button class="b sm alt" id="coachModel">🔊 ${t(def.kind==="prompt"?"coach_hear_q":"coach_model")}</button>`:""}${def.guide?`<button class="b sm alt" id="coachGuide">▶ ${t("coach_guide",{w:def.guide})}</button>`:""}<button class="b sm alt" id="coachOther">↻ ${t("coach_other")}</button></div>
+    <div id="coachRec" style="margin-top:8px"></div><div id="coachRes"></div>`;
+  $("#coachClose").onclick=closeCoach;
+  $("#coachOther").onclick=()=>{ R.i++; renderCoach(); };
+  if($("#coachModel")) $("#coachModel").onclick=()=>speak(plainText(text),R.lang,null,def.kind==="prompt"?null:0.9);
+  if($("#coachGuide")) $("#coachGuide").onclick=()=>guideText(def.guide);
+  const recBox=$("#coachRec");
+  const ctl=recControls(recBox,{lang:srLang()?R.lang:null,maxSec:def.maxSec||60,onDone:r=>coachDone(r,text)});
+  if(def.auto&&!res){ /* quick-start drill: question is spoken, recording starts by itself */
+    const go=el("button",{class:"b warm",style:"width:100%;margin-top:6px"},"▶ "+t("coach_q_start")); recBox.prepend(go); recBox.querySelector("[data-rec]").classList.add("hidden");
+    go.onclick=()=>{ go.disabled=true; speak(text,R.lang,()=>{ if(CR===R){ recBox.querySelector("[data-rec]").classList.remove("hidden"); go.remove(); recBox.querySelector("[data-rec]").click(); } }); };
+  }
+  if(res) $("#coachRes").append(res);
+}
+function guideText(wpm){ const R=CR, box=$("#coachText"); if(!box) return; if(R.guide){ clearInterval(R.guide); R.guide=null; }
+  const raw=plainText(R.def.texts(R.lang,coachStore()[R.id])[R.i%R.def.texts(R.lang,coachStore()[R.id]).length]).split(/\s+/);
+  box.innerHTML=raw.map(w=>`<span>${esc(w)}</span>`).join(" "); let k=0; const sp=box.children;
+  const step=()=>{ if(k>0){ sp[k-1].classList.remove("now"); sp[k-1].classList.add("done"); } if(k>=sp.length){ clearInterval(R.guide); R.guide=null; return; } sp[k].classList.add("now"); k++; };
+  step(); R.guide=setInterval(step,60000/wpm); }
+function coachDone(r,text){
+  const R=CR; if(!R) return; if(R.guide){ clearInterval(R.guide); R.guide=null; }
+  const def=R.def, an=analyze(r.pcm,{minSpeech:def.kind==="words"?40:80}), sr=r.sr.text?r.sr:null;
+  const tips=makeTips(an,{sr,lang:R.lang,expected:def.kind==="prompt"?null:plainText(text),statements:R.id!=="melody"});
+  const take={blob:r.blob,an,tips,kind:"coach-"+R.id,title:t("cd_"+R.id),lang:R.lang,text:sr?sr.text:""};
+  const wrap=el("div");
+  const finish=m=>{ const out=coachAttempt(R.id,m.pass,m.v); const a=out?out.a:null;
+    const head=el("div",{class:m.pass?"okbox":"warnbox",style:"margin-top:8px"},`<div style="font-size:1.3rem;font-weight:800">${m.pass?"✓ "+t("coach_pass"):"✗ "+t("coach_fail")}</div><div>${esc(m.txt)}</div>
+      <div style="margin-top:4px"><b>${m.pass?t("coach_next_pass"):t("coach_next_fail")}</b> ${esc(m.pass?t(def.next||("cn_"+R.id)):t(m.fb||("cf_"+R.id)))}</div>`);
+    wrap.prepend(head);
+    if(out&&out.achieved){ beep(1320,.35,.12); wrap.prepend(el("div",{class:"okbox",style:"font-size:1.1rem"},`🏆 <b>${out.rc?t("coach_rc_ok",{d:out.a.recheckAt?Math.round((out.a.recheckAt-Date.now())/DAY):0}):t("coach_achieved",{d:RECHECK[0]})}</b>`)); }
+    const nb=el("div",{class:"row",style:"margin-top:8px"});
+    const nxt=el("button",{class:"b grow"},t("coach_next_text")); nxt.onclick=()=>{ R.i++; if(a) a.ti=R.i; save(); renderCoach(); };
+    const same=el("button",{class:"b alt grow"},t("coach_same")); same.onclick=()=>renderCoach();
+    nb.append(same,nxt); wrap.append(nb); renderCoach(wrap); $("#coachRes").scrollIntoView({behavior:"smooth"}); };
+  wrap.append(replayView(take,{onSave:()=>saveTake(take),noRegister:true}));
+  if(!an.ok){ finish({pass:false,v:null,txt:an.noVoice?t("tip_noise"):t("tip_short")}); return; }
+  if(def.needSR&&!sr){ /* self-assessment fallback */
+    const q=el("div",{class:"card",style:"margin-top:8px"},`<p><b>${t(R.id==="fillers"?"coach_self_fill":"coach_self_clear")}</b></p><div class="chips"></div>`);
+    const opts=R.id==="fillers"?[[0,"0"],[1,"1"],[2,"2"],[3,"3+"]]:[[1,"✓ "+t("ser_ok")],[0,"✗"]];
+    chipSet(q.querySelector(".chips"),opts,null,v=>{ q.remove(); const n=+v; finish(R.id==="fillers"?{pass:n===0&&an.speak>=12,v:n,txt:t("cm_fillers",{n,s:Math.round(an.speak)})}:{pass:n===1,v:n,txt:n?t("ser_ok"):t("coach_fail")}); });
+    wrap.prepend(q); renderCoach(wrap); return; }
+  finish(def.metric(an,{text,sr,lang:R.lang}));
+}
+
+/* ================= Voice tone by gender & age (v3.5) ================= */
+Object.assign(T.en,{
+ prof_title:"About you", prof_desc:"Gender and age set realistic targets for your speaking pitch and select the right voice-tone exercises. Stored only on this phone.",
+ prof_gender:"Gender", g_m:"Male", g_f:"Female", g_n:"No tone target", prof_age:"Age (years)", prof_save:"Save", prof_later:"Later",
+ tone_title:"Voice tone", tone_m_sub:"more masculine, resonant voice", tone_f_sub:"more feminine, bright voice",
+ tone_desc_m:"A masculine-sounding voice comes less from a very low pitch than from chest resonance (vibration felt in the chest), a relaxed open throat, falling endings and a calm, steady delivery. Never press your voice below your comfortable range – that strains the vocal folds.",
+ tone_desc_f:"A feminine-sounding voice comes less from a very high pitch than from forward resonance (vibration felt in the face and lips), a lively melody, soft onsets and bright vowels. Never push your voice above your comfortable range – that strains the vocal folds.",
+ tone_desc_n:"Choose “male” or “female” in “About you” (⚙ Settings) to get tone exercises with a target range.",
+ tone_child:"For children the voice is still developing: the app sets no pitch target and only offers healthy-voice exercises (breathing, humming, articulation).",
+ tone_teen_m:"During voice change (puberty) the pitch drops by itself. Do not force a low voice – practise resonance and breath support only; the target range is wider.",
+ tone_senior_m:"From about 60, men's voices often become higher and thinner. Breath support and chest resonance help keep the voice full.",
+ tone_senior_f:"After menopause, women's voices often become lower. Forward resonance, melody and good hydration keep the voice bright.",
+ tone_target:"Your target speaking pitch: {lo}–{hi} Hz (median of your voice while speaking, measured by the app).",
+ tone_target_none:"No pitch target for this profile.",
+ tone_last:"Last measured speaking pitch: {f} Hz – {state}.", tone_in:"within your target range", tone_low:"below your target range", tone_high:"above your target range",
+ tone_find:"🎯 Find my natural pitch", tone_find_how:"Say “mm-hmm” (as when agreeing) three times, relaxed, then count “one, two, three, four, five” in a calm voice. The app measures your natural speaking pitch.",
+ tone_nat:"Your natural speaking pitch: {f} Hz.", tone_train:"🏋 Train voice tone",
+ r_tone_m:"Resonance – masculine voice", r_tone_f:"Resonance – feminine voice",
+ cd_tone:"Voice tone", ch_tone_m:"Breathe low into the belly; keep shoulders and throat relaxed (feel the beginning of a yawn).|Hand on your chest: speak so you feel the vibration there – in the lower, comfortable part of your range, never pressed.|Let every statement fall at the end (↘) and speak calmly, without rushing.",
+ ch_tone_f:"Smile slightly and keep the sound forward: feel the vibration on your lips and nose (as in “mmm”, “ning”).|Speak in the middle of your comfortable range – never pushed high – with lively melody on the key words.|Start words softly (gentle onset, like a light “h” before vowels) and keep breath support to the end, so the voice doesn't creak.",
+ cg_tone_m:"median speaking pitch {lo}–{hi} Hz, no rising endings", cg_tone_f:"median speaking pitch {lo}–{hi} Hz and pitch variation ≥ 2.8 semitones",
+ cm_tone:"Measured: median pitch {f} Hz (target {lo}–{hi}), variation {v} semitones, rising endings {u}.",
+ cn_tone:"Next text – keep the same resonance and pitch.", cf_tone_low:"Your pitch was below the target: you may be pressing down. Release the throat (yawn), speak a little lighter and let the resonance do the work.", cf_tone_high:"Your pitch was above the target. Breathe low, relax the throat and let the voice settle a little lower – feel the chest vibration (men) / keep it forward but relaxed (women).", cf_tone_mel:"Add more melody: stress the key words higher and longer.", cf_tone_up:"Let every statement fall at the end."
+});
+Object.assign(T.de,{
+ prof_title:"Über dich", prof_desc:"Geschlecht und Alter legen realistische Zielbereiche für deine Sprechtonhöhe fest und wählen die passenden Stimmklang-Übungen aus. Nur auf diesem Handy gespeichert.",
+ prof_gender:"Geschlecht", g_m:"Männlich", g_f:"Weiblich", g_n:"Kein Klangziel", prof_age:"Alter (Jahre)", prof_save:"Speichern", prof_later:"Später",
+ tone_title:"Stimmklang", tone_m_sub:"männlicher, resonanter Klang", tone_f_sub:"weiblicher, heller Klang",
+ tone_desc_m:"Ein männlich wirkender Klang entsteht weniger durch eine sehr tiefe Tonhöhe als durch Brustresonanz (Vibration im Brustkorb spürbar), einen lockeren, weiten Hals, fallende Satzenden und einen ruhigen, gleichmäßigen Vortrag. Drück die Stimme nie unter deinen bequemen Bereich – das belastet die Stimmlippen.",
+ tone_desc_f:"Ein weiblich wirkender Klang entsteht weniger durch eine sehr hohe Tonhöhe als durch Vorderresonanz (Vibration an Gesicht und Lippen spürbar), eine lebendige Melodie, weiche Stimmeinsätze und helle Vokale. Drück die Stimme nie über deinen bequemen Bereich – das belastet die Stimmlippen.",
+ tone_desc_n:"Wähle unter ⚙ Einstellungen → „Über dich“ „männlich“ oder „weiblich“, um Klangübungen mit Zielbereich zu erhalten.",
+ tone_child:"Bei Kindern entwickelt sich die Stimme noch: Die App setzt keinen Tonhöhen-Zielwert und bietet nur Übungen für eine gesunde Stimme (Atmung, Summen, Artikulation).",
+ tone_teen_m:"Im Stimmbruch sinkt die Tonhöhe von selbst. Erzwinge keine tiefe Stimme – übe nur Resonanz und Atemstütze; der Zielbereich ist weiter gefasst.",
+ tone_senior_m:"Ab etwa 60 wird die Männerstimme oft höher und dünner. Atemstütze und Brustresonanz helfen, die Stimme voll zu halten.",
+ tone_senior_f:"Nach den Wechseljahren wird die Frauenstimme oft tiefer. Vorderresonanz, Melodie und ausreichend Trinken halten die Stimme hell.",
+ tone_target:"Dein Zielbereich für die Sprechtonhöhe: {lo}–{hi} Hz (Median deiner Stimme beim Sprechen, von der App gemessen).",
+ tone_target_none:"Für dieses Profil gibt es keinen Tonhöhen-Zielwert.",
+ tone_last:"Zuletzt gemessene Sprechtonhöhe: {f} Hz – {state}.", tone_in:"im Zielbereich", tone_low:"unter dem Zielbereich", tone_high:"über dem Zielbereich",
+ tone_find:"🎯 Meine natürliche Tonlage finden", tone_find_how:"Sag dreimal locker „mhm“ (wie bei Zustimmung) und zähle dann ruhig „eins, zwei, drei, vier, fünf“. Die App misst deine natürliche Sprechtonhöhe.",
+ tone_nat:"Deine natürliche Sprechtonhöhe: {f} Hz.", tone_train:"🏋 Stimmklang trainieren",
+ r_tone_m:"Resonanz – männlicher Klang", r_tone_f:"Resonanz – weiblicher Klang",
+ cd_tone:"Stimmklang", ch_tone_m:"Tief in den Bauch atmen; Schultern und Hals locker lassen (Gefühl wie am Anfang eines Gähnens).|Hand auf die Brust: so sprechen, dass du dort die Vibration spürst – im unteren, bequemen Teil deines Bereichs, nie gedrückt.|Jede Aussage am Ende fallen lassen (↘) und ruhig sprechen, ohne Eile.",
+ ch_tone_f:"Leicht lächeln und den Klang nach vorne bringen: die Vibration an Lippen und Nase spüren (wie bei „mmm“, „ning“).|In der Mitte deines bequemen Bereichs sprechen – nie hochgedrückt – mit lebendiger Melodie auf den Schlüsselwörtern.|Wörter weich beginnen (sanfter Einsatz, wie ein leichtes „h“ vor Vokalen) und die Atemstütze bis zum Ende halten, damit die Stimme nicht knarrt.",
+ cg_tone_m:"Median-Sprechtonhöhe {lo}–{hi} Hz, keine steigenden Satzenden", cg_tone_f:"Median-Sprechtonhöhe {lo}–{hi} Hz und Tonhöhenvariation ≥ 2,8 Halbtöne",
+ cm_tone:"Gemessen: Median-Tonhöhe {f} Hz (Ziel {lo}–{hi}), Variation {v} Halbtöne, steigende Enden {u}.",
+ cn_tone:"Nächster Text – gleiche Resonanz und Tonlage beibehalten.", cf_tone_low:"Deine Tonhöhe lag unter dem Ziel: Vielleicht drückst du nach unten. Hals lösen (Gähnen), etwas leichter sprechen und die Resonanz arbeiten lassen.", cf_tone_high:"Deine Tonhöhe lag über dem Ziel. Tief atmen, den Hals entspannen und die Stimme etwas tiefer ankommen lassen – Brustvibration spüren (Männer) bzw. vorne, aber entspannt bleiben (Frauen).", cf_tone_mel:"Mehr Melodie: die Schlüsselwörter höher und länger betonen.", cf_tone_up:"Jede Aussage am Ende fallen lassen."
+});
+Object.assign(T.fr,{
+ prof_title:"À propos de vous", prof_desc:"Le genre et l'âge fixent des plages réalistes pour la hauteur de votre voix parlée et choisissent les exercices de timbre adaptés. Enregistré uniquement sur ce téléphone.",
+ prof_gender:"Genre", g_m:"Homme", g_f:"Femme", g_n:"Pas d'objectif de timbre", prof_age:"Âge (ans)", prof_save:"Enregistrer", prof_later:"Plus tard",
+ tone_title:"Timbre de la voix", tone_m_sub:"voix plus masculine et résonante", tone_f_sub:"voix plus féminine et claire",
+ tone_desc_m:"Une voix qui sonne masculine vient moins d'une hauteur très grave que de la résonance de poitrine (vibration ressentie dans la poitrine), d'une gorge détendue et ouverte, de fins de phrases descendantes et d'un débit calme et régulier. Ne forcez jamais la voix sous votre zone confortable – cela fatigue les cordes vocales.",
+ tone_desc_f:"Une voix qui sonne féminine vient moins d'une hauteur très aiguë que de la résonance vers l'avant (vibration ressentie au visage et aux lèvres), d'une mélodie vivante, d'attaques douces et de voyelles claires. Ne forcez jamais la voix au-dessus de votre zone confortable – cela fatigue les cordes vocales.",
+ tone_desc_n:"Choisissez « homme » ou « femme » dans ⚙ Réglages → « À propos de vous » pour obtenir des exercices de timbre avec une plage cible.",
+ tone_child:"Chez l'enfant, la voix est encore en développement : l'appli ne fixe pas de hauteur cible et propose seulement des exercices pour une voix saine (respiration, fredonnement, articulation).",
+ tone_teen_m:"Pendant la mue, la voix descend toute seule. Ne forcez pas une voix grave – travaillez seulement la résonance et le soutien respiratoire ; la plage cible est plus large.",
+ tone_senior_m:"À partir de 60 ans environ, la voix des hommes devient souvent plus aiguë et plus fine. Le soutien respiratoire et la résonance de poitrine aident à garder une voix pleine.",
+ tone_senior_f:"Après la ménopause, la voix des femmes devient souvent plus grave. La résonance vers l'avant, la mélodie et une bonne hydratation gardent la voix claire.",
+ tone_target:"Votre plage cible de hauteur parlée : {lo}–{hi} Hz (médiane de votre voix quand vous parlez, mesurée par l'appli).",
+ tone_target_none:"Pas de hauteur cible pour ce profil.",
+ tone_last:"Dernière hauteur parlée mesurée : {f} Hz – {state}.", tone_in:"dans votre plage cible", tone_low:"sous votre plage cible", tone_high:"au-dessus de votre plage cible",
+ tone_find:"🎯 Trouver ma hauteur naturelle", tone_find_how:"Dites trois fois « mm-hmm » (comme pour approuver), détendu, puis comptez calmement « un, deux, trois, quatre, cinq ». L'appli mesure votre hauteur naturelle.",
+ tone_nat:"Votre hauteur parlée naturelle : {f} Hz.", tone_train:"🏋 Travailler le timbre",
+ r_tone_m:"Résonance – voix masculine", r_tone_f:"Résonance – voix féminine",
+ cd_tone:"Timbre de la voix", ch_tone_m:"Respirez bas dans le ventre ; épaules et gorge détendues (sensation du début d'un bâillement).|Main sur la poitrine : parlez de façon à y sentir la vibration – dans la partie basse et confortable de votre voix, jamais forcée.|Faites descendre chaque affirmation à la fin (↘) et parlez calmement, sans vous presser.",
+ ch_tone_f:"Souriez légèrement et placez le son vers l'avant : sentez la vibration sur les lèvres et le nez (comme sur « mmm », « ning »).|Parlez au milieu de votre zone confortable – jamais poussée vers l'aigu – avec une mélodie vivante sur les mots clés.|Attaquez les mots en douceur (comme un léger « h » devant les voyelles) et gardez le soutien du souffle jusqu'au bout pour que la voix ne grince pas.",
+ cg_tone_m:"hauteur parlée médiane {lo}–{hi} Hz, sans fin montante", cg_tone_f:"hauteur parlée médiane {lo}–{hi} Hz et variation ≥ 2,8 demi-tons",
+ cm_tone:"Mesuré : hauteur médiane {f} Hz (cible {lo}–{hi}), variation {v} demi-tons, fins montantes {u}.",
+ cn_tone:"Texte suivant – gardez la même résonance et la même hauteur.", cf_tone_low:"Votre hauteur était sous la cible : vous poussez peut-être vers le grave. Relâchez la gorge (bâillement), parlez un peu plus légèrement et laissez travailler la résonance.", cf_tone_high:"Votre hauteur était au-dessus de la cible. Respirez bas, détendez la gorge et laissez la voix se poser un peu plus bas – sentez la vibration de poitrine (hommes) / restez vers l'avant mais détendue (femmes).", cf_tone_mel:"Plus de mélodie : accentuez les mots clés plus haut et plus longtemps.", cf_tone_up:"Faites descendre chaque affirmation à la fin."
+});
+
+/* ---- targets by gender and age (typical adult speaking-pitch ranges; conservative, never extreme) ---- */
+function voiceTarget(){
+  const g=SET.gender, a=+SET.age||0;
+  if(!g||g==="n"||(a&&a<12)) return null;
+  if(g==="m"){ if(a&&a<18) return {lo:90,hi:170,note:"tone_teen_m"}; if(a>=60) return {lo:95,hi:145,note:"tone_senior_m"}; return {lo:85,hi:135}; }
+  if(a&&a<18) return {lo:185,hi:260}; if(a>=50) return {lo:160,hi:230,note:"tone_senior_f"}; return {lo:165,hi:240};
+}
+function toneMetric(an){
+  const tg=voiceTarget()||{lo:0,hi:9999}, f=an.f0med, inB=f>=tg.lo&&f<=tg.hi;
+  const pass = SET.gender==="f" ? inB&&an.sdSt>=2.8 : inB&&an.uptalk.length===0;
+  const fb = !inB ? (f<tg.lo?"cf_tone_low":"cf_tone_high") : (SET.gender==="f"&&an.sdSt<2.8?"cf_tone_mel":"cf_tone_up");
+  return {v:f,pass,fb,txt:t("cm_tone",{f:Math.round(f),lo:tg.lo,hi:tg.hi,v:f1(an.sdSt),u:an.uptalk.length})};
+}
+DRILLS.tone={dim:"melody",kind:"read",model:true,texts:l=>SET.gender==="f"?CT.melody[l].concat(CT.pauses[l]):CT.statements[l].concat(CT.endings[l]),metric:toneMetric,
+  goal:()=>{ const tg=voiceTarget(); return tg?t(SET.gender==="f"?"cg_tone_f":"cg_tone_m",tg):t("tone_target_none"); },
+  how:()=>t(SET.gender==="f"?"ch_tone_f":"ch_tone_m"), next:"cn_tone"};
+
+/* ---- guided resonance routines (shown only for the matching gender) ---- */
+ROUTINES.push({g:"m",name:{en:"Resonance – masculine voice",de:"Resonanz – männlicher Klang",fr:"Résonance – voix masculine"},steps:[
+ [45,{en:["Open throat","Start a yawn with closed lips and feel the wide space in the throat. Then sigh “hmm” from a comfortable middle pitch down.","A relaxed, low larynx gives a fuller sound."],de:["Weiter Hals","Mit geschlossenen Lippen ein Gähnen beginnen und den weiten Raum im Hals spüren. Dann von mittlerer Tonhöhe aus „hmm“ nach unten seufzen.","Ein entspannter, tief stehender Kehlkopf gibt einen volleren Klang."],fr:["Gorge ouverte","Commencez un bâillement lèvres fermées et sentez l'espace large dans la gorge. Puis soupirez « hmm » d'une hauteur moyenne vers le grave.","Un larynx détendu et bas donne un son plus plein."]}],
+ [60,{en:["Chest humming","Hand on your chest. Hum “mmm” in the lower, comfortable part of your voice until you feel the vibration under your hand. 5 long breaths.","Trains chest resonance – the basis of a full, masculine sound."],de:["Brustsummen","Hand auf die Brust. „mmm“ im unteren, bequemen Teil deiner Stimme summen, bis du die Vibration unter der Hand spürst. 5 lange Atemzüge.","Trainiert die Brustresonanz – die Grundlage eines vollen, männlichen Klangs."],fr:["Fredonnement de poitrine","Main sur la poitrine. Fredonnez « mmm » dans la partie basse et confortable de votre voix jusqu'à sentir la vibration sous la main. 5 longues respirations.","Entraîne la résonance de poitrine – la base d'un son plein et masculin."]}],
+ [60,{en:["Hum into words","“mmm-one, mmm-two, mmm-three …” up to ten: keep the chest vibration from the hum in each number.","Transfers the resonance to speech."],de:["Vom Summen ins Wort","„mmm-eins, mmm-zwei, mmm-drei …“ bis zehn: die Brustvibration des Summens in jede Zahl mitnehmen.","Überträgt die Resonanz auf die Sprache."],fr:["Du fredonnement aux mots","« mmm-un, mmm-deux, mmm-trois… » jusqu'à dix : gardez la vibration de poitrine dans chaque nombre.","Transfère la résonance à la parole."]}],
+ [60,{en:["Falling statements","Say short statements and let the voice clearly fall at the end: “I'll do it.” “That's correct.” “See you tomorrow.” Calm, unhurried.","Falling endings sound decisive and calm."],de:["Fallende Aussagen","Kurze Aussagen sprechen und die Stimme am Ende deutlich fallen lassen: „Ich mache das.“ „Das stimmt.“ „Bis morgen.“ Ruhig, ohne Eile.","Fallende Enden klingen entschieden und ruhig."],fr:["Affirmations descendantes","Dites de courtes affirmations en faisant nettement descendre la voix : « Je m'en occupe. » « C'est exact. » « À demain. » Calmement, sans hâte.","Les fins descendantes sonnent décidées et calmes."]}],
+ [45,{en:["Steady volume","Read any sentence at the same carrying volume from the first to the last word, breathing from the belly.","Steady energy sounds composed and confident."],de:["Gleichmäßige Lautstärke","Einen beliebigen Satz vom ersten bis zum letzten Wort mit gleicher, tragender Lautstärke lesen, Atem aus dem Bauch.","Gleichmäßige Energie klingt souverän und sicher."],fr:["Volume régulier","Lisez une phrase avec le même volume porteur du premier au dernier mot, en respirant avec le ventre.","Une énergie régulière paraît posée et assurée."]}]]});
+ROUTINES.push({g:"f",name:{en:"Resonance – feminine voice",de:"Resonanz – weiblicher Klang",fr:"Résonance – voix féminine"},steps:[
+ [45,{en:["Relaxed jaw and smile","Massage the jaw, then let a slight smile rest on your face. Sigh “haaa” lightly from a comfortable middle pitch.","A relaxed face and a slight smile brighten the sound."],de:["Lockerer Kiefer und Lächeln","Den Kiefer massieren, dann ein leichtes Lächeln im Gesicht lassen. Leicht „haaa“ von mittlerer, bequemer Tonhöhe seufzen.","Ein entspanntes Gesicht und ein leichtes Lächeln machen den Klang heller."],fr:["Mâchoire détendue et sourire","Massez la mâchoire, puis gardez un léger sourire. Soupirez légèrement « haaa » depuis une hauteur moyenne confortable.","Un visage détendu et un léger sourire éclaircissent le son."]}],
+ [60,{en:["Forward humming","Hum “mmm” and then “nnn” and “ng” in the middle of your range. Feel the vibration on lips, nose and cheekbones – not in the throat.","Trains forward (mask) resonance – the basis of a bright, feminine sound."],de:["Summen nach vorne","„mmm“, dann „nnn“ und „ng“ in der Mitte deines Bereichs summen. Die Vibration an Lippen, Nase und Wangenknochen spüren – nicht im Hals.","Trainiert die Vorderresonanz (Maske) – die Grundlage eines hellen, weiblichen Klangs."],fr:["Fredonnement vers l'avant","Fredonnez « mmm », puis « nnn » et « ng » au milieu de votre voix. Sentez la vibration sur les lèvres, le nez et les pommettes – pas dans la gorge.","Entraîne la résonance vers l'avant (masque) – la base d'un son clair et féminin."]}],
+ [60,{en:["Bright syllables","“ning – nang – nong”, “mee – may – my”, with a slight smile, each on a gentle glide up and down.","Bright vowels and forward consonants carry the resonance into words."],de:["Helle Silben","„ning – nang – nong“, „mi – me – mai“, mit leichtem Lächeln, jeweils mit sanftem Gleiten auf und ab.","Helle Vokale und vordere Konsonanten tragen die Resonanz in die Wörter."],fr:["Syllabes claires","« ning – nang – nong », « mi – mé – maï », avec un léger sourire, chacune avec un glissé doux vers le haut et le bas.","Les voyelles claires et les consonnes avant portent la résonance dans les mots."]}],
+ [60,{en:["Melody on key words","Say: “What a *wonderful* idea!”, “I'm *really* happy to see you.” Lift the key word higher and lengthen it – lively, but relaxed.","Lively melody is a strong feature of a feminine-sounding voice."],de:["Melodie auf Schlüsselwörtern","Sag: „Was für eine *wunderbare* Idee!“, „Ich freue mich *wirklich*, dich zu sehen.“ Das Schlüsselwort höher und länger – lebendig, aber entspannt.","Eine lebendige Melodie ist ein starkes Merkmal eines weiblich wirkenden Klangs."],fr:["Mélodie sur les mots clés","Dites : « Quelle *merveilleuse* idée ! », « Je suis *vraiment* contente de te voir. » Montez et allongez le mot clé – vivant, mais détendu.","Une mélodie vivante est un trait fort d'une voix qui sonne féminine."]}],
+ [45,{en:["Soft onsets, supported endings","Start vowel words softly with a hint of “h”: “(h)am, (h)open, (h)every”. Keep breath support to the end of each sentence so the voice doesn't creak.","Soft onsets sound light; support prevents creaky endings (vocal fry)."],de:["Weiche Einsätze, gestützte Enden","Wörter mit Vokal weich beginnen, mit einem Hauch „h“: „(h)alle, (h)offen, (h)immer“. Die Atemstütze bis zum Satzende halten, damit die Stimme nicht knarrt.","Weiche Einsätze klingen leicht; die Stütze verhindert knarrende Enden."],fr:["Attaques douces, fins soutenues","Commencez les mots à voyelle en douceur avec un soupçon de « h » : « (h)ouvert, (h)aimer, (h)idée ». Gardez le soutien du souffle jusqu'au bout pour que la voix ne grince pas.","Les attaques douces paraissent légères ; le soutien évite les fins grinçantes."]}]]});
+
+/* ---- UI: profile sheet + tone card ---- */
+function renderProfileForm(box,onDone){
+  box.innerHTML=`<h3>${t("prof_title")}</h3><p class="muted">${t("prof_desc")}</p>
+    <div class="muted">${t("prof_gender")}</div><div class="chips" data-g></div>
+    <label class="muted">${t("prof_age")} <input type="number" min="5" max="100" inputmode="numeric" data-a value="${SET.age||""}" style="width:90px;font:inherit;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)"></label>`;
+  const g=box.querySelector("[data-g]"), draw=()=>chipSet(g,[["m",t("g_m")],["f",t("g_f")],["n",t("g_n")]],SET.gender,v=>{ SET.gender=v; save(); draw(); onDone&&onDone(); }); draw();
+  box.querySelector("[data-a]").onchange=e=>{ const v=Math.max(0,Math.min(110,+e.target.value||0)); SET.age=v||null; save(); onDone&&onDone(); };
+}
+function maybeAskProfile(){
+  if(SET.gender!==undefined&&SET.gender!==null) return;
+  const sh=el("div",{class:"sheet",id:"profSheet"},`<div class="card"><div data-f></div><div class="row" style="margin-top:12px"><button class="b alt grow" data-l>${t("prof_later")}</button><button class="b grow" data-s>${t("prof_save")}</button></div></div>`);
+  document.body.append(sh); renderProfileForm(sh.querySelector("[data-f]"));
+  sh.querySelector("[data-l]").onclick=()=>{ SET.gender="n"; save(); sh.remove(); renderTone(); };
+  sh.querySelector("[data-s]").onclick=()=>{ if(!SET.gender) SET.gender="n"; save(); sh.remove(); renderTone(); renderRoutines(); };
+}
+function renderTone(){
+  const box=$("#toneBody"); if(!box) return; const tg=voiceTarget(), a=+SET.age||0, g=SET.gender;
+  $("#toneSub").textContent=g==="m"?t("tone_m_sub"):g==="f"?t("tone_f_sub"):"";
+  let h="";
+  if(a&&a<12) h+=`<div class="okbox">${t("tone_child")}</div>`;
+  else if(!g||g==="n") h+=`<p class="muted">${t("tone_desc_n")}</p>`;
+  else { h+=`<p class="muted">${t(g==="m"?"tone_desc_m":"tone_desc_f")}</p>`; if(tg&&tg.note) h+=`<div class="okbox">${t(tg.note)}</div>`;
+    h+=`<p><b>${tg?t("tone_target",tg):t("tone_target_none")}</b></p>`;
+    const f=SET.natF0||(store.profile&&store.profile.f0);
+    if(f&&tg) h+=`<p>${t("tone_last",{f:Math.round(f),state:t(f<tg.lo?"tone_low":f>tg.hi?"tone_high":"tone_in")})}</p>`; }
+  box.innerHTML=h+`<div id="toneFind"></div><div class="row" style="margin-top:8px" data-b></div><div id="toneOut"></div>`;
+  const row=box.querySelector("[data-b]");
+  if(tg){ const tb=el("button",{class:"b warm grow"},t("tone_train")); tb.onclick=()=>{ coachRegisterExt("tone",t("tone_title")); openCoach("tone"); }; row.append(tb);
+    const ri=ROUTINES.findIndex(r=>r.g===g); if(ri>=0){ const rb=el("button",{class:"b alt grow"},"▶ "+ROUTINES[ri].name[SET.ui]); rb.onclick=()=>{ show("today"); openRoutine(ri); }; row.append(rb); } }
+  const pf=el("details",{},`<summary>⚙ ${t("prof_title")}</summary>`), pfb=el("div"); pf.append(pfb); renderProfileForm(pfb,()=>{ renderTone(); renderRoutines(); }); box.append(pf);
+  const fb=$("#toneFind"); fb.innerHTML=`<p class="muted">${t("tone_find_how")}</p><div data-r></div>`;
+  recControls(fb.querySelector("[data-r]"),{maxSec:20,label:t("tone_find"),onDone:r=>{ const an=analyze(r.pcm,{minSpeech:60}); if(an.ok&&an.f0med){ SET.natF0=Math.round(an.f0med); save();
+      const tgt=voiceTarget(); if(tgt&&(an.f0med<tgt.lo||an.f0med>tgt.hi)) coachRegisterExt("tone",t("tone_find").replace("🎯 ","")); }
+    renderTone(); $("#toneOut").append(el("div",{class:"okbox"},an.ok?t("tone_nat",{f:Math.round(an.f0med)}):t("tip_short"))); }});
+}
+
+/* ================= Learning goal & pacing (v3.5) =================
+   Workload is counted in "units" of about 5 minutes of focused practice:
+   conversation level ≈ 1.5 units (incl. typical repeats), open coach assignment ≈ 1.5 units (≈ 4–5 recorded attempts),
+   articulation sound to mastery ≈ 2 units (≈ 2 series of 8 words), lesson ≈ 0.5 unit. A daily warm-up (1 unit) comes on top.
+   Voice-health limits: ≤ 20 min per session (then ≥ 1 h break), ≤ 60 min per day. */
+Object.assign(T.en,{
+ goal_title:"Learning goal & pace", goal_desc:"Choose what you want to reach and in how many days. The app estimates the total practice time, derives how many minutes per day and how many sessions you need, and fills your daily plan accordingly.",
+ goal_what:"What do you want to reach?", ga_conv:"Master all conversations ({c}, {l})", ga_coach:"Complete all training assignments", ga_art:"Master all sounds ({l})", ga_les:"Read and try all lessons", ga_tone:"Reach my voice-tone target",
+ goal_when:"Within", goal_days:"{n} days", goal_custom:"other", goal_make:"Create my plan", goal_stop:"Stop goal",
+ goal_est:"Estimated total: {u} units ≈ {h} h of practice.", goal_daily:"{m} min per day in {s} session(s) of ≈ {p} min + warm-up, until {d}.",
+ goal_unreal:"Too much for {n} days: this would need {m} min per day, but more than 60 min of voice practice per day overloads the voice. Realistic: at least {r} days.",
+ goal_light:"Light pace – you could also reach this faster.",
+ goal_prog:"Progress {p} % · expected today {e} % → {s}", goal_on:"on track ✓", goal_behind:"behind – add a session today", goal_ahead:"ahead of plan ✓", goal_left:"{d} days left",
+ goal_done:"🏆 Goal reached!", goal_session:"Session {i}", goal_rest:"Break of at least 1 hour between sessions – the voice needs rest.",
+ goal_none:"No goal set – the daily plan uses a standard mix (about 20–25 min).", unit_min:"≈ {m} min"
+});
+Object.assign(T.de,{
+ goal_title:"Lernziel & Tempo", goal_desc:"Wähle, was du erreichen willst und in wie vielen Tagen. Die App schätzt die gesamte Übungszeit, leitet daraus Minuten pro Tag und Anzahl der Einheiten ab und füllt deinen Tagesplan entsprechend.",
+ goal_what:"Was willst du erreichen?", ga_conv:"Alle Gespräche meistern ({c}, {l})", ga_coach:"Alle Trainingsaufträge abschließen", ga_art:"Alle Laute meistern ({l})", ga_les:"Alle Lektionen lesen und ausprobieren", ga_tone:"Mein Stimmklang-Ziel erreichen",
+ goal_when:"Innerhalb von", goal_days:"{n} Tagen", goal_custom:"andere", goal_make:"Plan erstellen", goal_stop:"Ziel beenden",
+ goal_est:"Geschätzter Aufwand: {u} Einheiten ≈ {h} Std. Übung.", goal_daily:"{m} Min. pro Tag in {s} Einheit(en) à ≈ {p} Min. + Aufwärmen, bis {d}.",
+ goal_unreal:"Zu viel für {n} Tage: Das wären {m} Min. pro Tag, aber mehr als 60 Min. Stimmtraining pro Tag überlastet die Stimme. Realistisch: mindestens {r} Tage.",
+ goal_light:"Lockeres Tempo – du könntest das auch schneller erreichen.",
+ goal_prog:"Fortschritt {p} % · heute erwartet {e} % → {s}", goal_on:"im Plan ✓", goal_behind:"im Rückstand – heute eine Einheit mehr", goal_ahead:"dem Plan voraus ✓", goal_left:"noch {d} Tage",
+ goal_done:"🏆 Ziel erreicht!", goal_session:"Einheit {i}", goal_rest:"Zwischen den Einheiten mindestens 1 Stunde Pause – die Stimme braucht Erholung.",
+ goal_none:"Kein Ziel gesetzt – der Tagesplan nutzt eine Standardmischung (etwa 20–25 Min.).", unit_min:"≈ {m} Min."
+});
+Object.assign(T.fr,{
+ goal_title:"Objectif & rythme", goal_desc:"Choisissez ce que vous voulez atteindre et en combien de jours. L'appli estime le temps total de pratique, en déduit les minutes par jour et le nombre de séances, et remplit votre plan quotidien en conséquence.",
+ goal_what:"Que voulez-vous atteindre ?", ga_conv:"Maîtriser tous les dialogues ({c}, {l})", ga_coach:"Terminer toutes les missions d'entraînement", ga_art:"Maîtriser tous les sons ({l})", ga_les:"Lire et essayer toutes les leçons", ga_tone:"Atteindre mon objectif de timbre",
+ goal_when:"En", goal_days:"{n} jours", goal_custom:"autre", goal_make:"Créer mon plan", goal_stop:"Arrêter l'objectif",
+ goal_est:"Estimation : {u} unités ≈ {h} h de pratique.", goal_daily:"{m} min par jour en {s} séance(s) d'environ {p} min + échauffement, jusqu'au {d}.",
+ goal_unreal:"Trop pour {n} jours : il faudrait {m} min par jour, or plus de 60 min de travail vocal par jour surcharge la voix. Réaliste : au moins {r} jours.",
+ goal_light:"Rythme léger – vous pourriez y arriver plus vite.",
+ goal_prog:"Progression {p} % · attendu aujourd'hui {e} % → {s}", goal_on:"dans les temps ✓", goal_behind:"en retard – ajoutez une séance aujourd'hui", goal_ahead:"en avance ✓", goal_left:"encore {d} jours",
+ goal_done:"🏆 Objectif atteint !", goal_session:"Séance {i}", goal_rest:"Au moins 1 heure de pause entre les séances – la voix a besoin de repos.",
+ goal_none:"Aucun objectif – le plan quotidien utilise un mélange standard (environ 20–25 min).", unit_min:"≈ {m} min"
+});
+const UNIT_MIN=5, MAX_DAY=60, MAX_SESSION=20;
+function goalWork(areas){
+  const w={conv:0,coach:0,art:0,les:0,tone:0};
+  if(areas.conv) SCENES.filter(s=>s.ctx===SET.ctx).forEach(sc=>{ const s=getConv(sc.id,SET.tl); w.conv+=(3-stepsPassed(s))*1.5; });
+  if(areas.coach) coachOpen().filter(a=>a.id!=="tone").forEach(a=>{ w.coach+=a.done?0.5:Math.max(0.5,1.5*(1-(a.streak||0)/STREAK)); });
+  if(areas.art) Object.keys(ART[SET.tl]).forEach(k=>{ const st=artStats(SET.tl,k); if(!st.mastered) w.art+=2*(1-st.p/100*0.7); });
+  if(areas.les) LESSONS.forEach(l=>{ if(!store.lessons[l.id]) w.les+=0.5; });
+  if(areas.tone&&voiceTarget()){ const a=coachStore().tone; w.tone+= a&&a.done?0:4; }
+  w.total=Object.values(w).reduce((x,y)=>x+y,0); return w;
+}
+function goalCalc(areas,days){
+  const w=goalWork(areas), perDay=w.total/Math.max(1,days), min=Math.ceil(perDay*UNIT_MIN/5)*5;
+  const realistic=Math.ceil(w.total*UNIT_MIN/(MAX_DAY-UNIT_MIN));
+  const sessions=Math.max(1,Math.ceil(min/MAX_SESSION)); return {w,min,sessions,per:Math.ceil(min/sessions),realistic,unreal:min+UNIT_MIN>MAX_DAY};
+}
+let GDRAFT=null;
+function renderGoal(){
+  const box=$("#goalBody"); if(!box) return; const G=store.goal;
+  if(G&&!GDRAFT){ const w=goalWork(G.areas), done=Math.max(0,Math.min(1,1-w.total/Math.max(0.01,G.total))), el_=(Date.now()-G.start)/DAY, exp=Math.min(1,el_/G.days), left=Math.max(0,Math.ceil((G.end-Date.now())/DAY));
+    const st=done>=1?t("goal_done"):done+0.05<exp?t("goal_behind"):done>exp+0.1?t("goal_ahead"):t("goal_on");
+    box.innerHTML=`<p><b>${goalAreasTxt(G.areas)}</b></p><div class="bar"><i style="width:${Math.round(done*100)}%"></i></div>
+      <p>${t("goal_prog",{p:Math.round(done*100),e:Math.round(exp*100),s:st})} · ${t("goal_left",{d:left})}</p>
+      <p class="muted">${t("goal_daily",{m:G.min,s:G.sessions,p:G.per,d:new Date(G.end).toLocaleDateString(SET.ui)})}</p>
+      <div class="row"><button class="b sm alt" id="goalEdit">✎ ${t("goal_make")}</button><button class="b sm alt" id="goalStop">${t("goal_stop")}</button></div>`;
+    $("#goalEdit").onclick=()=>{ GDRAFT={areas:Object.assign({},G.areas),days:G.days}; renderGoal(); };
+    $("#goalStop").onclick=()=>{ store.goal=null; delete store.plan[today()]; save(); renderGoal(); renderPlan(); }; return; }
+  if(!G&&!GDRAFT){ box.innerHTML=`<p class="muted">${t("goal_none")}</p><button class="b" style="width:100%" data-open>🎯 ${t("goal_make")}</button>`; box.querySelector("[data-open]").onclick=()=>{ GDRAFT={areas:{conv:true,coach:true,art:false,les:false,tone:!!voiceTarget()},days:30}; renderGoal(); }; return; }
+  const D=GDRAFT||(GDRAFT={areas:{conv:true,coach:true,art:false,les:false,tone:!!voiceTarget()},days:30});
+  const c=goalCalc(D.areas,D.days);
+  box.innerHTML=`<p><b>${t("goal_what")}</b></p><div data-areas></div>
+    <p><b>${t("goal_when")}</b></p><div class="row"><div class="chips" data-days></div><input type="number" min="3" max="365" value="${D.days}" data-cd style="width:80px;font:inherit;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)"></div>
+    <div class="${c.unreal?"warnbox":"okbox"}" style="margin-top:8px">${t("goal_est",{u:f1(c.w.total),h:f1(c.w.total*UNIT_MIN/60)})}<br>
+      ${c.unreal?t("goal_unreal",{n:D.days,m:c.min,r:c.realistic}):t("goal_daily",{m:c.min,s:c.sessions,p:c.per,d:new Date(Date.now()+D.days*DAY).toLocaleDateString(SET.ui)})+(c.min<10&&c.w.total>0?" "+t("goal_light"):"")}</div>
+    <div class="row" style="margin-top:8px"><button class="b grow" data-make ${c.w.total<=0?"disabled":""}>${t("goal_make")}</button><button class="b alt" data-cancel>${t("cancel")}</button></div>`;
+  const ar=box.querySelector("[data-areas]");
+  [["conv",t("ga_conv",{c:t("ctx_"+SET.ctx),l:langIn(SET.tl)})],["coach",t("ga_coach")],["art",t("ga_art",{l:langIn(SET.tl)})],["les",t("ga_les")]].concat(voiceTarget()?[["tone",t("ga_tone")]]:[]).forEach(([k,l])=>{
+    const lb=el("label",{class:"check"},`<input type="checkbox" ${D.areas[k]?"checked":""}> <span>${esc(l)}</span>`); lb.querySelector("input").onchange=e=>{ D.areas[k]=e.target.checked; renderGoal(); }; ar.append(lb); });
+  chipSet(box.querySelector("[data-days]"),[[7,t("goal_days",{n:7})],[14,t("goal_days",{n:14})],[30,t("goal_days",{n:30})]],D.days,v=>{ D.days=+v; renderGoal(); });
+  box.querySelector("[data-cd]").onchange=e=>{ D.days=Math.max(3,Math.min(365,+e.target.value||30)); renderGoal(); };
+  if(box.querySelector("[data-cancel]")) box.querySelector("[data-cancel]").onclick=()=>{ GDRAFT=null; renderGoal(); };
+  box.querySelector("[data-make]").onclick=()=>{ const days=c.unreal?Math.max(D.days,c.realistic):D.days, cc=goalCalc(D.areas,days);
+    store.goal={areas:D.areas,days,start:Date.now(),end:Date.now()+days*DAY,total:cc.w.total,min:cc.min,sessions:cc.sessions,per:cc.per}; GDRAFT=null;
+    delete store.plan[today()]; save(); renderGoal(); renderPlan(); toast("✓ "+t("goal_daily",{m:cc.min,s:cc.sessions,p:cc.per,d:new Date(store.goal.end).toLocaleDateString(SET.ui)})); };
+}
+function goalAreasTxt(a){ return [a.conv&&t("ga_conv",{c:t("ctx_"+SET.ctx),l:langIn(SET.tl)}),a.coach&&t("ga_coach"),a.art&&t("ga_art",{l:langIn(SET.tl)}),a.les&&t("ga_les"),a.tone&&t("ga_tone")].filter(Boolean).join(" · "); }
+/* daily plan derived from the goal: fill each session with ≈ per-minutes of work, warm-up first */
+function goalPlanItems(){
+  const G=store.goal; if(!G) return null;
+  const w=goalWork(G.areas), daysLeft=Math.max(1,Math.ceil((G.end-Date.now())/DAY));
+  let unitsToday=Math.max(1,Math.ceil(w.total/daysLeft)); unitsToday=Math.min(unitsToday,Math.floor((MAX_DAY-UNIT_MIN)/UNIT_MIN));
+  const pool=[], dayN=Math.floor(Date.now()/DAY);
+  if(G.areas.tone&&voiceTarget()&&!(coachStore().tone&&coachStore().tone.done)) pool.push({k:"coach",id:"tone",u:1.5});
+  if(G.areas.coach) coachOpen().filter(a=>a.id!=="tone").forEach(a=>pool.push({k:"coach",id:a.id,u:1.5}));
+  if(G.areas.conv){ dueList().forEach(d=>pool.push({k:"review",id:d.sc.id,l:d.l,u:1.5})); SCENES.filter(s=>s.ctx===SET.ctx).forEach(sc=>{ const s=getConv(sc.id,SET.tl); if(!s.mastered) pool.push({k:"talk",id:sc.id,l:SET.tl,u:1.5}); }); }
+  if(G.areas.art) Object.keys(ART[SET.tl]).filter(k=>!artStats(SET.tl,k).mastered).forEach(k=>pool.push({k:"art",snd:k,u:1}));
+  if(G.areas.les) LESSONS.filter(l=>!store.lessons[l.id]).forEach(l=>pool.push({k:"lesson",id:l.id,u:0.5}));
+  // interleave categories so every day mixes voice, speech and conversation
+  const byK={}; pool.forEach(p=>(byK[p.k]=byK[p.k]||[]).push(p)); const order=Object.keys(byK); const mixed=[]; let added=true;
+  while(added){ added=false; for(const k of order){ const x=byK[k].shift(); if(x){ mixed.push(x); added=true; } } }
+  const rs=ROUTINES.map((r,i)=>[r,i]).filter(([r])=>!r.g||r.g===SET.gender); const items=[{k:"warm",r:rs[dayN%rs.length][1],s:0}]; let u=0, sess=0, su=1;
+  const perSessU=Math.max(2,Math.round(MAX_SESSION/UNIT_MIN));
+  for(const it of mixed){ if(u>=unitsToday) break; if(su+it.u>perSessU&&su>0){ sess++; su=0; } it.s=sess; items.push(it); u+=it.u; su+=it.u; }
+  if(items.length===1) items.push({k:"diction",tw:dayN%6,s:0});
+  return items;
+}
+
+/* ================= Reference speakers & speaking styles (v3.5) =================
+   No recordings of real people are included (copyright). Built-in styles describe typical, publicly observable
+   characteristics with approximate target ranges; for a real voice, the user imports a clip they recorded/own. */
+Object.assign(T.en,{
+ ref_title:"Speaking role models", ref_desc:"Learn from the delivery of excellent speakers. Choose a style, listen to the description, read the practice text in that style and compare your measurements with the style's target ranges. Or import a short clip of a speaker you admire (recorded from TV, radio or a video you have access to) – the app measures it and compares your imitation with it.",
+ ref_note:"The app contains no recordings of real people. Target ranges are approximate values typical of the style, not measurements of a specific person.",
+ ref_style:"Style", ref_import:"📂 Import reference clip", ref_imported:"Your reference", ref_play:"▶ Play reference", ref_shadow:"Shadowing: play the reference, then speak the same content yourself, copying pace, pauses and melody.",
+ ref_traits:"Characteristics", ref_text:"Practice text", ref_rec:"🎤 Record my version", ref_cmp:"Comparison", ref_you:"You", ref_target:"Target / reference", ref_sim:"Similarity to the style", ref_gaps:"The biggest differences have been added to your training assignments.",
+ ref_rate:"Pace (syllables/s)", ref_pause:"Pauses (% of time)", ref_mel:"Melody (semitones)", ref_long:"Long pauses (> 2 s)", ref_ends:"Falling endings",
+ st_news:"News anchor", st_news_d:"Clear, neutral and fast but never rushed; every word articulated; steady loudness; short, regular pauses at sense units; statements end with a clear falling tone.",
+ st_states:"Political keynote (e.g. Barack Obama's style)", st_states_d:"Calm, measured pace with deliberate, sometimes long pauses before and after key phrases; lists of three; rising energy towards the end of a passage, then a clear, falling conclusion; a warm, steady voice.",
+ st_ted:"Inspiring talk (TED style)", st_ted_d:"Conversational and personal; lively melody; short pauses after surprising facts; varied pace – slower for the key message, faster for the story.",
+ st_doc:"Documentary narrator", st_doc_d:"Warm, calm and resonant; slightly slow; long phrases on one breath; gentle melody; endings sustained, never fading."
+});
+Object.assign(T.de,{
+ ref_title:"Sprechvorbilder", ref_desc:"Lerne vom Vortrag hervorragender Sprecher. Wähle einen Stil, lies die Beschreibung, sprich den Übungstext in diesem Stil und vergleiche deine Messwerte mit den Zielbereichen des Stils. Oder importiere einen kurzen Ausschnitt eines Sprechers, den du schätzt (aufgenommen aus TV, Radio oder einem Video, auf das du Zugriff hast) – die App vermisst ihn und vergleicht deine Nachahmung damit.",
+ ref_note:"Die App enthält keine Aufnahmen realer Personen. Die Zielbereiche sind für den Stil typische Näherungswerte, keine Messungen einer bestimmten Person.",
+ ref_style:"Stil", ref_import:"📂 Referenz-Ausschnitt importieren", ref_imported:"Deine Referenz", ref_play:"▶ Referenz abspielen", ref_shadow:"Shadowing (Mitsprechen): Referenz abspielen, dann denselben Inhalt selbst sprechen und dabei Tempo, Pausen und Melodie nachahmen.",
+ ref_traits:"Merkmale", ref_text:"Übungstext", ref_rec:"🎤 Meine Version aufnehmen", ref_cmp:"Vergleich", ref_you:"Du", ref_target:"Ziel / Referenz", ref_sim:"Ähnlichkeit zum Stil", ref_gaps:"Die größten Unterschiede wurden zu deinen Trainingsaufträgen hinzugefügt.",
+ ref_rate:"Tempo (Silben/s)", ref_pause:"Pausen (% der Zeit)", ref_mel:"Melodie (Halbtöne)", ref_long:"Lange Pausen (> 2 s)", ref_ends:"Fallende Enden",
+ st_news:"Nachrichtensprecher", st_news_d:"Klar, neutral und zügig, aber nie gehetzt; jedes Wort artikuliert; gleichmäßige Lautstärke; kurze, regelmäßige Pausen an Sinneinheiten; Aussagen enden deutlich fallend.",
+ st_states:"Politische Rede (z. B. im Stil von Barack Obama)", st_states_d:"Ruhiges, bedachtes Tempo mit bewussten, teils langen Pausen vor und nach Kernaussagen; Dreierlisten; steigende Energie zum Ende eines Abschnitts, dann ein klarer, fallender Abschluss; warme, ruhige Stimme.",
+ st_ted:"Inspirierender Vortrag (TED-Stil)", st_ted_d:"Im Gesprächston und persönlich; lebendige Melodie; kurze Pausen nach überraschenden Fakten; wechselndes Tempo – langsamer für die Kernbotschaft, schneller für die Geschichte.",
+ st_doc:"Dokumentarfilm-Sprecher", st_doc_d:"Warm, ruhig und resonant; eher langsam; lange Phrasen auf einem Atem; sanfte Melodie; Enden getragen, nie abfallend."
+});
+Object.assign(T.fr,{
+ ref_title:"Modèles d'orateurs", ref_desc:"Apprenez de la diction d'excellents orateurs. Choisissez un style, lisez sa description, dites le texte d'entraînement dans ce style et comparez vos mesures aux plages cibles du style. Ou importez un court extrait d'un orateur que vous admirez (enregistré à la télévision, à la radio ou depuis une vidéo à laquelle vous avez accès) – l'appli le mesure et compare votre imitation.",
+ ref_note:"L'appli ne contient aucun enregistrement de personnes réelles. Les plages cibles sont des valeurs approximatives typiques du style, pas des mesures d'une personne précise.",
+ ref_style:"Style", ref_import:"📂 Importer un extrait de référence", ref_imported:"Votre référence", ref_play:"▶ Écouter la référence", ref_shadow:"Shadowing (imitation en écho) : écoutez la référence, puis dites le même contenu en imitant le débit, les pauses et la mélodie.",
+ ref_traits:"Caractéristiques", ref_text:"Texte d'entraînement", ref_rec:"🎤 Enregistrer ma version", ref_cmp:"Comparaison", ref_you:"Vous", ref_target:"Cible / référence", ref_sim:"Ressemblance avec le style", ref_gaps:"Les plus grands écarts ont été ajoutés à vos missions d'entraînement.",
+ ref_rate:"Débit (syllabes/s)", ref_pause:"Pauses (% du temps)", ref_mel:"Mélodie (demi-tons)", ref_long:"Longues pauses (> 2 s)", ref_ends:"Fins descendantes",
+ st_news:"Présentateur de journal télévisé", st_news_d:"Clair, neutre et rapide sans jamais se presser ; chaque mot articulé ; intensité régulière ; pauses courtes et régulières aux groupes de sens ; les affirmations finissent nettement en descendant.",
+ st_states:"Discours politique (par ex. le style de Barack Obama)", st_states_d:"Débit calme et posé avec des pauses délibérées, parfois longues, avant et après les phrases clés ; énumérations en trois temps ; énergie croissante vers la fin d'un passage, puis une conclusion nette et descendante ; voix chaleureuse et stable.",
+ st_ted:"Conférence inspirante (style TED)", st_ted_d:"Ton de conversation, personnel ; mélodie vivante ; courtes pauses après les faits surprenants ; débit varié – plus lent pour le message clé, plus rapide pour l'histoire.",
+ st_doc:"Narrateur de documentaire", st_doc_d:"Chaleureux, calme et résonant ; plutôt lent ; longues phrases sur un seul souffle ; mélodie douce ; fins tenues, jamais affaiblies."
+});
+/* target ranges: rate syll/s, pause share, melody SD semitones */
+const STYLES={
+ news:{rate:[4.6,5.6],pause:[0.08,0.18],mel:[2.2,3.5],
+  txt:{en:"Good evening. Heavy rain has caused flooding in several districts of the city. Emergency services evacuated more than two hundred residents overnight. Schools will remain closed tomorrow. The weather service expects the rain to ease by Thursday.",
+       de:"Guten Abend. Starke Regenfälle haben in mehreren Stadtteilen zu Überschwemmungen geführt. Rettungskräfte haben in der Nacht mehr als zweihundert Anwohner in Sicherheit gebracht. Die Schulen bleiben morgen geschlossen. Der Wetterdienst erwartet, dass der Regen bis Donnerstag nachlässt.",
+       fr:"Bonsoir. De fortes pluies ont provoqué des inondations dans plusieurs quartiers de la ville. Les secours ont évacué plus de deux cents habitants pendant la nuit. Les écoles resteront fermées demain. Le service météo prévoit une accalmie d'ici jeudi."}},
+ states:{rate:[3.0,4.0],pause:[0.22,0.40],mel:[2.8,4.5],
+  txt:{en:"We did not come this far to stop now. / We came here because we believe / that every child deserves a good school, / every worker deserves a fair wage, / and every family deserves a safe home. / That is our promise. / And together, / we will keep it.",
+       de:"Wir sind nicht so weit gekommen, um jetzt stehen zu bleiben. / Wir sind hier, weil wir glauben, / dass jedes Kind eine gute Schule verdient, / jeder Arbeitnehmer einen fairen Lohn / und jede Familie ein sicheres Zuhause. / Das ist unser Versprechen. / Und gemeinsam / werden wir es halten.",
+       fr:"Nous ne sommes pas arrivés jusqu'ici pour nous arrêter maintenant. / Nous sommes là parce que nous croyons / que chaque enfant mérite une bonne école, / chaque travailleur un salaire juste, / et chaque famille un foyer sûr. / C'est notre promesse. / Et ensemble, / nous la tiendrons."}},
+ ted:{rate:[4.0,5.0],pause:[0.14,0.26],mel:[3.0,5.0],
+  txt:{en:"Three years ago, I stood in a village school with no clean water. / The children drank from a muddy well. / Today, that same school has a filter that cost less than a mobile phone. / And here is the surprising part: / the students built it themselves.",
+       de:"Vor drei Jahren stand ich in einer Dorfschule ohne sauberes Wasser. / Die Kinder tranken aus einem schlammigen Brunnen. / Heute hat genau diese Schule einen Filter, der weniger gekostet hat als ein Handy. / Und jetzt kommt das Überraschende: / Die Schüler haben ihn selbst gebaut.",
+       fr:"Il y a trois ans, je me trouvais dans une école de village sans eau potable. / Les enfants buvaient l'eau d'un puits boueux. / Aujourd'hui, cette même école possède un filtre qui a coûté moins cher qu'un téléphone portable. / Et voici le plus surprenant : / ce sont les élèves qui l'ont construit."}},
+ doc:{rate:[3.4,4.4],pause:[0.15,0.30],mel:[2.0,3.2],
+  txt:{en:"As the sun rises over the river delta, thousands of birds take to the sky. / For a few short weeks each year, this quiet landscape becomes one of the busiest places on Earth.",
+       de:"Als die Sonne über dem Flussdelta aufgeht, erheben sich Tausende Vögel in den Himmel. / Für wenige Wochen im Jahr wird diese stille Landschaft zu einem der belebtesten Orte der Erde.",
+       fr:"Quand le soleil se lève sur le delta du fleuve, des milliers d'oiseaux s'envolent. / Pendant quelques semaines chaque année, ce paysage paisible devient l'un des endroits les plus animés de la Terre."}}
+};
+let REF={style:"news",imp:null};
+function renderRef(){
+  const box=$("#refBody"); if(!box) return;
+  const opts=Object.keys(STYLES).map(k=>[k,t("st_"+k)]); if(REF.imp) opts.push(["imp","⭐ "+t("ref_imported")]);
+  box.innerHTML=`<div class="chips" data-st></div><div data-info></div><div data-rec style="margin-top:8px"></div><div data-out></div>
+    <label class="b sm alt" style="display:inline-flex;align-items:center;margin-top:8px">${t("ref_import")}<input type="file" accept="audio/*,video/*" class="hidden" data-file></label>
+    <p class="muted" style="font-size:.78rem">${t("ref_note")}</p>`;
+  chipSet(box.querySelector("[data-st]"),opts,REF.style,v=>{ REF.style=v; renderRef(); });
+  const info=box.querySelector("[data-info]"), S=STYLES[REF.style];
+  if(REF.style==="imp"&&REF.imp){ const a=REF.imp.an;
+    info.innerHTML=`<p><b>${esc(REF.imp.name)}</b> – ${t("ref_rate")} ${f1(a.rate)} · ${t("ref_pause")} ${Math.round(a.pauseShare*100)} · ${t("ref_mel")} ${f1(a.sdSt)} · ${Math.round(a.f0med)} Hz</p><p class="muted">${t("ref_shadow")}</p>`;
+    const pb=el("button",{class:"b sm alt"},t("ref_play")); const au=new Audio(REF.imp.url); pb.onclick=()=>{ au.currentTime=0; au.play().catch(()=>{}); }; info.append(pb);
+  } else {
+    info.innerHTML=`<p><b>${t("ref_traits")}:</b> ${esc(t("st_"+REF.style+"_d"))}</p>
+      <p class="muted">${t("ref_rate")} ${f1(S.rate[0])}–${f1(S.rate[1])} · ${t("ref_pause")} ${Math.round(S.pause[0]*100)}–${Math.round(S.pause[1]*100)} · ${t("ref_mel")} ${f1(S.mel[0])}–${f1(S.mel[1])}</p>
+      <div class="muted">${t("ref_text")} (${langIn(SET.tl)})</div><div class="card flat reader" ${tlAttr(SET.tl)} style="font-size:1.15rem;line-height:1.6">${markupText(S.txt[SET.tl])}</div>`;
+  }
+  recControls(box.querySelector("[data-rec]"),{lang:srLang(),maxSec:120,label:t("ref_rec"),onDone:r=>refCompare(r,box.querySelector("[data-out]"))});
+  box.querySelector("[data-file]").onchange=async e=>{ const f=e.target.files[0]; if(!f) return; e.target.value=""; toast(t("analysing"));
+    try{ const pcm=await decodeFile(f), an=analyze(pcm); if(!an.ok){ toast(t("tip_short")); return; } if(REF.imp&&REF.imp.url) URL.revokeObjectURL(REF.imp.url);
+      REF.imp={name:f.name,an,url:URL.createObjectURL(f)}; REF.style="imp"; saveTake({blob:f,video:f.type.startsWith("video"),an,tips:{fix:[],good:[]},kind:"reference",title:f.name,lang:SET.tl}).catch(()=>{}); renderRef(); }
+    catch(err){ toast("✗ "+String(err&&err.message||err)); } };
+}
+function refCompare(r,out){
+  const an=analyze(r.pcm), sr=r.sr.text?r.sr:null; if(sr) applySrRate(an,sr,SET.tl);
+  let tgt; if(REF.style==="imp"&&REF.imp){ const a=REF.imp.an; tgt={rate:[a.rate*0.9,a.rate*1.1],pause:[Math.max(0,a.pauseShare-0.05),a.pauseShare+0.05],mel:[a.sdSt*0.85,a.sdSt*1.2]}; } else tgt=STYLES[REF.style];
+  const tips=makeTips(an,{sr,expected:REF.style==="imp"?null:plainText(STYLES[REF.style].txt[SET.tl])});
+  if(!an.ok){ out.innerHTML=""; out.append(replayView({blob:r.blob,an,tips},{noRegister:true})); return; }
+  const within=(v,[lo,hi])=>v>=lo&&v<=hi, sc=(v,[lo,hi])=>within(v,[lo,hi])?1:Math.max(0,1-Math.min(Math.abs(v-lo),Math.abs(v-hi))/((hi-lo)||1)/1.5);
+  const rows=[[t("ref_rate"),f1(an.rate),`${f1(tgt.rate[0])}–${f1(tgt.rate[1])}`,sc(an.rate,tgt.rate)],[t("ref_pause"),Math.round(an.pauseShare*100),`${Math.round(tgt.pause[0]*100)}–${Math.round(tgt.pause[1]*100)}`,sc(an.pauseShare,tgt.pause)],
+    [t("ref_mel"),f1(an.sdSt),`${f1(tgt.mel[0])}–${f1(tgt.mel[1])}`,sc(an.sdSt,tgt.mel)],[t("ref_ends"),an.uptalk.length?"✗":"✓","✓",an.uptalk.length?0.5:1]];
+  const sim=Math.round(100*rows.reduce((a,x)=>a+x[3],0)/rows.length);
+  // gaps → coach assignments
+  const gaps=[]; if(an.rate>tgt.rate[1]) gaps.push({code:"fast"}); else if(an.rate<tgt.rate[0]) gaps.push({code:"slow"});
+  if(an.pauseShare<tgt.pause[0]) gaps.push({code:"nopause"}); else if(an.pauseShare>tgt.pause[1]+0.05) gaps.push({code:"manypause"});
+  if(an.sdSt<tgt.mel[0]) gaps.push({code:"mono"}); if(an.uptalk.length) gaps.push({code:"uptalk"});
+  const title=REF.style==="imp"?t("ref_imported")+": "+REF.imp.name:t("st_"+REF.style);
+  if(gaps.length) coachRegister(gaps,t("ref_title")+" – "+title);
+  const extra=`<h3>${t("ref_cmp")} – ${esc(title)}</h3><table><tr><th></th><th>${t("ref_you")}</th><th>${t("ref_target")}</th><th></th></tr>${rows.map(x=>`<tr><td>${x[0]}</td><td><b>${x[1]}</b></td><td>${x[2]}</td><td>${x[3]>=1?"✓":"–"}</td></tr>`).join("")}</table>
+    <p><b>${t("ref_sim")}: ${sim} %</b></p>${gaps.length?`<p class="muted">🏋 ${t("ref_gaps")}</p>`:""}`;
+  const take={blob:r.blob,an,tips,score:sim,kind:"style-"+REF.style,title,lang:SET.tl,text:sr?sr.text:""};
+  out.innerHTML=""; out.append(replayView(take,{onSave:()=>saveTake(take),extra})); logSession(t("ref_title"),Math.max(0.5,an.dur/60));
 }
 
 /* ================= v3: plan, lessons, voice test, studio, drills, library ================= */
@@ -2475,9 +3073,12 @@ function scrollToId(id){ const e=document.getElementById(id); if(e){ setTimeout(
 function nextScene(){ return SCENES.filter(s=>s.ctx===SET.ctx).map(sc=>({sc,s:getConv(sc.id,SET.tl)})).find(x=>!x.s.mastered); }
 function planFor(date){
   if(store.plan[date]) return store.plan[date];
+  const gi=typeof goalPlanItems==="function"?goalPlanItems():null;
+  if(gi){ store.plan[date]={items:gi,done:{},goal:true}; save(); return store.plan[date]; }
   const dayN=Math.floor(Date.now()/DAY), prof=store.profile;
   const focus=prof&&prof.focus&&prof.focus.length?prof.focus[dayN%prof.focus.length]:DIMS6[dayN%6];
   const items=[{k:"warm",r:dayN%ROUTINES.length},{k:"drill",dim:focus,act:FOCUS_DRILL[focus]},{k:"diction",tw:dayN%6}];
+  const co=typeof coachOpen==="function"?coachOpen():[]; if(co.length) items.splice(1,0,{k:"coach",id:co[0].id});
   const due=dueList(); if(due.length) items.push({k:"review",id:due[0].sc.id,l:due[0].l});
   const nx=nextScene(); if(nx) items.push({k:"talk",id:nx.sc.id,l:SET.tl});
   const ls=LESSONS.find(l=>!store.lessons[l.id]&&l.dim===focus)||LESSONS.find(l=>!store.lessons[l.id])||LESSONS[dayN%LESSONS.length];
@@ -2487,7 +3088,7 @@ function planFor(date){
   save(); return store.plan[date];
 }
 function markPlan(k,x){ const p=planFor(today()); let ch=false;
-  p.items.forEach((it,i)=>{ if(p.done[i]||it.k!==k) return; if(k==="drill"&&it.act!==x) return; if(k==="lesson"&&x&&it.id!==x) return; p.done[i]=true; ch=true; });
+  p.items.forEach((it,i)=>{ if(p.done[i]||it.k!==k) return; if(k==="drill"&&it.act!==x) return; if(k==="lesson"&&x&&it.id!==x) return; if(k==="coach"&&x&&it.id!==x) return; if(k==="art"&&x&&it.snd!==x) return; p.done[i]=true; ch=true; });
   if(ch){ save(); renderPlan(); const n=Object.keys(p.done).length; if(n===p.items.length){ beep(1320,.3,.12); toast("🎉 "+t("plan_done",{d:n,n:p.items.length})); } } }
 const lessonOf=id=>LESSONS.find(l=>l.id===id);
 const drillName=act=>act.startsWith("lesson:")?lessonOf(act.slice(7)).txt[SET.ui][0]:({pace:t("read_title"),into:t("into_title"),proj:t("proj_title"),art:t("art_title"),imp:t("imp_title"),studio:t("studio_title"),support:t("sup_title")}[act]||act);
@@ -2497,9 +3098,11 @@ function planLabel(it){
     case "warm": return t("pk_warm")+": "+ROUTINES[it.r].name[SET.ui];
     case "drill": return t("pk_drill")+" – "+t("d_"+it.dim)+": "+drillName(it.act);
     case "diction": { const x=TWISTERS[SET.tl][it.tw]; return esc(t("pk_diction"))+": <span "+tlAttr(SET.tl)+">"+esc(x.length>40?x.slice(0,38)+"…":x)+"</span>"; }
-    case "review": return t("pk_review")+": "+sc(it.id).title[SET.ui]+" ("+it.l.toUpperCase()+")";
-    case "talk": { const s=getConv(it.id,it.l); return t("pk_talk")+": "+sc(it.id).title[SET.ui]+" ("+it.l.toUpperCase()+") – "+t("lvl")+" "+(s.mastered?3:s.lvl); }
+    case "review": return t("pk_review")+": "+sc(it.id).title[SET.ui]+" ("+SET.tl.toUpperCase()+")";
+    case "talk": { const s=getConv(it.id,SET.tl); return t("pk_talk")+": "+sc(it.id).title[SET.ui]+" ("+SET.tl.toUpperCase()+") – "+t("lvl")+" "+(s.mastered?3:s.lvl); }
     case "lesson": return t("pk_lesson")+": "+lessonOf(it.id).txt[SET.ui][0];
+    case "coach": return t("pk_coach")+": "+coachName(it.id);
+    case "art": return t("ser_title")+": "+(ART[SET.tl][it.snd]?it.snd:Object.keys(ART[SET.tl])[0])+" ("+langIn(SET.tl)+")";
   } }
 function planGo(it){
   switch(it.k){
@@ -2514,15 +3117,21 @@ function planGo(it){
       else if(a.startsWith("lesson:")){ openLesson(a.slice(7)); }
       break; }
     case "diction": show("speech"); $("#twSelect").value=it.tw; tw.load(); scrollToId("twCard"); break;
-    case "review": { const sc=SCENES.find(s=>s.id===it.id); startAttempt(sc,it.l,3,"review"); break; }
-    case "talk": { const sc=SCENES.find(s=>s.id===it.id), s=getConv(it.id,it.l); startAttempt(sc,it.l,s.mastered?3:s.lvl,s.mastered?"review":"level"); break; }
+    case "review": { const sc=SCENES.find(s=>s.id===it.id), s=getConv(it.id,SET.tl); startAttempt(sc,SET.tl,s.mastered?3:s.lvl,s.mastered?"review":"level"); break; }
+    case "talk": { const sc=SCENES.find(s=>s.id===it.id), s=getConv(it.id,SET.tl); startAttempt(sc,SET.tl,s.mastered?3:s.lvl,s.mastered?"review":"level"); break; }
     case "lesson": openLesson(it.id); break;
+    case "coach": coachGo(it.id); break;
+    case "art": show("speech"); SP.snd=ART[SET.tl][it.snd]?it.snd:Object.keys(ART[SET.tl])[0]; SP.pos="i"; SP.idx=0; renderSpeech(); scrollToId("serBox"); break;
   } }
 function renderPlan(){
   const box=$("#planList"); if(!box) return; const p=planFor(today()); box.innerHTML="";
-  p.items.forEach((it,i)=>{ const d=!!p.done[i]; const r=el("div",{class:"planitem"+(d?" done":"")},`<span class="ck">${d?"✅":"⬜"}</span><span class="grow">${it.k==="diction"?planLabel(it):esc(planLabel(it))}</span>`);
+  if(!p.goal&&typeof coachOpen==="function"&&!p.items.some(x=>x.k==="coach")){ const co=coachOpen(); if(co.length){ p.items.splice(1,0,{k:"coach",id:co[0].id}); const nd={}; Object.keys(p.done).forEach(i=>nd[+i>=1?+i+1:i]=true); p.done=nd; save(); } }
+  let lastS=-1; const G=store.goal;
+  p.items.forEach((it,i)=>{ if(p.goal&&it.s!==undefined&&it.s!==lastS){ lastS=it.s; box.append(el("h3",{style:"margin:10px 0 2px"},`${t("goal_session",{i:it.s+1})} <span class="muted" style="font-weight:400">${G?t("unit_min",{m:G.per}):""}</span>`)); }
+    const d=!!p.done[i]; const r=el("div",{class:"planitem"+(d?" done":"")},`<span class="ck">${d?"✅":"⬜"}</span><span class="grow">${it.k==="diction"?planLabel(it):esc(planLabel(it))}</span>`);
     const b=el("button",{class:"b sm"+(d?" alt":"")},t("go")); b.onclick=()=>planGo(it); r.append(b); box.append(r); });
   $("#planCount").textContent=t("plan_done",{d:Object.keys(p.done).length,n:p.items.length});
+  if(p.goal&&lastS>0) box.append(el("p",{class:"muted"},"⏸ "+t("goal_rest")));
   $("#planNoTest").classList.toggle("hidden",!!store.profile);
   const cal=$("#planCal"); cal.innerHTML="";
   for(let k=13;k>=0;k--){ const d=new Date(Date.now()-k*DAY).toISOString().slice(0,10), pl=store.plan[d], f=pl?Object.keys(pl.done).length/pl.items.length:0;
@@ -2632,6 +3241,7 @@ function testFinish(){
   if(p2.r.sr.text){ const fi=fillerInfo(p2.r.sr.text,SET.tl); dims.fluency=clamp01(1-0.2*fi.n-0.1*(p2.an.longPauses||[]).length); }
   else if(p2.an.ok) dims.fluency=clamp01(1-0.15*p2.an.longPauses.length-(p2.an.first>4?0.2:0));
   Object.keys(dims).forEach(k=>{ if(dims[k]==null) delete dims[k]; });
+  { const vt=typeof voiceTarget==="function"&&voiceTarget(), f0=p1.an.f0med||p2.an.f0med; if(vt&&f0&&(f0<vt.lo||f0>vt.hi)) coachRegisterExt("tone",t("test_title")); }
   if(!Object.keys(dims).length){ TEST=null; renderTest(); toast(t("tip_noise")); return; }
   const ranked=Object.entries(dims).sort((a,b)=>b[1]-a[1]), score=avgScore(dims);
   const pr={d:today(),t:Date.now(),score,dims,f0:p1.an.f0med||p2.an.f0med||0,strengths:ranked.slice(0,2).map(x=>x[0]),focus:ranked.slice(-2).reverse().map(x=>x[0])};
@@ -2642,7 +3252,7 @@ function testFinish(){
   [[p1,passage,"test-1"],[p2,null,"test-2"]].forEach(([p,exp,k],i)=>{ const tips=makeTips(p.an,{sr:p.r.sr.text?p.r.sr:null,expected:exp}), sc=tips.scores;
     const take={blob:p.r.blob,an:p.an,tips,scores:sc,score:avgScore(sc),kind:k,title:t("test_title")+" "+(i+1)+"/2",lang:SET.tl,text:p.r.sr.text||""};
     const det=el("details",{},`<summary>${t("replay_title")} – ${i+1}/2</summary>`); det.append(replayView(take,{saved:true})); box.append(det);
-    saveTake(take).catch(()=>{}); });
+    saveTake(take).catch(()=>{}); coachRegister(tips.fix,t("test_title")); });
   const again=el("button",{class:"b alt",style:"width:100%;margin-top:8px"},t("test_retake")); again.onclick=()=>testStep(1); box.append(again);
 }
 
@@ -2676,10 +3286,10 @@ window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); deferredI
 $("#installBtn").onclick=async()=>{ if(!deferredInstall) return; deferredInstall.prompt(); try{ await deferredInstall.userChoice; }catch(e){} deferredInstall=null; $("#installBtn").classList.add("hidden"); };
 
 /* ---------- re-render everything that depends on language / mode ---------- */
-function renderV3(){ renderPlan(); renderLessons(); renderTest(); renderStudioPrompts(); renderStudio(); renderInto(); renderProj(); renderImpRec(); renderTwRec(); renderSupport(); }
+function renderV3(){ renderPlan(); renderLessons(); renderTest(); renderStudioPrompts(); renderStudio(); renderInto(); renderProj(); renderImpRec(); renderTwRec(); renderSupport(); renderCoachList(); renderTone(); renderGoal(); renderRef(); }
 
 /* ================= init ================= */
-applyI18n(); nextPair();
+applyI18n(); nextPair(); maybeAskProfile();
 { const h=location.hash.slice(1); show(VIEWS.includes(h)?h:"today"); }
 if("serviceWorker" in navigator && location.protocol==="https:" && topLevel && document.querySelector('link[rel=manifest]')){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
 

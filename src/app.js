@@ -112,6 +112,7 @@ function renderSettings(){
   chipSet($("#setTl"),LANGS.map(l=>[l,LANG_NAMES[l]]),SET.tl,v=>setTl(v));
   chipSet($("#setCtx"),CTXS.map(c=>[c,t("ctx_"+c)]),SET.ctx,v=>setCtx(v));
   chipSet($("#setMode"),[["auto",t("mode_auto")],["rec",t("mode_rec")],["text",t("mode_text")]],SET.mode,v=>{ SET.mode=v; if(v==="auto") store.flags.conc=undefined; save(); renderSettings(); });
+  if(typeof renderProfileForm==="function") renderProfileForm($("#setProf"),()=>{ renderTone(); renderRoutines(); renderSettings(); });
   $("#setRate").value=SET.rate; $("#rateVal").textContent="×"+(+SET.rate).toFixed(2);
 }
 function setTl(v){ SET.tl=v; save(); SP.snd=Object.keys(ART[v])[0]; SP.idx=0; renderSettings(); renderTalkChips(); renderSpeech(); renderPassages(); renderTwisters(); nextPair(); renderScenes(); renderToday(); $("#topicBox").textContent=t("imp_tap"); delete $("#topicBox").dataset.set; renderV3(); }
@@ -131,7 +132,7 @@ function renderGlossary(){ const g=$("#glossary"); g.innerHTML=""; GLOSS[SET.ui]
 function cKey(id,lang){ return id+"."+lang; }
 function getConv(id,lang){ return store.conv[cKey(id,lang)]||{lvl:1,mastered:false,box:0,due:0,best:{},n:0}; }
 function setConv(id,lang,s){ store.conv[cKey(id,lang)]=s; save(); }
-function dueList(){ const now=Date.now(), out=[]; SCENES.forEach(sc=>LANGS.forEach(l=>{ const s=getConv(sc.id,l); if(s.mastered&&s.due<=now) out.push({sc,l,s}); })); return out; }
+function dueList(all){ const now=Date.now(), out=[]; SCENES.forEach(sc=>(all?LANGS:[SET.tl]).forEach(l=>{ const s=getConv(sc.id,l); if(s.mastered&&s.due<=now) out.push({sc,l,s}); })); return out; }
 function stepsPassed(s){ return s.mastered?3:Math.max(0,s.lvl-1); }
 
 function renderScenes(){
@@ -165,7 +166,7 @@ function renderToday(){
 }
 
 /* ================= routines ================= */
-function renderRoutines(){ const L=$("#routineList"); L.innerHTML=""; ROUTINES.forEach((r,i)=>{ const tot=r.steps.reduce((a,s)=>a+s[0],0); const b=el("button",{class:"b alt full"},`${esc(r.name[SET.ui])} <span class="muted">(${fmt(tot)} min · ${r.steps.length})</span>`); b.onclick=()=>openRoutine(i); L.append(b); }); }
+function renderRoutines(){ const L=$("#routineList"); L.innerHTML=""; ROUTINES.forEach((r,i)=>{ if(r.g&&r.g!==SET.gender) return; const tot=r.steps.reduce((a,s)=>a+s[0],0); const b=el("button",{class:"b alt full"},`${esc(r.name[SET.ui])} <span class="muted">(${fmt(tot)} min · ${r.steps.length})</span>`); b.onclick=()=>openRoutine(i); L.append(b); }); }
 let RP={r:null,i:0,left:0,running:false,h:null,startT:0};
 function openRoutine(i){ stopRoutine(); RP.r=ROUTINES[i]; RP.i=0; RP.startT=Date.now(); $("#routinePlayer").classList.remove("hidden"); $("#rpTitle").textContent=RP.r.name[SET.ui]; loadStep(); $("#routinePlayer").scrollIntoView({behavior:"smooth"}); }
 function loadStep(){ const s=RP.r.steps[RP.i], tx=s[1][SET.ui]; RP.left=s[0]; $("#rpStepTitle").textContent=(RP.i+1)+". "+tx[0]; $("#rpStepText").textContent=tx[1]; $("#rpStepWhy").textContent=t("why")+" "+tx[2]; $("#rpTime").textContent=fmt(RP.left); $("#rpSteps").innerHTML=RP.r.steps.map((_,k)=>`<i class="${k<=RP.i?'d':''}"></i>`).join(""); }
@@ -244,6 +245,7 @@ function drawPitch(){ const pc=$("#pitchCanvas"), dpr=window.devicePixelRatio||1
   const g=pc.getContext("2d"); g.clearRect(0,0,W,H); const lo=hzToMidi(70),hi=hzToMidi(700),yOf=m=>H-(m-lo)/(hi-lo)*H;
   g.font=(10*dpr)+"px system-ui"; g.fillStyle=cssv("--muted"); g.strokeStyle=cssv("--line"); g.lineWidth=1;
   [100,150,200,300,400,600].forEach(f=>{ const y=yOf(hzToMidi(f)); g.beginPath(); g.moveTo(0,y); g.lineTo(W,y); g.stroke(); g.fillText(f+" Hz",4,y-3); });
+  const vt=typeof voiceTarget==="function"&&voiceTarget(); if(vt){ g.fillStyle="rgba(47,138,77,.12)"; const y1=yOf(hzToMidi(vt.hi)), y2=yOf(hzToMidi(vt.lo)); g.fillRect(0,y1,W,y2-y1); }
   const tg=+$("#targetNote").value; g.strokeStyle=cssv("--ok"); g.setLineDash([6*dpr,4*dpr]); g.beginPath(); g.moveTo(0,yOf(tg)); g.lineTo(W,yOf(tg)); g.stroke(); g.setLineDash([]);
   const now=performance.now(); g.fillStyle=cssv("--accent2"); MIC.pH.forEach(p=>{ g.beginPath(); g.arc(W-(now-p.t)/8000*W,yOf(hzToMidi(p.f)),2.2*dpr,0,7); g.fill(); }); }
 function loopMic(){

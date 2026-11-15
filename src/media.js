@@ -159,23 +159,23 @@ function makeTips(an, {sr=null, lang=SET.tl, expected=null, statements=true, lat
   if(!an.ok){ fix.push({txt:an.noVoice?t("tip_noise"):t("tip_short")}); return {fix,good,scores:null}; }
   if(sr&&sr.text) applySrRate(an,sr,lang);
   const sc=deliveryScores(an,{statements});
-  if(an.rate>5.2) fix.push({txt:t("tip_fast",{v:f1(an.rate)})}); else if(an.rate<3.5) fix.push({txt:t("tip_slow",{v:f1(an.rate)})}); else good.push(t("tip_pace_ok",{v:f1(an.rate)}));
-  if(an.pauseShare<0.08) fix.push({txt:t("tip_nopause",{v:Math.round(an.pauseShare*100)})});
-  else if(an.pauseShare>0.30) fix.push({txt:t("tip_manypause",{v:Math.round(an.pauseShare*100)})});
+  if(an.rate>5.2) fix.push({code:"fast",txt:t("tip_fast",{v:f1(an.rate)})}); else if(an.rate<3.5) fix.push({code:"slow",txt:t("tip_slow",{v:f1(an.rate)})}); else good.push(t("tip_pace_ok",{v:f1(an.rate)}));
+  if(an.pauseShare<0.08) fix.push({code:"nopause",txt:t("tip_nopause",{v:Math.round(an.pauseShare*100)})});
+  else if(an.pauseShare>0.30) fix.push({code:"manypause",txt:t("tip_manypause",{v:Math.round(an.pauseShare*100)})});
   else if(!an.longPauses.length) good.push(t("tip_pause_ok"));
-  an.longPauses.slice(0,3).forEach(p=>fix.push({t:p.s,txt:t("tip_longpause",{s:f1(p.e-p.s)})}));
-  if(an.sdSt<2) fix.push({txt:t("tip_mono",{v:f1(an.sdSt)})}); else good.push(t("tip_melody_ok",{v:f1(an.sdSt)}));
-  if(statements) an.uptalk.slice(0,3).forEach(x=>fix.push({t:x,txt:t("tip_uptalk")}));
-  an.trail.slice(0,3).forEach(x=>fix.push({t:x,txt:t("tip_trail")}));
-  if(an.clipping) fix.push({txt:t("tip_clip")});
-  else if(an.meanDb<-40) fix.push({txt:t("tip_quiet",{v:Math.round(an.meanDb)})}); else if(!an.trail.length) good.push(t("tip_loud_ok"));
+  an.longPauses.slice(0,3).forEach(p=>fix.push({code:"longpause",t:p.s,txt:t("tip_longpause",{s:f1(p.e-p.s)})}));
+  if(an.sdSt<2) fix.push({code:"mono",txt:t("tip_mono",{v:f1(an.sdSt)})}); else good.push(t("tip_melody_ok",{v:f1(an.sdSt)}));
+  if(statements) an.uptalk.slice(0,3).forEach(x=>fix.push({code:"uptalk",t:x,txt:t("tip_uptalk")}));
+  an.trail.slice(0,3).forEach(x=>fix.push({code:"trail",t:x,txt:t("tip_trail")}));
+  if(an.clipping) fix.push({code:"clip",txt:t("tip_clip")});
+  else if(an.meanDb<-40) fix.push({code:"quiet",txt:t("tip_quiet",{v:Math.round(an.meanDb)})}); else if(!an.trail.length) good.push(t("tip_loud_ok"));
   const lat = latency!=null ? latency : an.first;
-  if(lat>4) fix.push({t:0,txt:t("tip_late",{s:f1(lat)})});
+  if(lat>4) fix.push({code:"late",t:0,txt:t("tip_late",{s:f1(lat)})});
   let fluency=null, clarity=null;
   if(sr&&sr.text){
     const fi=fillerInfo(sr.text,lang); fluency=clamp01(1-0.2*fi.n-0.1*an.longPauses.length);
-    if(fi.n) fix.push({txt:t("tip_fillers",{n:fi.n,w:fi.words.join(", ")})}); else good.push(t("tip_nofill"));
-    const cl=srClarity(sr,expected); if(cl){ clarity=cl.score; if(cl.score<0.85&&cl.miss.length) fix.push({txt:t("tip_clarity",{w:cl.miss.join(", ")})}); else if(cl.score>=0.85) good.push(t("tip_clarity_ok")); }
+    if(fi.n) fix.push({code:"fillers",txt:t("tip_fillers",{n:fi.n,w:fi.words.join(", ")})}); else good.push(t("tip_nofill"));
+    const cl=srClarity(sr,expected); if(cl){ clarity=cl.score; if(cl.score<0.85&&cl.miss.length) fix.push({code:"clarity",miss:cl.miss,txt:t("tip_clarity",{w:cl.miss.join(", ")})}); else if(cl.score>=0.85) good.push(t("tip_clarity_ok")); }
   }
   const scores=Object.assign({},sc); if(fluency!=null) scores.fluency=fluency; if(clarity!=null) scores.clarity=clarity;
   fix.sort((a,b)=>(a.t??-1)-(b.t??-1));
@@ -189,7 +189,7 @@ function scoreBars(sc){ return DIM_KEYS.filter(k=>sc&&sc[k]!=null).map(k=>{ cons
 function metricLine(an){ if(!an||!an.ok) return ""; const f1=x=>(Math.round(x*10)/10).toLocaleString(SET.ui);
   return `<p class="muted">${t("m_dur")}: ${f1(an.total)} s · ${t("m_rate")}: ${f1(an.rate)} ${t("m_syl")} · ${t("m_pause")}: ${Math.round(an.pauseShare*100)} % · ${t("m_pitch")}: ${Math.round(an.f0med)} Hz · ${t("m_var")}: ${f1(an.sdSt)} ${t("m_st")} · ${t("m_loud")}: ${Math.round(an.meanDb)} dBFS</p>`; }
 function fixDuration(m){ m.addEventListener("loadedmetadata",()=>{ if(m.duration===Infinity||isNaN(m.duration)){ const h=()=>{ m.removeEventListener("timeupdate",h); m.currentTime=0; }; m.addEventListener("timeupdate",h); m.currentTime=1e7; } },{once:true}); }
-function replayView(take, {onSave=null, saved=false, extra=""}={}){
+function replayView(take, {onSave=null, saved=false, extra="", noRegister=false}={}){
   const an=take.an, tips=take.tips||{fix:[],good:[]}, box=el("div",{class:"card flat replay"});
   const url=take.url||(take.blob?URL.createObjectURL(take.blob):null);
   const isV=!!take.video;
@@ -205,7 +205,9 @@ function replayView(take, {onSave=null, saved=false, extra=""}={}){
   const media=box.querySelector("audio,video"), cv=box.querySelector("canvas");
   if(media) fixDuration(media);
   const tf=box.querySelector(".tips-fix");
-  if(tf) tips.fix.forEach(x=>{ const r=el("div",{class:"tiprow"},`${x.t!=null&&media?`<button class="b sm alt">▶ ${fmtT(x.t)}</button>`:"•"} <span>${esc(x.txt)}</span>`); const b=r.querySelector("button"); if(b) b.onclick=()=>{ media.currentTime=Math.max(0,x.t-1); media.play().catch(()=>{}); }; tf.append(r); });
+  if(tf) tips.fix.forEach(x=>{ const r=el("div",{class:"tiprow"},`${x.t!=null&&media?`<button class="b sm alt">▶ ${fmtT(x.t)}</button>`:"•"} <span>${esc(x.txt)}</span>`); const b=r.querySelector("button"); if(b) b.onclick=()=>{ media.currentTime=Math.max(0,x.t-1); media.play().catch(()=>{}); };
+    const cid=typeof COACH_OF!=="undefined"&&COACH_OF[x.code]; if(cid&&!noRegister){ const tb=el("button",{class:"b sm warm tipbtn"},"🏋 "+t("train_this")); tb.onclick=()=>{ coachRegister([x],take.title); openCoach(cid); }; r.append(tb); } tf.append(r); });
+  if(!saved&&!noRegister&&tips.fix&&tips.fix.length&&typeof coachRegister==="function") coachRegister(tips.fix,take.title);
   const draw=()=>drawTimeline(cv,an,media?media.currentTime:null,tips);
   requestAnimationFrame(draw);
   if(media){ let raf; const loop=()=>{ draw(); if(!media.paused) raf=requestAnimationFrame(loop); }; media.addEventListener("play",loop); media.addEventListener("seeked",draw);

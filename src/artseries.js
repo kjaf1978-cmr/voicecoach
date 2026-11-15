@@ -112,7 +112,7 @@ function evalWord(w,r){
   beep(res.ok===false?440:res.ok?990:700,.1,.08);
   S.i++; setTimeout(serWord,res.ok===null?500:1100);
 }
-function finishSeries(){ logSession(t("ser_title")+" "+SER.snd,Math.max(0.5,(Date.now()-SER.t0)/60000)); markPlan("drill","art"); renderSerSummary(); showArtMastery(); renderSpeech(); }
+function finishSeries(){ markPlan("art",SER.snd); if(SER.results.some(r=>r.ok===false)) coachRegisterExt("art:"+SER.lang+"|"+SER.snd,t("ser_title")); logSession(t("ser_title")+" "+SER.snd,Math.max(0.5,(Date.now()-SER.t0)/60000)); markPlan("drill","art"); renderSerSummary(); showArtMastery(); renderSpeech(); }
 function renderSerSummary(){
   const S=SER, box=$("#serBox"); if(!S) return;
   const judged=S.results.filter(r=>r.ok!==null), ok=judged.filter(r=>r.ok).length, open=S.results.filter(r=>r.ok===null).length;
