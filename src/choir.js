@@ -67,7 +67,7 @@ function click(c,t0,hi){ const o=c.createOscillator(), g=c.createGain(); o.frequ
 /* ---- generic singing session: plays accompaniment, records pitch, evaluates target notes ----
    acc: [{m,t,d,v,organ}] ; targets: [{m,t,d,label}] (seconds after start); countIn beats; onLive(f,tRel) */
 async function singSession({acc,targets,countIn=0,beat=0.6,total,onLive,onPhase}){
-  const c=ac(), pts=[]; let take, pStart=null; try{ take=await startTake({onPitch:(f,sec,db)=>{ if(pStart===null) return; const rel=(performance.now()-pStart)/1000; pts.push({t:rel,f:db>-58?f:0}); onLive&&onLive(f,rel,db); }}); }catch(e){ micError(e); toast(t("mic_fail")); return null; }
+  const c=ac(), pts=[]; let take, pStart=null; try{ take=await startTake({onPitch:(f,sec,db)=>{ if(pStart===null) return; const rel=(performance.now()-pStart)/1000; pts.push({t:rel,f:db>-58?f:0,db}); onLive&&onLive(f,rel,db); }}); }catch(e){ micError(e); toast(t("mic_fail")); return null; }
   const lead=0.35+countIn*beat, cNow=c.currentTime, start=cNow+lead; pStart=performance.now()+lead*1000;
   for(let k=0;k<countIn;k++) click(c,cNow+0.35+k*beat,k===0);
   acc.forEach(n=>synthNote(c,n.m,start+n.t,n.d,n.v||0.12,n.organ));
@@ -79,7 +79,11 @@ async function singSession({acc,targets,countIn=0,beat=0.6,total,onLive,onPhase}
     if(v.length<3) return Object.assign({},n,{ok:false,miss:true});
     const fm=pctl(v,0.5); let cents=1200*Math.log2(fm/midiToHz(n.m)), oct=false; if(Math.abs(cents)>900&&Math.abs(Math.abs(cents)-1200)<150){ cents-=Math.sign(cents)*1200; oct=true; }
     const cs=v.map(f=>{ let x=1200*Math.log2(f/midiToHz(n.m)); if(oct) x-=Math.sign(x)*1200; return x; }), mc=cs.reduce((x,y)=>x+y,0)/cs.length, sd=Math.sqrt(cs.reduce((x,y)=>x+(y-mc)*(y-mc),0)/cs.length);
-    return Object.assign({},n,{cents:Math.round(cents),sd,oct,ok:Math.abs(cents)<=30&&!oct}); });
+    const near=p=>p.f>0&&Math.abs((((1200*Math.log2(p.f/midiToHz(n.m))%1200)+1800)%1200)-600)<=50;
+    const hit=pts.find(p=>p.t>=n.t-0.2&&p.t<=n.t+n.d&&near(p)), lat=hit?hit.t-n.t:null;
+    const tail=pts.filter(p=>p.t>=n.t+n.d*0.6&&p.t<=n.t+n.d*0.92), sus=tail.length?tail.filter(p=>p.f>0).length/tail.length:0;
+    const vd=pts.filter(p=>p.t>=a&&p.t<=b&&p.f>0).map(p=>p.db), dbm=vd.length?pctl(vd,0.5):null, endv=pts.filter(p=>p.t>=n.t+n.d*0.65&&p.t<=n.t+n.d*0.92&&p.f>0).map(p=>p.db), dbe=endv.length?pctl(endv,0.5):null;
+    return Object.assign({},n,{cents:Math.round(cents),sd,oct,lat,sus,dbm,dbe,ok:Math.abs(cents)<=30&&!oct}); });
   return {res,blob:r.blob,pcm:r.pcm};
 }
 /* note lane using the pattern panel: green bars = targets, orange = live pitch */
@@ -194,4 +198,4 @@ ROUTINES.push({choir:true,name:{en:"Choir warm-up",de:"Chor-Einsingen",fr:"Écha
  [45,{en:["Staccato arpeggio","“Ha-ha-ha-ha-ha” on do-mi-sol-mi-do, short and springy from the belly.","Activates breath support and precise onsets."],de:["Staccato-Dreiklang","„Ha-ha-ha-ha-ha“ auf do-mi-sol-mi-do, kurz und federnd aus dem Bauch.","Aktiviert die Atemstütze und präzise Einsätze."],fr:["Arpège staccato","« Ha-ha-ha-ha-ha » sur do-mi-sol-mi-do, court et rebondi depuis le ventre.","Active le soutien et des attaques précises."]}],
  [45,{en:["Tongue twister on a note","Sing “Red lorry, yellow lorry” (or a twister in your language) on one note, then on a five-note scale – clear consonants, steady tone.","Diction for choir: consonants clear, vowels long."],de:["Zungenbrecher auf einem Ton","„Fischers Fritz fischt frische Fische“ auf einem Ton, dann auf der Fünftonleiter singen – klare Konsonanten, ruhiger Ton.","Diktion im Chor: Konsonanten klar, Vokale lang."],fr:["Virelangue sur une note","Chantez « Un chasseur sachant chasser » sur une note, puis sur une gamme de cinq notes – consonnes nettes, son stable.","Diction chorale : consonnes nettes, voyelles longues."]}]]});
 function renderChoirWarmup(){ const box=$("#wuBody"); if(!box) return; box.innerHTML=""; const i=ROUTINES.findIndex(r=>r.choir); const b=el("button",{class:"b",style:"width:100%"},t("wu_go")+" ("+Math.round(ROUTINES[i].steps.reduce((a,s)=>a+s[0],0)/60)+" min)"); b.onclick=()=>{ show("today"); openRoutine(i); }; box.append(b); }
-function renderChoir(){ if(!$("#v-choir")) return; renderVType(); renderChoirWarmup(); renderNotes(); renderPart(); renderRound(); }
+function renderChoir(){ if(!$("#v-choir")) return; renderVType(); renderChoirWarmup(); renderNotes(); renderPart(); renderRound(); if(typeof renderSongs==="function") renderSongs(); }
