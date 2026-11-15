@@ -70,6 +70,7 @@ function patternPanel(box,tpl,{center=patternCenter(),band=voiceTarget(),relativ
   requestAnimationFrame(()=>draw(null));
   return {
     reset(){ P.live=[]; P.onset=null; P.user=null; P.ownMed=null; draw(null); },
+    pushAt(f,tt){ P.live.push({t:tt,f}); draw(Math.min(tt,tpl.dur+0.5)); },
     onPitch(f,sec,db){ if(P.onset===null){ if(f>0&&db>-55) P.onset=sec; else return; } const tt=sec-P.onset; P.live.push({t:tt,f});
       if(relative&&!P.ownMed){ const v=P.live.filter(x=>x.f>0).map(x=>x.f); if(v.length>25) P.ownMed=pctl(v,0.5); } draw(Math.min(tt,tpl.dur+0.5)); },
     evaluate(an){

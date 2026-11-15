@@ -83,17 +83,17 @@ function scoreTurn({text,dur,latency,level,model,kw,lang}){
 }
 
 /* ================= navigation ================= */
-const ICONS={today:'<path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>',
+const ICONS={choir:'<path d="M9 18V5l11-2v13" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.5" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="17.5" cy="16" r="2.5" stroke="currentColor" stroke-width="2" fill="none"/>',today:'<path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>',
  talk:'<path d="M3 5h12v8H8l-4 3v-3H3zM17 9h4v8h-1v3l-3-3h-5v-2" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/>',
  speech:'<path d="M5 12c2-6 12-6 14 0-2 6-12 6-14 0z" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 12h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
  voice:'<path d="M3 12h2l2-6 3 12 3-9 2 6 2-3h4" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>',
  breath:'<circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/>',
  progress:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>'};
-const VIEWS=["today","talk","speech","voice","breath","progress"];
+const VIEWS=["today","talk","speech","voice","breath","choir","progress"];
 function buildNav(){ $("#nav").innerHTML=""; VIEWS.forEach(id=>{ const b=el("button",{"data-v":id},`<svg viewBox="0 0 24 24">${ICONS[id]}</svg>${t("nav_"+id)}`); b.onclick=()=>show(id); $("#nav").append(b); }); markNav(); }
 let curView="today";
 function markNav(){ document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===curView)); }
-function show(id){ curView=id; document.querySelectorAll("section.view").forEach(s=>s.classList.toggle("on",s.id==="v-"+id)); markNav(); try{ if(location.hash!=="#"+id) history.replaceState(null,"","#"+id); }catch(e){} window.scrollTo(0,0); if(id==="progress") renderProgress(); if(id==="today") renderToday(); if(id==="talk") renderScenes(); }
+function show(id){ curView=id; document.querySelectorAll("section.view").forEach(s=>s.classList.toggle("on",s.id==="v-"+id)); markNav(); try{ if(location.hash!=="#"+id) history.replaceState(null,"","#"+id); }catch(e){} window.scrollTo(0,0); if(id==="progress") renderProgress(); if(id==="today") renderToday(); if(id==="talk") renderScenes(); if(id==="choir"&&typeof renderChoir==="function") renderChoir(); }
 window.addEventListener("hashchange",()=>{ const h=location.hash.slice(1); if(VIEWS.includes(h)) show(h); });
 
 /* ================= settings & i18n ================= */

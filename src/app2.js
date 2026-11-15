@@ -220,7 +220,7 @@ window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); deferredI
 $("#installBtn").onclick=async()=>{ if(!deferredInstall) return; deferredInstall.prompt(); try{ await deferredInstall.userChoice; }catch(e){} deferredInstall=null; $("#installBtn").classList.add("hidden"); };
 
 /* ---------- re-render everything that depends on language / mode ---------- */
-function renderV3(){ renderPlan(); renderLessons(); renderTest(); renderStudioPrompts(); renderStudio(); renderInto(); renderProj(); renderImpRec(); renderTwRec(); renderSupport(); renderCoachList(); renderTone(); renderGoal(); renderRef(); }
+function renderV3(){ renderPlan(); renderLessons(); renderTest(); renderStudioPrompts(); renderStudio(); renderInto(); renderProj(); renderImpRec(); renderTwRec(); renderSupport(); renderCoachList(); renderTone(); renderGoal(); renderRef(); if(typeof renderChoir==="function") renderChoir(); }
 
 /* ================= init ================= */
 applyI18n(); nextPair(); maybeAskProfile();
