@@ -88,6 +88,8 @@ table{width:100%;border-collapse:collapse;font-size:.82rem} td,th{border-bottom:
 .planitem.done .grow{opacity:.55;text-decoration:line-through}
 .lesson{border-top:1px solid var(--line);padding:6px 0}
 .check{display:flex;gap:8px;align-items:flex-start;margin:5px 0;font-size:.92rem} .check input{width:20px;height:20px;flex:none}
+.beatdot{width:120px;height:120px;margin:12px auto;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;transition:transform .08s,background .08s}
+.beatdot.on{background:var(--accent2);color:#fff;transform:scale(1.15)}
 textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 </style>
 </head>
@@ -267,6 +269,8 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
 
 <!-- BREATH -->
 <section class="view" id="v-breath">
+  <div class="card" id="supCard"><h2 data-t="sup_title"></h2><p class="muted" data-t="sup_desc"></p>
+    <div class="chips" id="supEx"></div><div id="supBody"></div><div id="supOut"></div></div>
   <div class="card"><h2 data-t="br_title"></h2><p class="muted" data-t="br_desc"></p>
     <div class="chips" id="breathPresets"></div><p class="muted" id="breathDesc"></p>
     <div class="breath"><div class="ring"></div><div class="ball" id="ball"></div><div class="lbl" id="ballLbl"></div></div>

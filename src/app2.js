@@ -22,7 +22,7 @@ function markPlan(k,x){ const p=planFor(today()); let ch=false;
   p.items.forEach((it,i)=>{ if(p.done[i]||it.k!==k) return; if(k==="drill"&&it.act!==x) return; if(k==="lesson"&&x&&it.id!==x) return; p.done[i]=true; ch=true; });
   if(ch){ save(); renderPlan(); const n=Object.keys(p.done).length; if(n===p.items.length){ beep(1320,.3,.12); toast("🎉 "+t("plan_done",{d:n,n:p.items.length})); } } }
 const lessonOf=id=>LESSONS.find(l=>l.id===id);
-const drillName=act=>act.startsWith("lesson:")?lessonOf(act.slice(7)).txt[SET.ui][0]:({pace:t("read_title"),into:t("into_title"),proj:t("proj_title"),art:t("art_title"),imp:t("imp_title"),studio:t("studio_title")}[act]||act);
+const drillName=act=>act.startsWith("lesson:")?lessonOf(act.slice(7)).txt[SET.ui][0]:({pace:t("read_title"),into:t("into_title"),proj:t("proj_title"),art:t("art_title"),imp:t("imp_title"),studio:t("studio_title"),support:t("sup_title")}[act]||act);
 function planLabel(it){
   const sc=id=>SCENES.find(s=>s.id===id);
   switch(it.k){
@@ -40,6 +40,7 @@ function planGo(it){
       if(a==="pace"){ show("speech"); scrollToId("paceCard"); }
       else if(a==="into"){ show("voice"); scrollToId("intoCard"); }
       else if(a==="proj"){ show("voice"); scrollToId("projCard"); }
+      else if(a==="support"){ show("breath"); scrollToId("supCard"); }
       else if(a==="imp"){ show("talk"); scrollToId("impCard"); }
       else if(a==="art"){ show("speech"); const ks=Object.keys(ART[SET.tl]); SP.snd=ks.slice().sort((x,y)=>artStats(SET.tl,x).p-artStats(SET.tl,y).p)[0]; SP.idx=0; renderSpeech(); scrollToId("artCard"); }
       else if(a.startsWith("lesson:")){ openLesson(a.slice(7)); }
@@ -207,7 +208,7 @@ window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); deferredI
 $("#installBtn").onclick=async()=>{ if(!deferredInstall) return; deferredInstall.prompt(); try{ await deferredInstall.userChoice; }catch(e){} deferredInstall=null; $("#installBtn").classList.add("hidden"); };
 
 /* ---------- re-render everything that depends on language / mode ---------- */
-function renderV3(){ renderPlan(); renderLessons(); renderTest(); renderStudioPrompts(); renderStudio(); renderInto(); renderProj(); renderImpRec(); renderTwRec(); }
+function renderV3(){ renderPlan(); renderLessons(); renderTest(); renderStudioPrompts(); renderStudio(); renderInto(); renderProj(); renderImpRec(); renderTwRec(); renderSupport(); }
 
 /* ================= init ================= */
 applyI18n(); nextPair();

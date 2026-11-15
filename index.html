@@ -88,12 +88,14 @@ table{width:100%;border-collapse:collapse;font-size:.82rem} td,th{border-bottom:
 .planitem.done .grow{opacity:.55;text-decoration:line-through}
 .lesson{border-top:1px solid var(--line);padding:6px 0}
 .check{display:flex;gap:8px;align-items:flex-start;margin:5px 0;font-size:.92rem} .check input{width:20px;height:20px;flex:none}
+.beatdot{width:120px;height:120px;margin:12px auto;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;transition:transform .08s,background .08s}
+.beatdot.on{background:var(--accent2);color:#fff;transform:scale(1.15)}
 textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 </style>
 </head>
 <body>
 <header>
-  <h1>VoiceCoach <span class="ver">v3.2</span></h1>
+  <h1>VoiceCoach <span class="ver">v3.3</span></h1>
   <span class="badge" id="streakBadge"></span>
   <button class="pill hidden" id="installBtn" data-t="install"></button>
   <button class="pill" id="setBtn">⚙ <span id="setSummary"></span></button>
@@ -267,6 +269,8 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
 
 <!-- BREATH -->
 <section class="view" id="v-breath">
+  <div class="card" id="supCard"><h2 data-t="sup_title"></h2><p class="muted" data-t="sup_desc"></p>
+    <div class="chips" id="supEx"></div><div id="supBody"></div><div id="supOut"></div></div>
   <div class="card"><h2 data-t="br_title"></h2><p class="muted" data-t="br_desc"></p>
     <div class="chips" id="breathPresets"></div><p class="muted" id="breathDesc"></p>
     <div class="breath"><div class="ring"></div><div class="ball" id="ball"></div><div class="lbl" id="ballLbl"></div></div>
@@ -302,7 +306,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
 <nav id="nav"></nav>
 <div class="toast" id="toast"></div>
 <script>
-/* VoiceCoach v3.2 */
+/* VoiceCoach v3.3 */
 /* UI strings – en / de / fr */
 const T = {
 en:{
@@ -1191,6 +1195,107 @@ const INTO = {
 };
 /* focus dimension → drill used in the daily plan */
 const FOCUS_DRILL = {pace:"pace", pauses:"lesson:pause", melody:"into", projection:"proj", clarity:"art", fluency:"imp"};
+
+/* v3.3 – breath support training ("speak from the belly") */
+Object.assign(T.de,{
+ sup_title:"Atemstütze: aus dem Bauch sprechen",
+ sup_desc:"„Aus dem Bauch sprechen“ heißt: Zwerchfell (kuppelförmiger Atemmuskel unter der Lunge) und Bauchmuskeln liefern einen gleichmäßigen Luftstrom – die Stimme wird tragfähig und deutlich, ohne dass Hals und Kehlkopf drücken. Drei gemessene Übungen; jede mit Aufnahme, Wiedergabe und Korrekturtipps. Vorher am besten das Programm „Stimme aus dem Bauch“ (Heute → Aufwärmprogramme).",
+ sup_pulse:"Zwerchfell-Impulse", sup_flow:"Gleichmäßiger Luftstrom", sup_ab:"Vorher/Nachher-Vergleich",
+ sup_pulse_how:"Hand auf den Bauch. Nach dem Einzählen (4 Pieptöne) bei jedem Aufleuchten des Kreises ein kurzes, kräftiges „ha“ (oder stimmlos „f“/„sch“) – der Impuls kommt aus einem kurzen Ruck der Bauchdecke nach innen, nicht aus dem Hals. Zwischen den Impulsen alles loslassen: der Bauch federt zurück und die Luft strömt von selbst ein. 8 Impulse. Die App prüft Anzahl, Takt, Kürze (unter 0,35 s), klare Pausen dazwischen und gleichmäßige Kraft.",
+ sup_tempo:"Tempo (Schläge pro Minute)", sup_ready:"bereit", sup_start:"▶ Start (4 Pieptöne zum Einzählen)",
+ sup_flow_how:"Tief in den Bauch einatmen, dann auf einem leisen, gleichmäßigen „ssss“ (ohne Stimme) ausatmen, so lange es angenehm geht. Den Bauch dabei langsam nach innen ziehen, die Schultern bleiben locker. Ziel: 15 s und mehr, gleichmäßig stark bis zum Ende. Danach ● Stopp tippen. Die App misst Dauer, Gleichmäßigkeit (Schwankung in dB) und ob der Luftstrom am Ende abfällt.",
+ sup_ab_how:"Sprich denselben Satz zweimal: (A) so wie immer, (B) mit Bauchstütze. Die App vergleicht Lautstärke, Tonhöhe, Klangbalance, das Abfallen am Satzende, Melodie und – wenn Spracherkennung verfügbar ist – die Deutlichkeit.",
+ sup_ab1:"Aufnahme A – sprich den Satz ganz normal:", sup_ab2:"Aufnahme B – jetzt mit Bauchstütze:",
+ sup_ab2_cue:"Hand auf den Bauch. Tief einatmen (Bauch wölbt sich nach außen, Schultern bleiben unten). Beim Sprechen den Bauch langsam nach innen ziehen, Mund weiter öffnen, zu jemandem in 3 m Entfernung sprechen – ohne zu drücken oder lauter zu „pressen“.",
+ sup_A:"A normal", sup_B:"B mit Stütze", sup_bal:"Klangbalance", sup_fade:"Abfall am Phrasenende",
+ sup_bal_note:"Klangbalance = Energie unter 1 kHz im Verhältnis zu 1–4 kHz (in dB). Ein höherer Wert klingt runder und weniger gepresst. Das ist ein Hinweis, keine medizinische Messung; vergleiche nur deine eigenen Aufnahmen mit gleichem Abstand zum Handy.",
+ sup_count:"Anzahl", sup_timing:"Takt", sup_crisp:"Kürze", sup_sep:"Pausen dazwischen", sup_even:"Gleichmäßige Kraft",
+ sup_dur:"Dauer", sup_steady:"Gleichmäßigkeit", sup_end:"Stütze bis zum Ende",
+ sup_last:"Letztes Ergebnis: {d} – {s} Punkte",
+ sup_t_few:"Nur {n} von {N} Impulsen erkannt. Jeder Impuls braucht einen deutlichen, kurzen Luftstoß aus dem Bauch.", sup_t_many:"{n} statt {N} Impulse erkannt – vermutlich doppelte Ansätze. Ein Impuls pro Lichtsignal.",
+ sup_t_timing:"Die Impulse lagen im Mittel {ms} ms neben dem Takt. Schau auf den Kreis und starte genau beim Aufleuchten.",
+ sup_t_long:"Dieser Impuls war zu lang ({ms} ms) – das klingt nach Drücken aus dem Hals. Kurz und federnd, wie ein überraschtes „ha!“.",
+ sup_t_sep:"Zwischen den Impulsen war keine klare Pause. Nach jedem Impuls Bauch komplett loslassen – die Luft strömt von selbst nach.",
+ sup_t_even:"Die Kraft der Impulse schwankte (± {v} dB). Gleich starke Impulse – der Bauch arbeitet jedes Mal gleich.",
+ sup_g_count:"Alle Impulse erkannt ({n}).", sup_g_timing:"Gut im Takt.", sup_g_sep:"Klare Pausen – der Bauch federt zurück.", sup_g_even:"Gleichmäßige Kraft.",
+ sup_t_short:"Luftstrom nur {s} s. Tiefer in den Bauch einatmen und die Luft sparsamer, gleichmäßiger abgeben.", sup_g_dur:"Gute Dauer: {s} s.",
+ sup_t_wobble:"Der Luftstrom schwankte (± {v} dB). Bauch gleichmäßig langsam nach innen ziehen – nicht stoßweise.", sup_g_steady:"Gleichmäßiger Luftstrom (± {v} dB).",
+ sup_t_fade:"Am Ende fiel der Luftstrom um {v} dB ab – die Stütze hat nachgelassen. Lieber früher aufhören, als mit Restluft aus dem Hals zu pressen.",
+ sup_g_louder:"Mit Stütze {v} dB tragfähiger – ohne Pressen.", sup_t_notlouder:"Mit Stütze nicht hörbar tragfähiger. Tiefer einatmen, Mund weiter öffnen und an eine Person in 3 m Entfernung denken.",
+ sup_t_pitchup:"Mit Stütze lag die Stimme {v} Hz höher – das deutet auf Spannung im Hals. Kehle weit wie beim Gähnen, in deiner normalen Tonlage bleiben.", sup_g_pitch:"Die Tonlage blieb entspannt.",
+ sup_g_fade:"Mit Stütze fällt die Stimme am Satzende weniger ab.", sup_t_pressed:"Die Klangbalance wurde heller/härter – Hinweis auf Pressen im Hals. Weniger Kraft, mehr Atem und Weite.",
+ r_belly:"Stimme aus dem Bauch"
+});
+Object.assign(T.en,{
+ sup_title:"Breath support: speak from the belly",
+ sup_desc:"“Speaking from the belly” means the diaphragm (the dome-shaped breathing muscle under the lungs) and the belly muscles provide a steady airflow – the voice carries and words sound clear without the throat and larynx pushing. Three measured exercises, each with recording, replay and correction tips. Best done after the “Voice from the belly” routine (Today → Warm-up routines).",
+ sup_pulse:"Diaphragm impulses", sup_flow:"Steady airflow", sup_ab:"Before/after comparison",
+ sup_pulse_how:"Hand on the belly. After the count-in (4 beeps), every time the circle lights up give one short, strong “ha” (or voiceless “f”/“sh”) – the impulse comes from a quick inward jerk of the belly wall, not from the throat. Between impulses let everything go: the belly springs back and air flows in by itself. 8 impulses. The app checks the number, timing, shortness (under 0.35 s), clear gaps and even strength.",
+ sup_tempo:"Tempo (beats per minute)", sup_ready:"ready", sup_start:"▶ Start (4 count-in beeps)",
+ sup_flow_how:"Breathe deeply into the belly, then breathe out on a quiet, even “ssss” (no voice) for as long as is comfortable. Slowly pull the belly in, shoulders relaxed. Target: 15 s or more, equally strong to the end. Then tap ■ Stop. The app measures duration, evenness (variation in dB) and whether the airflow fades at the end.",
+ sup_ab_how:"Say the same sentence twice: (A) as you usually do, (B) with belly support. The app compares loudness, pitch, sound balance, fading at the end of phrases, melody and – when speech recognition is available – clarity.",
+ sup_ab1:"Recording A – say the sentence normally:", sup_ab2:"Recording B – now with belly support:",
+ sup_ab2_cue:"Hand on the belly. Breathe in deeply (belly moves out, shoulders stay down). While speaking, slowly pull the belly in, open the mouth more and speak to someone 3 m away – without pushing or squeezing.",
+ sup_A:"A normal", sup_B:"B supported", sup_bal:"Sound balance", sup_fade:"Fading at phrase end",
+ sup_bal_note:"Sound balance = energy below 1 kHz relative to 1–4 kHz (in dB). A higher value sounds rounder and less pressed. This is a hint, not a medical measurement; compare only your own recordings at the same distance from the phone.",
+ sup_count:"Count", sup_timing:"Timing", sup_crisp:"Shortness", sup_sep:"Gaps between", sup_even:"Even strength",
+ sup_dur:"Duration", sup_steady:"Evenness", sup_end:"Support to the end",
+ sup_last:"Last result: {d} – {s} points",
+ sup_t_few:"Only {n} of {N} impulses detected. Each impulse needs a clear, short puff of air from the belly.", sup_t_many:"{n} instead of {N} impulses detected – probably double onsets. One impulse per light.",
+ sup_t_timing:"Impulses were on average {ms} ms off the beat. Watch the circle and start exactly when it lights up.",
+ sup_t_long:"This impulse was too long ({ms} ms) – that sounds like pushing from the throat. Short and springy, like a surprised “ha!”.",
+ sup_t_sep:"No clear gap between impulses. After each impulse release the belly completely – air flows back in by itself.",
+ sup_t_even:"The strength varied (± {v} dB). Make the impulses equally strong – the belly does the same work each time.",
+ sup_g_count:"All impulses detected ({n}).", sup_g_timing:"Well on the beat.", sup_g_sep:"Clear gaps – the belly springs back.", sup_g_even:"Even strength.",
+ sup_t_short:"Airflow only {s} s. Breathe deeper into the belly and release the air more sparingly and evenly.", sup_g_dur:"Good duration: {s} s.",
+ sup_t_wobble:"The airflow wobbled (± {v} dB). Pull the belly in slowly and evenly – not in bursts.", sup_g_steady:"Steady airflow (± {v} dB).",
+ sup_t_fade:"At the end the airflow dropped by {v} dB – the support gave up. Better to stop earlier than to squeeze out the last air from the throat.",
+ sup_g_louder:"With support {v} dB more carrying – without pushing.", sup_t_notlouder:"No audible gain with support. Breathe deeper, open the mouth more and think of a person 3 m away.",
+ sup_t_pitchup:"With support your voice was {v} Hz higher – a sign of throat tension. Keep the throat wide as in a yawn and stay at your normal pitch.", sup_g_pitch:"Your pitch stayed relaxed.",
+ sup_g_fade:"With support the voice fades less at the end of sentences.", sup_t_pressed:"The sound became brighter/harder – a sign of pressing in the throat. Less force, more breath and space.",
+ r_belly:"Voice from the belly"
+});
+Object.assign(T.fr,{
+ sup_title:"Soutien respiratoire : parler avec le ventre",
+ sup_desc:"« Parler avec le ventre » signifie que le diaphragme (muscle respiratoire en forme de dôme sous les poumons) et les abdominaux fournissent un souffle régulier – la voix porte et les mots sont nets sans que la gorge et le larynx poussent. Trois exercices mesurés, chacun avec enregistrement, réécoute et conseils. Idéalement après l'échauffement « Voix du ventre » (Accueil → Échauffements).",
+ sup_pulse:"Impulsions du diaphragme", sup_flow:"Souffle régulier", sup_ab:"Comparaison avant/après",
+ sup_pulse_how:"Main sur le ventre. Après le décompte (4 bips), à chaque fois que le cercle s'allume, un « ha » court et fort (ou sourd « f »/« ch ») – l'impulsion vient d'un petit coup du ventre vers l'intérieur, pas de la gorge. Entre les impulsions, tout relâcher : le ventre rebondit et l'air rentre tout seul. 8 impulsions. L'appli vérifie le nombre, le rythme, la brièveté (moins de 0,35 s), des pauses nettes et une force égale.",
+ sup_tempo:"Tempo (battements par minute)", sup_ready:"prêt", sup_start:"▶ Démarrer (4 bips de décompte)",
+ sup_flow_how:"Inspirez profondément dans le ventre, puis expirez sur un « ssss » léger et régulier (sans voix) aussi longtemps que c'est confortable. Rentrez lentement le ventre, épaules relâchées. Objectif : 15 s ou plus, aussi fort jusqu'à la fin. Puis touchez ■ Stop. L'appli mesure la durée, la régularité (variation en dB) et si le souffle faiblit à la fin.",
+ sup_ab_how:"Dites deux fois la même phrase : (A) comme d'habitude, (B) avec le soutien du ventre. L'appli compare intensité, hauteur, équilibre sonore, baisse en fin de phrase, mélodie et – si la reconnaissance vocale est disponible – la clarté.",
+ sup_ab1:"Enregistrement A – dites la phrase normalement :", sup_ab2:"Enregistrement B – maintenant avec le soutien du ventre :",
+ sup_ab2_cue:"Main sur le ventre. Inspirez profondément (le ventre sort, les épaules restent basses). En parlant, rentrez lentement le ventre, ouvrez davantage la bouche et parlez à quelqu'un à 3 m – sans pousser ni serrer.",
+ sup_A:"A normal", sup_B:"B soutenu", sup_bal:"Équilibre sonore", sup_fade:"Baisse en fin de phrase",
+ sup_bal_note:"Équilibre sonore = énergie sous 1 kHz par rapport à 1–4 kHz (en dB). Une valeur plus élevée sonne plus ronde et moins serrée. C'est une indication, pas une mesure médicale ; comparez seulement vos propres enregistrements à la même distance du téléphone.",
+ sup_count:"Nombre", sup_timing:"Rythme", sup_crisp:"Brièveté", sup_sep:"Pauses entre", sup_even:"Force égale",
+ sup_dur:"Durée", sup_steady:"Régularité", sup_end:"Soutien jusqu'au bout",
+ sup_last:"Dernier résultat : {d} – {s} points",
+ sup_t_few:"Seulement {n} impulsions sur {N} détectées. Chaque impulsion demande un petit souffle net venant du ventre.", sup_t_many:"{n} impulsions au lieu de {N} – sans doute des attaques doubles. Une impulsion par signal.",
+ sup_t_timing:"Les impulsions étaient en moyenne à {ms} ms du rythme. Regardez le cercle et partez exactement quand il s'allume.",
+ sup_t_long:"Cette impulsion était trop longue ({ms} ms) – cela ressemble à une poussée de la gorge. Courte et élastique, comme un « ha ! » surpris.",
+ sup_t_sep:"Pas de pause nette entre les impulsions. Après chaque impulsion, relâchez complètement le ventre – l'air rentre tout seul.",
+ sup_t_even:"La force variait (± {v} dB). Des impulsions égales – le ventre fait le même travail à chaque fois.",
+ sup_g_count:"Toutes les impulsions détectées ({n}).", sup_g_timing:"Bien dans le rythme.", sup_g_sep:"Pauses nettes – le ventre rebondit.", sup_g_even:"Force régulière.",
+ sup_t_short:"Souffle de {s} s seulement. Inspirez plus bas dans le ventre et libérez l'air plus économiquement et régulièrement.", sup_g_dur:"Bonne durée : {s} s.",
+ sup_t_wobble:"Le souffle variait (± {v} dB). Rentrez le ventre lentement et régulièrement – pas par à-coups.", sup_g_steady:"Souffle régulier (± {v} dB).",
+ sup_t_fade:"À la fin, le souffle a baissé de {v} dB – le soutien a lâché. Mieux vaut s'arrêter plus tôt que de pousser le reste d'air avec la gorge.",
+ sup_g_louder:"Avec soutien, {v} dB de portée en plus – sans pousser.", sup_t_notlouder:"Pas de gain audible avec le soutien. Inspirez plus bas, ouvrez davantage la bouche et pensez à une personne à 3 m.",
+ sup_t_pitchup:"Avec soutien, votre voix était {v} Hz plus aiguë – signe de tension dans la gorge. Gorge ouverte comme pour bâiller, restez à votre hauteur habituelle.", sup_g_pitch:"La hauteur est restée détendue.",
+ sup_g_fade:"Avec soutien, la voix baisse moins en fin de phrase.", sup_t_pressed:"Le son est devenu plus clair/dur – signe de serrage dans la gorge. Moins de force, plus de souffle et d'espace.",
+ r_belly:"Voix du ventre"
+});
+/* guided routine: voice from the belly */
+ROUTINES.push({name:{en:"Voice from the belly",de:"Stimme aus dem Bauch",fr:"Voix du ventre"}, steps:[
+ [60,{de:["Bauchatmung spüren","Rücklings liegen oder aufrecht sitzen, eine Hand auf dem Bauch, eine auf der Brust. Durch die Nase einatmen: nur die Bauchhand hebt sich. Langsam durch den Mund aus: der Bauch sinkt. Die Brusthand bleibt ruhig.","So spürst du, wo die Atmung für die Stimme stattfinden soll – unten, nicht oben in Brust und Schultern."],en:["Feel belly breathing","Lie on your back or sit upright, one hand on the belly, one on the chest. Breathe in through the nose: only the belly hand rises. Breathe out slowly through the mouth: the belly sinks. The chest hand stays still.","You feel where breathing for the voice should happen – low, not high in chest and shoulders."],fr:["Sentir la respiration abdominale","Allongé sur le dos ou assis droit, une main sur le ventre, une sur la poitrine. Inspirez par le nez : seule la main du ventre monte. Expirez lentement par la bouche : le ventre descend. La main de la poitrine ne bouge pas.","Vous sentez où doit se faire la respiration pour la voix – en bas, pas dans la poitrine et les épaules."]}],
+ [30,{de:["Hecheln","Mund leicht offen, schnell und flach hecheln wie ein Hund nach dem Laufen (etwa 2 pro Sekunde). Nur der Bauch bewegt sich, der Hals bleibt locker. Bei Schwindel sofort aufhören.","Aktiviert und lockert das Zwerchfell."],en:["Panting","Mouth slightly open, pant quickly and lightly like a dog after running (about 2 per second). Only the belly moves, the throat stays loose. Stop at once if you feel dizzy.","Activates and loosens the diaphragm."],fr:["Halètement","Bouche entrouverte, haletez vite et légèrement comme un chien après une course (environ 2 par seconde). Seul le ventre bouge, la gorge reste souple. Arrêtez tout de suite en cas de vertige.","Active et assouplit le diaphragme."]}],
+ [45,{de:["Zwerchfell-Impulse auf f","Kurze, kräftige „f – f – f – f“ wie beim Ausblasen einer Kerze. Jeder Impuls ist ein kleiner Ruck der Bauchdecke nach innen; dazwischen Bauch loslassen.","Trainiert den Bauch als Motor für den Luftstrom."],en:["Diaphragm impulses on f","Short, strong “f – f – f – f” like blowing out a candle. Each impulse is a small inward jerk of the belly wall; release the belly in between.","Trains the belly as the motor of the airflow."],fr:["Impulsions sur f","Des « f – f – f – f » courts et forts, comme pour souffler une bougie. Chaque impulsion est un petit coup du ventre vers l'intérieur ; entre deux, relâchez le ventre.","Entraîne le ventre comme moteur du souffle."]}],
+ [45,{de:["Impulse mit Stimme","Jetzt „ha – ha – ha“, „ho – ho – ho“, „hey!“ wie ein freundlicher Zuruf. Der Impuls kommt aus dem Bauch, die Kehle bleibt weit, kein Kratzen im Hals.","Verbindet Atemimpuls und Stimme ohne Pressen."],en:["Impulses with voice","Now “ha – ha – ha”, “ho – ho – ho”, “hey!” like a friendly call. The impulse comes from the belly, the throat stays wide, no scratching in the throat.","Connects breath impulse and voice without pushing."],fr:["Impulsions avec la voix","Maintenant « ha – ha – ha », « ho – ho – ho », « hé ! » comme un appel amical. L'impulsion vient du ventre, la gorge reste ouverte, sans gratter.","Relie l'impulsion respiratoire et la voix sans pousser."]}],
+ [45,{de:["Gähnen und weit werden","Ein Gähnen beginnen und den weiten Raum im Rachen spüren. Mit diesem Gefühl „hmm“ seufzen, dann „ja“, „nein“, „hallo“ sagen.","Senkt den Kehlkopf und nimmt Druck aus dem Hals."],en:["Yawn and widen","Start a yawn and feel the wide space in the throat. With that feeling sigh “hmm”, then say “yes”, “no”, “hello”.","Lowers the larynx and takes pressure off the throat."],fr:["Bâiller et ouvrir","Commencez un bâillement et sentez l'espace large dans la gorge. Avec cette sensation, soupirez « hmm », puis dites « oui », « non », « bonjour ».","Abaisse le larynx et enlève la pression de la gorge."]}],
+ [60,{de:["Summen mit Bauchstütze","Lippen locker zu, „mmmm“ in bequemer Tonlage summen, dabei den Bauch langsam einziehen. Hand auf Brustbein und Gesicht: das Vibrieren spüren. Dann öffnen: „mmm-ma, mmm-mo, mmm-mu“.","Lenkt den Klang nach vorne in den Gesichtsraum (Resonanz) statt in den Hals."],en:["Humming with belly support","Lips loosely closed, hum “mmmm” at a comfortable pitch while slowly pulling the belly in. Hands on breastbone and face: feel the vibration. Then open: “mmm-ma, mmm-mo, mmm-moo”.","Moves the sound forward into the face (resonance) instead of the throat."],fr:["Fredonner avec le ventre","Lèvres fermées sans serrer, fredonnez « mmmm » à hauteur confortable en rentrant lentement le ventre. Mains sur le sternum et le visage : sentez la vibration. Puis ouvrez : « mmm-ma, mmm-mo, mmm-mou ».","Place le son vers l'avant, dans le visage (résonance), plutôt que dans la gorge."]}],
+ [60,{de:["Zählen mit Stütze","Einatmen in den Bauch, dann auf einem Atem langsam und deutlich zählen: „eins, zwei, drei …“. Bei jeder Zahl gibt der Bauch einen kleinen Impuls. Aufhören, bevor es im Hals eng wird.","Überträgt die Stütze auf die Sprache."],en:["Counting with support","Breathe into the belly, then count slowly and clearly on one breath: “one, two, three…”. With each number the belly gives a small impulse. Stop before the throat gets tight.","Transfers support to speech."],fr:["Compter avec soutien","Inspirez dans le ventre, puis comptez lentement et nettement sur un souffle : « un, deux, trois… ». À chaque nombre, le ventre donne une petite impulsion. Arrêtez avant que la gorge se serre.","Transfère le soutien vers la parole."]}],
+ [60,{de:["Satz mit Bauchstütze","„Heute spreche ich ruhig, klar und kraftvoll.“ – dreimal: leise, normal, tragfähig in den Raum. Die Lautstärke kommt aus dem Bauch, nicht aus mehr Druck im Hals. Danach im Atem-Tab den Vorher/Nachher-Vergleich machen.","Festigt das neue Gefühl im Sprechen."],en:["Sentence with support","“Today I speak calmly, clearly and with energy.” – three times: quiet, normal, carrying into the room. Volume comes from the belly, not from more pressure in the throat. Then do the before/after comparison in the Breath tab.","Anchors the new feeling in speech."],fr:["Phrase avec soutien","« Aujourd'hui, je parle calmement, clairement et avec énergie. » – trois fois : doucement, normalement, en portant la voix dans la pièce. Le volume vient du ventre, pas d'une pression accrue dans la gorge. Ensuite, faites la comparaison avant/après dans l'onglet Souffle.","Ancre la nouvelle sensation dans la parole."]}]
+]});
+FOCUS_DRILL.projection="support";
 
 "use strict";
 /* ============================================================
@@ -2184,6 +2289,118 @@ function practiceOne(idx,card){
   },0.8);
 }
 
+/* ================= breath support ("speak from the belly") – measured drills (v3.3) ================= */
+const SUP_SENT={de:"Heute spreche ich ruhig, klar und kraftvoll – meine Stimme kommt aus dem Bauch.",
+ en:"Today I speak calmly, clearly and with energy – my voice comes from my belly.",
+ fr:"Aujourd'hui, je parle calmement, clairement et avec énergie – ma voix vient du ventre."};
+/* frame energies (10 ms) for any sound incl. voiceless fricatives */
+function frameDb(pcm){ const hop=160,N=Math.floor(pcm.length/hop),db=new Float32Array(N); for(let i=0;i<N;i++){ let s=0; for(let j=i*hop;j<i*hop+hop;j++) s+=pcm[j]*pcm[j]; db[i]=10*Math.log10(s/hop+1e-10); } return db; }
+/* spectral balance: low band (<1 kHz) vs high band (1–4 kHz) energy on voiced frames, dB. Higher = darker / less pressed. Heuristic only. */
+function spectralBalance(pcm,an){
+  if(!an||!an.ok) return null; const S=an.series; let lo=0,hi=0,yl=0,yh=0,px=0; const al=1-Math.exp(-2*Math.PI*1000/16000), ah=Math.exp(-2*Math.PI*1000/16000), a4=1-Math.exp(-2*Math.PI*4000/16000); let h4=0;
+  for(let i=0;i<pcm.length;i++){ yl+=al*(pcm[i]-yl); yh=ah*(yh+pcm[i]-px); px=pcm[i]; h4+=a4*(yh-h4); const k=Math.floor(i/320); if(S.f0[k]>0){ lo+=yl*yl; hi+=h4*h4; } }
+  return hi>0?10*Math.log10(lo/hi):null; }
+
+let SUP={ex:"pulse",tempo:80};
+function renderSupport(){
+  const card=$("#supCard"); if(!card) return;
+  chipSet($("#supEx"),[["pulse",t("sup_pulse")],["flow",t("sup_flow")],["ab",t("sup_ab")]],SUP.ex,v=>{ SUP.ex=v; $("#supOut").innerHTML=""; renderSupport(); });
+  const b=$("#supBody"); b.innerHTML="";
+  const last=(store.support||[]).filter(x=>x.ex===SUP.ex).slice(-1)[0];
+  if(SUP.ex==="pulse"){
+    b.innerHTML=`<p class="muted">${t("sup_pulse_how")}</p><div class="row"><span class="muted">${t("sup_tempo")}:</span><div class="chips" id="supTempo"></div></div>
+      <div class="beatdot" id="supBeat">${t("sup_ready")}</div><div id="supRec"></div>`;
+    chipSet($("#supTempo"),[[60,"60"],[80,"80"],[100,"100"]],SUP.tempo,v=>{ SUP.tempo=+v; renderSupport(); });
+    pulseControls($("#supRec"));
+  } else if(SUP.ex==="flow"){
+    b.innerHTML=`<p class="muted">${t("sup_flow_how")}</p><div class="huge" style="font-size:2rem">ssssssss…</div><div id="supRec"></div>`;
+    recControls($("#supRec"),{maxSec:45,onDone:r=>flowDone(r)});
+  } else {
+    b.innerHTML=`<p class="muted">${t("sup_ab_how")}</p><div class="card flat" style="font-size:1.1rem">${esc(SUP_SENT[SET.tl])}</div><div id="supAB"></div>`;
+    abStep(1);
+  }
+  if(last) b.append(el("p",{class:"muted"},t("sup_last",{d:last.d,s:last.score})));
+}
+/* ---- 1) diaphragm impulses ---- */
+function pulseControls(box){
+  const N=8; box.innerHTML=`<button class="b warm" style="width:100%" id="supGo">${t("sup_start")}</button>`;
+  $("#supGo").onclick=async()=>{
+    const per=60/SUP.tempo, dot=$("#supBeat"); $("#supGo").disabled=true; ac(); keepAwake(true);
+    for(let k=4;k>=1;k--){ dot.textContent=k; dot.classList.add("on"); beep(k===1?1100:800,.08,.15); await new Promise(r=>setTimeout(r,per*500)); dot.classList.remove("on"); await new Promise(r=>setTimeout(r,per*500)); }
+    let take; try{ take=await startTake({}); }catch(e){ micError(e); $("#supGo").disabled=false; return; }
+    const t0=performance.now(), lead=0.4; dot.textContent="";
+    for(let k=0;k<N;k++){ const due=t0+(lead+k*per)*1000; setTimeout(()=>{ dot.textContent=k+1; dot.classList.add("on"); try{ navigator.vibrate&&navigator.vibrate(40); }catch(e){} setTimeout(()=>dot.classList.remove("on"),150); },Math.max(0,due-performance.now())); }
+    setTimeout(async()=>{ dot.textContent="…"; const r=await take.stop(); keepAwake(false); dot.textContent=t("sup_ready"); $("#supGo").disabled=false; pulseDone(r,lead,per,N); },(lead+N*per+0.8)*1000);
+  };
+}
+function pulseDone(r,lead,per,N){
+  const db=frameDb(r.pcm), floor=pctl(db,0.1), peak=pctl(db,0.99), thr=floor+Math.max(10,0.4*(peak-floor));
+  const pulses=[]; for(let i=0;i<db.length;){ if(db[i]>thr){ let j=i,mx=-200; while(j<db.length&&db[j]>thr-3){ mx=Math.max(mx,db[j]); j++; } if(j-i>=3) pulses.push({s:i/100,e:j/100,d:(j-i)/100,pk:mx}); i=j+8; } else i++; }
+  const beats=[...Array(N)].map((_,k)=>lead+k*per), errs=pulses.map(p=>Math.min(...beats.map(b=>Math.abs(p.s-b))));
+  const nScore=Math.max(0,1-Math.abs(pulses.length-N)/N), meanErr=errs.length?errs.reduce((a,b)=>a+b,0)/errs.length:per;
+  const timing=Math.max(0,1-meanErr/(per*0.5)), longP=pulses.filter(p=>p.d>0.35).length, crisp=pulses.length?1-longP/pulses.length:0;
+  let gaps=0; for(let k=1;k<pulses.length;k++){ let mn=200; for(let i=Math.round(pulses[k-1].e*100);i<Math.round(pulses[k].s*100);i++) mn=Math.min(mn,db[i]); if(pulses[k-1].pk-mn>=15) gaps++; }
+  const sep=pulses.length>1?gaps/(pulses.length-1):0, pk=pulses.map(p=>p.pk), m=pk.reduce((a,b)=>a+b,0)/(pk.length||1), sd=Math.sqrt(pk.reduce((a,b)=>a+(b-m)*(b-m),0)/(pk.length||1)), even=pulses.length?Math.max(0,Math.min(1,1-(sd-2)/6)):0;
+  const scores={sup_count:nScore,sup_timing:timing,sup_crisp:crisp,sup_sep:sep,sup_even:even}, score=Math.round(100*Object.values(scores).reduce((a,b)=>a+b,0)/5);
+  const fix=[],good=[];
+  if(pulses.length<N) fix.push({txt:t("sup_t_few",{n:pulses.length,N})}); else if(pulses.length>N) fix.push({txt:t("sup_t_many",{n:pulses.length,N})}); else good.push(t("sup_g_count",{n:pulses.length}));
+  if(timing<0.7) fix.push({txt:t("sup_t_timing",{ms:Math.round(meanErr*1000)})}); else good.push(t("sup_g_timing"));
+  pulses.filter(p=>p.d>0.35).slice(0,2).forEach(p=>fix.push({t:p.s,txt:t("sup_t_long",{ms:Math.round(p.d*1000)})}));
+  if(sep<0.7) fix.push({txt:t("sup_t_sep")}); else good.push(t("sup_g_sep"));
+  if(even<0.7) fix.push({txt:t("sup_t_even",{v:(Math.round(sd*10)/10).toLocaleString(SET.ui)})}); else good.push(t("sup_g_even"));
+  supResult({r,an:analyze(r.pcm,{minSpeech:20}),fix,good,scores,score,ex:"pulse",title:t("sup_pulse")+" "+SUP.tempo+" bpm"});
+}
+/* ---- 2) steady airflow on "ssss" ---- */
+function flowDone(r){
+  const db=frameDb(r.pcm), floor=pctl(db,0.1), peak=pctl(db,0.98), thr=floor+Math.max(8,0.35*(peak-floor));
+  let best={s:0,e:0}; for(let i=0;i<db.length;){ if(db[i]>thr){ let j=i,gap=0; while(j<db.length&&(db[j]>thr||gap<15)){ gap=db[j]>thr?0:gap+1; j++; } j-=gap; if(j-i>best.e-best.s) best={s:i,e:j}; i=j+1; } else i++; }
+  const dur=(best.e-best.s)/100, seg=Array.from(db.slice(best.s,best.e)).filter(v=>v>thr-6);
+  const core=seg.slice(Math.floor(seg.length*0.1),Math.floor(seg.length*0.9)), m=core.reduce((a,b)=>a+b,0)/(core.length||1), sd=Math.sqrt(core.reduce((a,b)=>a+(b-m)*(b-m),0)/(core.length||1));
+  const raw=Array.from(db.slice(best.s,best.e)), half=raw.slice(0,Math.floor(raw.length/2)), tail=raw.slice(-Math.max(20,Math.floor(raw.length*0.15))), avg=a=>a.reduce((x,y)=>x+y,0)/(a.length||1), drop=avg(half)-avg(tail);
+  const dS=Math.min(1,dur/15), stS=Math.max(0,Math.min(1,1-(sd-1.5)/4)), endS=Math.max(0,Math.min(1,1-(drop-3)/9));
+  const scores={sup_dur:dS,sup_steady:stS,sup_end:endS}, score=Math.round(100*(0.5*dS+0.3*stS+0.2*endS)), f1=x=>(Math.round(x*10)/10).toLocaleString(SET.ui);
+  const fix=[],good=[];
+  if(dur<10) fix.push({txt:t("sup_t_short",{s:f1(dur)})}); else good.push(t("sup_g_dur",{s:f1(dur)}));
+  if(sd>3) fix.push({txt:t("sup_t_wobble",{v:f1(sd)})}); else good.push(t("sup_g_steady",{v:f1(sd)}));
+  if(drop>6) fix.push({t:best.e/100-2,txt:t("sup_t_fade",{v:f1(drop)})});
+  supResult({r,an:analyze(r.pcm,{minSpeech:20}),fix,good,scores,score,ex:"flow",title:t("sup_flow"),extra:`<p><b>${t("sup_dur")}:</b> ${f1(dur)} s · <b>${t("sup_steady")}:</b> ${f1(sd)} dB</p>`});
+}
+/* ---- 3) A/B comparison: normal vs. with belly support ---- */
+let AB={};
+function abStep(n){
+  const box=$("#supAB"); box.innerHTML=`<p><b>${n===1?t("sup_ab1"):t("sup_ab2")}</b></p>${n===2?`<div class="okbox">${t("sup_ab2_cue")}</div>`:""}<div id="abRec"></div>`;
+  recControls($("#abRec"),{lang:srLang(),maxSec:30,onDone:r=>{ const an=analyze(r.pcm); AB[n]={r,an,bal:spectralBalance(r.pcm,an),tips:makeTips(an,{sr:r.sr.text?r.sr:null,expected:SUP_SENT[SET.tl]})}; if(n===1) abStep(2); else abDone(); }});
+}
+function abDone(){
+  const A=AB[1],B=AB[2], f1=x=>x==null?"–":(Math.round(x*10)/10).toLocaleString(SET.ui);
+  if(!A.an.ok||!B.an.ok){ supResult({r:B.r,an:B.an,fix:[{txt:t("tip_short")}],good:[],scores:{},score:0,ex:"ab",title:t("sup_ab")}); return; }
+  const cA=A.tips.scores.clarity, cB=B.tips.scores.clarity, trA=A.an.trail.length, trB=B.an.trail.length;
+  const rows=[[t("m_loud"),f1(A.an.meanDb)+" dBFS",f1(B.an.meanDb)+" dBFS",B.an.meanDb-A.an.meanDb>=1.5],
+    [t("m_pitch"),Math.round(A.an.f0med)+" Hz",Math.round(B.an.f0med)+" Hz",B.an.f0med<=A.an.f0med*1.03],
+    [t("sup_bal"),f1(A.bal)+" dB",f1(B.bal)+" dB",B.bal!=null&&A.bal!=null&&B.bal>=A.bal+0.5],
+    [t("sup_fade"),trA,trB,trB<=trA],
+    [t("d_melody"),f1(A.an.sdSt),f1(B.an.sdSt),B.an.sdSt>=A.an.sdSt-0.2]];
+  if(cA!=null&&cB!=null) rows.push([t("d_clarity"),Math.round(cA*100)+" %",Math.round(cB*100)+" %",cB>=cA]);
+  const better=rows.filter(r=>r[3]).length, score=Math.round(100*better/rows.length);
+  const fix=[],good=[];
+  if(B.an.meanDb-A.an.meanDb>=1.5) good.push(t("sup_g_louder",{v:f1(B.an.meanDb-A.an.meanDb)})); else fix.push({txt:t("sup_t_notlouder")});
+  if(B.an.f0med>A.an.f0med*1.08) fix.push({txt:t("sup_t_pitchup",{v:Math.round(B.an.f0med-A.an.f0med)})}); else good.push(t("sup_g_pitch"));
+  if(trB>trA) fix.push({txt:t("tip_trail")}); else if(trA>0&&trB<trA) good.push(t("sup_g_fade"));
+  if(B.bal!=null&&A.bal!=null&&B.bal<A.bal-1) fix.push({txt:t("sup_t_pressed")});
+  const extra=`<table style="margin:8px 0"><tr><th></th><th>${t("sup_A")}</th><th>${t("sup_B")}</th><th></th></tr>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td><b>${r[2]}</b></td><td>${r[3]?"✓":"–"}</td></tr>`).join("")}</table>
+    <p class="muted" style="font-size:.78rem">${t("sup_bal_note")}</p>`;
+  const o=supResult({r:B.r,an:B.an,fix,good,scores:{},score,ex:"ab",title:t("sup_ab"),extra});
+  const det=el("details",{},`<summary>${t("sup_A")}</summary>`); det.append(replayView({blob:A.r.blob,an:A.an,tips:A.tips})); o.append(det);
+}
+function supResult({r,an,fix,good,scores,score,ex,title,extra=""}){
+  const sc={}; for(const k in scores) sc[k]=scores[k];
+  const take={blob:r.blob,an,tips:{fix,good},scores:null,score,kind:"support-"+ex,title,lang:SET.tl};
+  const bars=Object.keys(sc).map(k=>{ const v=sc[k]; return `<div class="sc"><span>${t(k)}</span><div class="bar"><i style="width:${Math.round(v*100)}%;background:${v>=.8?'var(--ok)':v>=.5?'var(--accent2)':'var(--warn)'}"></i></div><b>${Math.round(v*100)}</b></div>`; }).join("");
+  store.support=(store.support||[]); store.support.push({d:today(),t:Date.now(),ex,score}); store.support=store.support.slice(-200); save();
+  markPlan("drill","support"); logSession(title,1);
+  const o=$("#supOut"); o.innerHTML=""; const v=replayView(take,{onSave:()=>saveTake(take),extra:bars+extra}); o.append(v); return o;
+}
+
 /* ================= v3: plan, lessons, voice test, studio, drills, library ================= */
 const DIMS6=["pace","pauses","melody","projection","clarity","fluency"];
 const srLang=()=> (!srBroken && store.flags.conc!==false && SET.mode!=="rec") ? SET.tl : null;
@@ -2208,7 +2425,7 @@ function markPlan(k,x){ const p=planFor(today()); let ch=false;
   p.items.forEach((it,i)=>{ if(p.done[i]||it.k!==k) return; if(k==="drill"&&it.act!==x) return; if(k==="lesson"&&x&&it.id!==x) return; p.done[i]=true; ch=true; });
   if(ch){ save(); renderPlan(); const n=Object.keys(p.done).length; if(n===p.items.length){ beep(1320,.3,.12); toast("🎉 "+t("plan_done",{d:n,n:p.items.length})); } } }
 const lessonOf=id=>LESSONS.find(l=>l.id===id);
-const drillName=act=>act.startsWith("lesson:")?lessonOf(act.slice(7)).txt[SET.ui][0]:({pace:t("read_title"),into:t("into_title"),proj:t("proj_title"),art:t("art_title"),imp:t("imp_title"),studio:t("studio_title")}[act]||act);
+const drillName=act=>act.startsWith("lesson:")?lessonOf(act.slice(7)).txt[SET.ui][0]:({pace:t("read_title"),into:t("into_title"),proj:t("proj_title"),art:t("art_title"),imp:t("imp_title"),studio:t("studio_title"),support:t("sup_title")}[act]||act);
 function planLabel(it){
   const sc=id=>SCENES.find(s=>s.id===id);
   switch(it.k){
@@ -2226,6 +2443,7 @@ function planGo(it){
       if(a==="pace"){ show("speech"); scrollToId("paceCard"); }
       else if(a==="into"){ show("voice"); scrollToId("intoCard"); }
       else if(a==="proj"){ show("voice"); scrollToId("projCard"); }
+      else if(a==="support"){ show("breath"); scrollToId("supCard"); }
       else if(a==="imp"){ show("talk"); scrollToId("impCard"); }
       else if(a==="art"){ show("speech"); const ks=Object.keys(ART[SET.tl]); SP.snd=ks.slice().sort((x,y)=>artStats(SET.tl,x).p-artStats(SET.tl,y).p)[0]; SP.idx=0; renderSpeech(); scrollToId("artCard"); }
       else if(a.startsWith("lesson:")){ openLesson(a.slice(7)); }
@@ -2393,7 +2611,7 @@ window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); deferredI
 $("#installBtn").onclick=async()=>{ if(!deferredInstall) return; deferredInstall.prompt(); try{ await deferredInstall.userChoice; }catch(e){} deferredInstall=null; $("#installBtn").classList.add("hidden"); };
 
 /* ---------- re-render everything that depends on language / mode ---------- */
-function renderV3(){ renderPlan(); renderLessons(); renderTest(); renderStudioPrompts(); renderStudio(); renderInto(); renderProj(); renderImpRec(); renderTwRec(); }
+function renderV3(){ renderPlan(); renderLessons(); renderTest(); renderStudioPrompts(); renderStudio(); renderInto(); renderProj(); renderImpRec(); renderTwRec(); renderSupport(); }
 
 /* ================= init ================= */
 applyI18n(); nextPair();
