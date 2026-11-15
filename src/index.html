@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14322f">
+<meta name="mobile-web-app-capable" content="yes">
+<title>VoiceCoach – Speech, Voice &amp; Communication Trainer</title>
+<!--MANIFEST-->
+<style>
+:root{--bg:#f4f1ea;--card:#fffdf8;--ink:#1d2421;--muted:#5f6b66;--line:#ded8cb;--accent:#1f6f63;--accent2:#c8643b;--soft:#e4efe9;--warn:#b3412e;--ok:#2f8a4d;--r:16px}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1715;--card:#17211e;--ink:#e8eee9;--muted:#9aa9a3;--line:#2a3833;--accent:#5cc2ad;--accent2:#e88a5f;--soft:#1d2e29;--warn:#ee7a65;--ok:#6bcf8a}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(env(safe-area-inset-top) + 10px) 14px 8px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+header h1{font-size:1.15rem;margin:0;flex:1}
+header .badge{font-size:.78rem;color:var(--muted)}
+.pill{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:6px 10px;font-size:.8rem}
+main{padding:12px 12px calc(96px + env(safe-area-inset-bottom));max-width:720px;margin:0 auto}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:6;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(6,1fr);padding-bottom:env(safe-area-inset-bottom)}
+nav button{background:none;border:0;color:var(--muted);padding:8px 1px 9px;font-size:.66rem;display:flex;flex-direction:column;align-items:center;gap:3px}
+nav button svg{width:22px;height:22px}
+nav button.on{color:var(--accent);font-weight:700}
+section.view{display:none} section.view.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:0 0 12px}
+.card.flat{background:var(--soft);border:0}
+.card h2{font-size:1.05rem;margin:0 0 6px} .card h3{font-size:.95rem;margin:12px 0 6px}
+p{margin:6px 0} .muted{color:var(--muted);font-size:.88rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center} .grow{flex:1}
+button.b{border:0;border-radius:12px;padding:11px 14px;font-size:.95rem;font-weight:600;background:var(--accent);color:#fff;min-height:46px}
+button.b.alt{background:var(--soft);color:var(--ink)} button.b.warm{background:var(--accent2)}
+button.b.sm{padding:7px 11px;min-height:36px;font-size:.84rem} button.b:disabled{opacity:.4}
+button.b.full{width:100%;text-align:left;margin:4px 0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:7px 12px;font-size:.85rem}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+select{font:inherit;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);max-width:100%}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.big{font-size:2.5rem;font-weight:700;text-align:center;margin:6px 0;font-variant-numeric:tabular-nums}
+.huge{font-size:2.1rem;font-weight:700;text-align:center;padding:20px 8px;min-height:100px;display:flex;align-items:center;justify-content:center;line-height:1.25}
+.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.stat div{background:var(--soft);border-radius:12px;padding:9px 4px;text-align:center}
+.stat b{display:block;font-size:1.3rem} .stat span{font-size:.7rem;color:var(--muted)}
+details{border-top:1px solid var(--line);padding:8px 0} details summary{cursor:pointer;font-weight:600}
+dl dt{font-weight:700;margin-top:8px} dl dd{margin:2px 0 0;color:var(--muted);font-size:.9rem}
+.warnbox{border-left:4px solid var(--warn);background:var(--soft);padding:10px 12px;border-radius:8px;font-size:.87rem}
+.okbox{border-left:4px solid var(--ok);background:var(--soft);padding:10px 12px;border-radius:8px;font-size:.9rem}
+canvas{width:100%;display:block;border-radius:12px;background:var(--soft)}
+.meter{height:20px;border-radius:10px;background:var(--soft);overflow:hidden;position:relative}
+.meter i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--ok),var(--accent2),var(--warn));width:0}
+.meter u{position:absolute;top:0;bottom:0;border-left:2px dashed var(--ink);opacity:.5}
+.bar{height:10px;border-radius:5px;background:var(--line);overflow:hidden;margin:4px 0}
+.bar i{display:block;height:100%;background:var(--accent)}
+.breath{width:210px;height:210px;margin:10px auto;position:relative;display:flex;align-items:center;justify-content:center}
+.breath .ring{position:absolute;inset:0;border-radius:50%;border:2px dashed var(--line)}
+.breath .ball{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 40% 35%,var(--accent),#0d4a41);transform:scale(.35);opacity:.9}
+.breath .lbl{position:absolute;color:#fff;font-weight:700;text-align:center;font-size:1.05rem;text-shadow:0 1px 3px rgba(0,0,0,.45)}
+.reader{font-size:1.25rem;line-height:1.7} .reader span{padding:1px 2px;border-radius:5px}
+.reader span.now{background:var(--accent2);color:#fff} .reader span.done{color:var(--muted)}
+.list{margin:0;padding-left:18px} .list li{margin:3px 0}
+.step{display:flex;gap:5px;margin:8px 0} .step i{flex:1;height:6px;border-radius:3px;background:var(--line)} .step i.d{background:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:.82rem} td,th{border-bottom:1px solid var(--line);padding:5px 3px;text-align:left;vertical-align:top}
+.tap{width:100%;min-height:110px;font-size:1.5rem;border-radius:20px}
+.hidden{display:none!important}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:12px;font-size:.88rem;opacity:0;transition:opacity .25s;pointer-events:none;z-index:20;max-width:90vw}
+.toast.on{opacity:1}
+.cents{position:relative;height:34px;background:var(--soft);border-radius:10px;margin:6px 0}
+.cents b{position:absolute;top:4px;bottom:4px;width:6px;border-radius:3px;background:var(--accent2);left:50%;transform:translateX(-3px)}
+.cents::after{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:2px solid var(--ok)}
+.cents .z{position:absolute;left:40%;right:40%;top:0;bottom:0;background:rgba(47,138,77,.18)}
+.bubble{border-radius:16px;padding:12px 14px;margin:8px 0;font-size:1.05rem;line-height:1.4}
+.bubble.them{background:var(--soft);border-top-left-radius:4px;margin-right:24px}
+.bubble.me{background:var(--accent);color:#fff;border-top-right-radius:4px;margin-left:24px}
+.tag{display:inline-block;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--soft);color:var(--ink);margin-right:4px;vertical-align:middle}
+.tag.ok{background:var(--ok);color:#fff} .tag.due{background:var(--accent2);color:#fff} .tag.lock{opacity:.5}
+.kp{display:inline-block;margin:3px 4px 3px 0;padding:4px 10px;border-radius:99px;border:1px dashed var(--accent);font-size:.88rem}
+.kp.hit{background:var(--ok);border:1px solid var(--ok);color:#fff} .kp.miss{border-color:var(--warn);color:var(--warn)}
+.sc{display:grid;grid-template-columns:110px 1fr 40px;gap:6px;align-items:center;font-size:.85rem;margin:3px 0}
+.scorebig{font-size:2.6rem;font-weight:800;text-align:center}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:15;display:flex;align-items:flex-end;justify-content:center}
+.sheet .card{width:100%;max-width:720px;margin:0;border-radius:20px 20px 0 0;padding-bottom:calc(18px + env(safe-area-inset-bottom));max-height:85vh;overflow:auto}
+.rate-row{margin:8px 0} .rate-row .chips{margin:3px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>VoiceCoach</h1>
+  <span class="badge" id="streakBadge"></span>
+  <button class="pill" id="setBtn">⚙ <span id="setSummary"></span></button>
+</header>
+
+<div class="sheet hidden" id="settings"><div class="card">
+  <h2 data-t="set_title"></h2>
+  <h3 data-t="set_ui"></h3><div class="chips" id="setUi"></div>
+  <h3 data-t="set_train"></h3><div class="chips" id="setTl"></div>
+  <h3 data-t="set_ctx"></h3><div class="chips" id="setCtx"></div>
+  <h3><span data-t="set_rate"></span>: <span id="rateVal"></span></h3>
+  <input type="range" id="setRate" min="0.6" max="1.3" step="0.05">
+  <div class="row" style="margin-top:12px"><span class="grow"></span><button class="b" id="setClose" data-t="set_close"></button></div>
+</div></div>
+
+<main>
+<!-- TODAY -->
+<section class="view on" id="v-today">
+  <div class="card"><h2 data-t="due_title"></h2><div id="dueList"></div></div>
+  <div class="card"><h2 data-t="next_title"></h2><div id="nextBox"></div></div>
+  <div class="card">
+    <h2 data-t="week_title"></h2>
+    <div class="stat">
+      <div><b id="stSessions">0</b><span data-t="st_sessions"></span></div>
+      <div><b id="stMinutes">0</b><span data-t="st_minutes"></span></div>
+      <div><b id="stStreak">0</b><span data-t="st_streak"></span></div>
+      <div><b id="stDue">0</b><span data-t="st_due"></span></div>
+    </div>
+    <p class="muted" data-t="week_note"></p>
+  </div>
+  <div class="card"><h2 data-t="routines_title"></h2><p class="muted" data-t="routines_desc"></p><div id="routineList"></div></div>
+  <div class="card hidden" id="routinePlayer">
+    <div class="row"><b class="grow" id="rpTitle"></b><button class="b sm alt" id="rpClose" data-t="close"></button></div>
+    <div class="step" id="rpSteps"></div>
+    <h2 id="rpStepTitle" style="margin-top:8px"></h2>
+    <p id="rpStepText"></p><p class="muted" id="rpStepWhy"></p>
+    <div class="big" id="rpTime">0:00</div>
+    <div class="row"><button class="b alt grow" id="rpPrev" data-t="back"></button><button class="b grow" id="rpPlay" data-t="startb"></button><button class="b alt grow" id="rpNext" data-t="next"></button></div>
+  </div>
+  <div class="card"><h2 data-t="howto_title"></h2><div data-t="howto_html"></div><div class="warnbox" data-t="warn_html" style="margin-top:10px"></div></div>
+  <div class="card"><details><summary data-t="gloss_title"></summary><dl id="glossary"></dl></details></div>
+</section>
+
+<!-- TALK -->
+<section class="view" id="v-talk">
+  <div id="convList">
+    <div class="card">
+      <h2 data-t="talk_title"></h2>
+      <p class="muted" data-t="talk_desc"></p>
+      <div class="chips" id="talkCtx"></div>
+      <div class="chips" id="talkTl"></div>
+      <details><summary data-t="grading_title"></summary><div data-t="grading_html" class="muted"></div></details>
+    </div>
+    <div id="sceneList"></div>
+    <div class="card">
+      <h2 data-t="imp_title"></h2><p class="muted" data-t="imp_desc"></p>
+      <div class="huge" id="topicBox" style="font-size:1.3rem"></div>
+      <div class="chips" id="topicDur"></div>
+      <div class="big" id="topicTime">1:00</div>
+      <div class="row"><button class="b alt grow" id="topicNew" data-t="imp_new"></button><button class="b grow" id="topicStart" data-t="startb"></button></div>
+    </div>
+    <div class="card">
+      <h2 data-t="filler_title"></h2><p class="muted" data-t="filler_desc"></p>
+      <button class="b warm tap" id="fillTap"></button>
+      <div class="row" style="margin-top:8px"><span class="grow"><span data-t="time"></span>: <b id="fillTime">0:00</b> · <b id="fillRate">–</b> <span data-t="per_min"></span></span>
+        <button class="b alt sm" id="fillStart" data-t="start_timer"></button><button class="b alt sm" id="fillSave" data-t="save"></button></div>
+    </div>
+  </div>
+
+  <div id="convPlayer" class="hidden">
+    <div class="card">
+      <div class="row"><b class="grow" id="cpTitle"></b><button class="b sm alt" id="cpClose" data-t="close"></button></div>
+      <div class="muted" id="cpLevel"></div>
+      <div class="step" id="cpSteps"></div>
+      <div id="cpBody"></div>
+    </div>
+  </div>
+</section>
+
+<!-- SPEECH -->
+<section class="view" id="v-speech">
+  <div class="card">
+    <div class="row"><h2 class="grow" style="margin:0" data-t="art_title"></h2><div class="chips" id="speechTl"></div></div>
+    <p class="muted" data-t="art_desc"></p>
+    <div class="chips" id="soundChips"></div>
+    <div class="chips" id="posChips"></div>
+    <p class="muted" id="soundTip"></p>
+    <div class="card flat">
+      <div class="huge" id="drillWord">–</div>
+      <p class="muted" id="drillHeard" style="text-align:center;min-height:1.2em"></p>
+      <div class="row">
+        <button class="b alt" id="drillPrev">◀</button>
+        <button class="b grow" id="drillCheck" data-t="art_check"></button>
+        <button class="b alt" id="drillOk" style="background:var(--ok);color:#fff">✓</button>
+        <button class="b alt" id="drillBad" style="background:var(--warn);color:#fff">✗</button>
+        <button class="b alt" id="drillNext">▶</button>
+      </div>
+      <div class="bar" style="margin-top:10px"><i id="artBar" style="width:0"></i></div>
+      <p class="muted" id="artMastery"></p>
+      <p class="muted" id="drillCount"></p>
+    </div>
+  </div>
+  <div class="card">
+    <h2 data-t="pairs_title"></h2><p class="muted" data-t="pairs_desc"></p>
+    <div class="huge" id="pairBox">–</div>
+    <div class="row"><button class="b grow" id="pairNext" data-t="pairs_new"></button><button class="b alt grow" id="pairPick" data-t="pairs_pick"></button></div>
+    <p class="muted" id="pairPicked"></p>
+  </div>
+  <div class="card">
+    <h2 data-t="tw_title"></h2><p class="muted" data-t="tw_desc"></p>
+    <select id="twSelect" style="width:100%"></select>
+    <div class="reader card" id="twReader" style="margin-top:10px"></div>
+    <label class="muted"><span data-t="speed"></span>: <span id="twWpmVal">60</span> WPM</label>
+    <input type="range" id="twWpm" min="30" max="200" step="5" value="60">
+    <div class="row"><label class="muted grow"><input type="checkbox" id="twClick"> <span data-t="metronome"></span></label><button class="b" id="twStart" data-t="startb"></button></div>
+  </div>
+  <div class="card">
+    <h2 data-t="read_title"></h2><p class="muted" data-t="read_desc"></p>
+    <select id="paceSelect" style="width:100%"></select>
+    <div class="reader card" id="paceReader" style="margin-top:10px"></div>
+    <label class="muted"><span data-t="speed"></span>: <span id="paceWpmVal">130</span> WPM</label>
+    <input type="range" id="paceWpm" min="60" max="200" step="5" value="130">
+    <div class="row"><span class="grow"></span><button class="b" id="paceStart" data-t="startb"></button></div>
+  </div>
+</section>
+
+<!-- VOICE -->
+<section class="view" id="v-voice">
+  <div class="card"><h2 data-t="mic_title"></h2><p class="muted" data-t="mic_desc"></p>
+    <button class="b" style="width:100%" id="micBtn" data-t="mic_on"></button>
+    <div class="warnbox hidden" id="micErr" style="margin-top:8px"></div></div>
+  <div class="card"><h2 data-t="pitch_title"></h2><p class="muted" data-t="pitch_desc"></p>
+    <div class="row"><div class="big grow" id="pitchHz">– Hz</div><div class="big grow" id="pitchNote">–</div></div>
+    <canvas id="pitchCanvas" height="170"></canvas><p class="muted" id="pitchStats"></p></div>
+  <div class="card"><h2 data-t="match_title"></h2><p class="muted" data-t="match_desc"></p>
+    <div class="row"><select id="targetNote" class="grow"></select><button class="b alt" id="playTarget" data-t="play"></button></div>
+    <div class="cents"><div class="z"></div><b id="centsMark"></b></div>
+    <div class="row muted"><span class="grow" data-t="too_low"></span><span id="centsTxt">–</span><span class="grow" style="text-align:right" data-t="too_high"></span></div>
+    <p class="muted"><span data-t="hold"></span>: <b id="holdTime">0.0 s</b> (<span data-t="best_lbl"></span> <b id="holdBest">0.0 s</b>)</p></div>
+  <div class="card"><h2 data-t="loud_title"></h2><p class="muted" data-t="loud_desc"></p>
+    <div class="meter"><i id="levelBar"></i><u id="levelThr"></u></div>
+    <div class="row" style="margin-top:6px"><span class="grow"><span data-t="level"></span>: <b id="levelDb">–</b></span><span><span data-t="steady"></span>: <b id="steady">–</b></span></div>
+    <label class="muted"><span data-t="threshold"></span>: <span id="thrVal">-45</span> dBFS</label>
+    <input type="range" id="thr" min="-70" max="-15" value="-45">
+    <div class="big" id="sustainTime">0.0 s</div>
+    <p class="muted"><span data-t="best_sustain"></span>: <b id="sustainBest">0.0 s</b> <button class="b alt sm" id="sustainSave" data-t="save_mpt"></button></p>
+    <p class="muted" data-t="steady_note"></p></div>
+  <div class="card"><h2 data-t="rec_title"></h2><p class="muted" data-t="rec_desc"></p>
+    <div class="row"><button class="b warm grow" id="recBtn" data-t="rec_btn"></button><span class="big" id="recTime" style="font-size:1.4rem">0:00</span></div>
+    <p class="muted"><span data-t="rec_sentence"></span> <i id="recSentence"></i></p><div id="takes"></div></div>
+</section>
+
+<!-- BREATH -->
+<section class="view" id="v-breath">
+  <div class="card"><h2 data-t="br_title"></h2><p class="muted" data-t="br_desc"></p>
+    <div class="chips" id="breathPresets"></div><p class="muted" id="breathDesc"></p>
+    <div class="breath"><div class="ring"></div><div class="ball" id="ball"></div><div class="lbl" id="ballLbl"></div></div>
+    <div class="row"><span class="muted grow"><span data-t="rounds"></span>: <b id="brRound">0</b> / <select id="brRounds"><option>4</option><option selected>6</option><option>8</option><option>10</option></select></span>
+      <button class="b" id="brStart" data-t="startb"></button></div></div>
+  <div class="card"><h2 data-t="mpt_title"></h2><p data-t="mpt_what"></p><p class="muted" data-t="mpt_how"></p>
+    <div class="big" id="mptTime">0.0 s</div>
+    <div class="row"><button class="b grow" id="mptBtn" data-t="startb"></button><button class="b alt" id="mptSave" data-t="save_best"></button></div>
+    <p class="muted" id="mptTries"></p></div>
+  <div class="card"><h2 data-t="sz_title"></h2><p data-t="sz_what"></p><p class="muted" data-t="sz_how"></p>
+    <div class="big" id="szTime">0.0 s</div>
+    <div class="row"><button class="b grow" id="sBtn"></button><button class="b warm grow" id="zBtn"></button></div>
+    <p id="szResult" class="muted"></p>
+    <div class="row"><button class="b alt sm" id="szSave" data-t="sz_save"></button><button class="b alt sm" id="szReset" data-t="sz_reset"></button></div></div>
+</section>
+
+<!-- PROGRESS -->
+<section class="view" id="v-progress">
+  <div class="card"><h2 id="prMastTitle"></h2><div id="prMastery"></div><p class="muted" data-t="pr_mastery_note"></p><div id="prLangTable"></div></div>
+  <div class="card"><h2 data-t="pr_scores"></h2><canvas id="scoreChart" height="170"></canvas><p class="muted" data-t="pr_scores_note"></p></div>
+  <div class="card"><h2 id="prArtTitle"></h2><div id="prArt"></div></div>
+  <div class="card"><h2 data-t="pr_meas"></h2><canvas id="measChart" height="150"></canvas><p class="muted" data-t="pr_meas_note"></p></div>
+  <div class="card"><h2 data-t="pr_hist"></h2><div id="logTable"></div>
+    <div class="row" style="margin-top:10px"><button class="b alt sm" id="logCopy" data-t="copy"></button><button class="b alt sm" id="logClear" data-t="clear"></button></div>
+    <div class="warnbox hidden" id="confirmClear" style="margin-top:10px"><p data-t="clear_q"></p>
+      <div class="row"><button class="b alt grow" id="ccNo" data-t="cancel"></button><button class="b grow" style="background:var(--warn)" id="ccYes" data-t="del"></button></div></div>
+    <p class="muted" id="storeNote"></p></div>
+</section>
+</main>
+
+<nav id="nav"></nav>
+<div class="toast" id="toast"></div>
+<!--SCRIPTS-->
+</body>
+</html>
