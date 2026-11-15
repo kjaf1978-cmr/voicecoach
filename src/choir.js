@@ -84,7 +84,7 @@ async function singSession({acc,targets,countIn=0,beat=0.6,total,onLive,onPhase,
   const c=ac(), pts=[]; let take, start=null;
   try{ take=await startTake({capture:false,onPitch:(f,sec,db)=>{ if(start===null||SESS.paused) return; const rel=c.currentTime-start; pts.push({t:rel,f:db>-58?f:0,db}); onLive&&onLive(f,rel,db); }}); }catch(e){ micError(e); toast(t("mic_fail")); return null; }
   AOUT=c.createGain(); AOUT.connect(c.destination); SESS.on=true; SESS.paused=false; SESS.stopped=false; sessBar(true);
-  const lead=0.35+countIn*beat, cNow=c.currentTime; start=cNow+lead;
+  const lead=0.35+countIn*beat, cNow=c.currentTime; start=cNow+lead; SESS.t0=start;
   for(let k=0;k<countIn;k++) click(c,cNow+0.35+k*beat,k===0);
   acc.forEach(n=>n.buf?(()=>{ const src=c.createBufferSource(), g=c.createGain(); src.buffer=n.buf; g.gain.value=n.v||0.8; src.connect(g).connect(outOf(c)); src.start(start+n.t,n.off||0,n.d); })():n.voice&&typeof synthVoice==="function"?synthVoice(c,n.m,start+n.t,n.d,n.v||0.08):n.vib!=null&&typeof synthVib==="function"?synthVib(c,n.m,start+n.t,n.d,n.v||0.12,n.vib):synthNote(c,n.m,start+n.t,n.d,n.v||0.12,n.organ)); onStart&&onStart(lead);
   const Q=cues.slice(); if(onPhase) targets.forEach((n,i)=>Q.push({t:n.t,fn:()=>onPhase(i,n)})); Q.sort((a,b)=>a.t-b.t);
