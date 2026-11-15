@@ -69,17 +69,20 @@ const SONGS=[
 (function(){ const s=SONGS[3].lyr, cut=(txt,ns)=>{ const w=txt.replace(/\s*\/\s*/g," ").split(/\s+/), out=[]; let k=0; ns.forEach(n=>{ out.push(w.slice(k,k+n).join(" ")); k+=n; }); return out.join(" / "); }, ns=SONGS[3].notes.map(p=>p.length); for(const l in s) s[l]=cut(s[l],ns); })();
 const LV={b:{pitch:70,stab:35,time:250,sus:70,dyn:8},i:{pitch:85,stab:25,time:160,sus:80,dyn:6},a:{pitch:95,stab:15,time:110,sus:90,dyn:4}};
 const LANG_NAME={en:{en:"English",de:"German",fr:"French"},de:{en:"Englisch",de:"Deutsch",fr:"Französisch"},fr:{en:"anglais",de:"allemand",fr:"français"}};
+const allSongs=()=>SONGS.concat(store.mySongs||[]);
 let SG={id:null,lv:"i",guide:true,bpm:null,phrase:null,phStreak:0,last:null};
 const songName=s=>typeof s.name==="string"?s.name:(s.name[SET.ui]||s.name.en);
-function songLang(s){ return s.lyr[SET.tl]?SET.tl:Object.keys(s.lyr)[0]; }
+function songLang(s){ return s.lyr[SET.tl]?SET.tl:(Object.keys(s.lyr)[0]||SET.tl); }
 function sgStore(id){ store.choirSongs=store.choirSongs||{}; return store.choirSongs[id]=store.choirSongs[id]||{runs:0,best:0,mastered:{}}; }
 /* build timed targets for the whole song or a single phrase */
 function songTargets(s,shift,beat,phrase){
-  const l=songLang(s), syl=s.lyr[l].split("/").map(p=>p.trim().split(/\s+/)); let tt=0; const out=[];
-  s.notes.forEach((ph,pi)=>{ if(phrase!=null&&pi!==phrase) return; ph.forEach(([st,b],ni)=>{ out.push({m:60+st+shift,t:tt,d:b*beat,label:(syl[pi]&&syl[pi][ni])||"",ph:pi,last:ni===ph.length-1,beats:b}); tt+=b*beat; }); });
+  const l=songLang(s), syl=s.lyr[l]?s.lyr[l].split("/").map(p=>p.trim().split(/\s+/)):[]; let tt=0; const out=[];
+  s.notes.forEach((ph,pi)=>{ if(phrase!=null&&pi!==phrase) return; const sung=ph.filter(n=>n[0]!=null), lastI=ph.lastIndexOf(sung[sung.length-1]); let si=0; ph.forEach(([st,b],ni)=>{ if(st==null){ if(!(phrase!=null&&ni===0)) tt+=b*beat; return; } out.push({m:60+st+shift,t:tt,d:b*beat,label:(syl[pi]&&syl[pi][si])||(s.my?nName(60+st+shift):""),ph:pi,last:ni===lastI,beats:b}); si++; tt+=b*beat; }); });
+  if(out.length&&out[0].t>0){ const o=out[0].t; out.forEach(n=>n.t-=o); tt-=o; }
   return {targets:out,dur:tt};
 }
-function songShift(s){ const [lo,hi]=vRange(), all=s.notes.flat().map(n=>n[0]), mn=Math.min(...all), mx=Math.max(...all);
+function songShift(s){ const [lo,hi]=vRange(), all=s.notes.flat().map(n=>n[0]).filter(x=>x!=null), mn=Math.min(...all), mx=Math.max(...all);
+  if(s.my){ let b=0,bs=1e9; [-24,-12,0,12,24].forEach(k=>{ const sc=Math.max(0,lo-(60+mn+k))+Math.max(0,60+mx+k-hi); if(sc<bs){ bs=sc; b=k; } }); return b; }
   let best=0,bs=1e9; for(let k=-30;k<=12;k++){ const a=60+mn+k, b=60+mx+k, over=Math.max(0,lo+1-a)+Math.max(0,b-(hi-1)), sc=over*20+Math.abs((a+b)/2-(lo+hi)/2); if(sc<bs){ bs=sc; best=k; } }
   while(!KEYPC.includes((((60+best)%12)+12)%12)) best--; return best; }
 /* five parameters from the per-note results */
@@ -95,21 +98,23 @@ function songMetrics(res){
 function metOk(k,v,L){ if(v==null) return false; return (k==="pitch"||k==="sus")?v>=L[k]:v<=L[k]; }
 function renderSongs(){
   const box=$("#sgBody"); if(!box) return;
-  if(!SG.id){ const own=SONGS.find(s=>s.lyr[SET.tl]); SG.id=(own||SONGS[0]).id; }
-  const s=SONGS.find(x=>x.id===SG.id), l=songLang(s), st=sgStore(s.id), shift=songShift(s), bpm=SG.bpm||s.bpm;
+  const ALL=allSongs(); if(!SG.id||!ALL.find(x=>x.id===SG.id)){ const own=SONGS.find(s=>s.lyr[SET.tl]); SG.id=(own||SONGS[0]).id; }
+  const s=ALL.find(x=>x.id===SG.id), l=songLang(s), st=sgStore(s.id), shift=songShift(s), bpm=SG.bpm||s.bpm;
   box.innerHTML=`<p class="muted">${t("sg_desc")}</p>
    <div class="row"><span class="muted">${t("sg_song")}:</span></div><div class="chips" data-s></div>
    <div class="row"><span class="muted">${t("sg_level")}:</span><div class="chips" data-l></div></div>
    <div class="row"><span class="muted">${t("pt_slow")}:</span><div class="chips" data-t></div><span class="muted">${t("sg_guide")}:</span><div class="chips" data-g></div></div>
-   <p class="muted" style="font-size:.8rem">${t("sg_lyr",{l:LANG_NAME[SET.ui][l]})}${s.lyr[SET.tl]?"":" "+t("sg_orig")} · ${t("nt_key",{n:nName(60+shift)})} · ${t("sg_hist",{n:st.runs})}${st.best?" · "+t("sg_best",{p:st.best}):""}${Object.keys(st.mastered).length?" · "+t("sg_mastered",{l:Object.keys(st.mastered).map(k=>t("lv_"+k)).join(", ")}):""}</p>
+   <p class="muted" style="font-size:.8rem">${s.my?"🎙 "+t("my_tag"):t("sg_lyr",{l:LANG_NAME[SET.ui][l]})+(s.lyr[SET.tl]?"":" "+t("sg_orig"))} · ${t("nt_key",{n:nName(60+shift)})} · ${t("sg_hist",{n:st.runs})}${st.best?" · "+t("sg_best",{p:st.best}):""}${Object.keys(st.mastered).length?" · "+t("sg_mastered",{l:Object.keys(st.mastered).map(k=>t("lv_"+k)).join(", ")}):""}</p>
    <div class="card flat" data-lyr ${tlAttr(l)} style="line-height:1.9;font-size:1.02rem"></div>
    ${SG.phrase!=null?`<div class="warnbox">${t("sg_phrase_mode",{n:SG.phrase+1,a:SG.phStreak})}</div>`:""}
    <div data-lane></div>
    <div class="row"><button class="b alt grow" data-lis>${t("sg_listen")}</button><button class="b warm grow" data-go>${SG.phrase!=null?t("sg_phrase_go",{n:SG.phrase+1}):t("sg_go")}</button></div>
-   ${SG.phrase!=null?`<button class="b alt sm" data-back style="margin-top:6px">${t("sg_back")}</button>`:""}<div data-out></div>`;
-  chipSet(box.querySelector("[data-s]"),SONGS.map(x=>[x.id,songName(x)+(sgStore(x.id).mastered[SG.lv]?" ✓":"")]),s.id,v=>{ SG.id=v; SG.bpm=null; SG.phrase=null; SG.last=null; renderSongs(); });
+   ${SG.phrase!=null?`<button class="b alt sm" data-back style="margin-top:6px">${t("sg_back")}</button>`:""}<div data-out></div>${s.my?`<button class="b alt sm" data-del style="margin-top:8px">🗑 ${t("my_del")}</button>`:""}`;
+  if(s.my) box.querySelector("[data-del]").onclick=()=>{ store.mySongs=(store.mySongs||[]).filter(x=>x.id!==s.id); save(); SG.id=null; SG.last=null; renderSongs(); };
+  renderMySong(box);
+  chipSet(box.querySelector("[data-s]"),ALL.slice().sort((a,b)=>(!!b.lyr[SET.tl]-!!a.lyr[SET.tl])||(!!a.my-!!b.my)).map(x=>[x.id,(x.my?"🎙 ":"")+songName(x)+(sgStore(x.id).mastered[SG.lv]?" ✓":"")]),s.id,v=>{ SG.id=v; SG.bpm=null; SG.phrase=null; SG.last=null; renderSongs(); });
   chipSet(box.querySelector("[data-l]"),["b","i","a"].map(k=>[k,t("lv_"+k)]),SG.lv,v=>{ SG.lv=v; renderSongs(); });
-  chipSet(box.querySelector("[data-t]"),[Math.round(s.bpm*0.75),s.bpm,Math.round(s.bpm*1.15)].map(v=>[v,String(v)]),bpm,v=>{ SG.bpm=+v; renderSongs(); });
+  chipSet(box.querySelector("[data-t]"),[Math.round(s.bpm*0.75),s.bpm,Math.round(s.bpm*1.15)].map(v=>[v,s.my?Math.round(v/s.bpm*100)+" "+t("my_pct"):String(v)]),bpm,v=>{ SG.bpm=+v; renderSongs(); });
   chipSet(box.querySelector("[data-g]"),[[1,t("sg_on")],[0,t("sg_off")]],SG.guide?1:0,v=>{ SG.guide=!!+v; renderSongs(); });
   const beat=60/bpm, {targets,dur}=songTargets(s,shift,beat,SG.phrase);
   // lyrics with one span per syllable
@@ -154,8 +159,58 @@ function showSongResult(box,s,res,m){
     tendencyTips(res).forEach(li);
   }
   if(!metOk("stab",m.stab,L)){ li(t("nx_stab")); add(t("sg_go_long"),()=>{ NT.ex="long"; NT.only=null; NT.round=0; renderNotes(); scrollToId("ntCard"); }); }
-  if(!metOk("time",m.time,L)){ const slow=Math.round(s.bpm*0.75); li(t("nx_time",{b:slow})); add(t("sg_go_slow"),()=>{ SG.bpm=slow; SG.last=null; renderSongs(); }); }
+  if(!metOk("time",m.time,L)){ const slow=Math.round(s.bpm*0.75); li(t("nx_time",{b:s.my?"75 "+t("my_pct"):slow})); add(t("sg_go_slow"),()=>{ SG.bpm=slow; SG.last=null; renderSongs(); }); }
   if(!metOk("sus",m.sus,L)) li(t("nx_sus"));
   if(!metOk("dyn",m.dyn,L)) li(t("nx_dyn"));
   if(!metOk("sus",m.sus,L)||!metOk("dyn",m.dyn,L)) add(t("sg_go_breath"),()=>{ show("breath"); scrollToId("supCard"); });
+}
+
+/* ---------- v4.1: more popular songs (traditional / public domain) ---------- */
+SONGS.find(s=>s.id==="twinkle").lyr.fr="Ah! vous di- rai- je, ma- man, / Ce qui cau- se mon tour- ment? / Pa- pa veut que je rai- sonne / Comm' u- ne gran- de per- sonne. / Moi, je dis que les bon- bons / Va- lent mieux que la rai- son.";
+SONGS.find(s=>s.id==="twinkle").name={en:"Twinkle, twinkle, little star",de:"Twinkle, twinkle, little star",fr:"Ah ! vous dirai-je, maman"};
+const _HB=[[[-5,.75],[-5,.25],[-3,1],[-5,1],[0,1],[-1,2]],[[-5,.75],[-5,.25],[-3,1],[-5,1],[2,1],[0,2]],[[-5,.75],[-5,.25],[7,1],[4,1],[0,1],[-1,1],[-3,2]],[[5,.75],[5,.25],[4,1],[0,1],[2,1],[0,2]]];
+const _JB1=[[4,1],[4,1],[4,2],[4,1],[4,1],[4,2],[4,1],[7,1],[0,1.5],[2,.5],[4,4]];
+const _HK1=[[7,1],[4,1],[4,2],[5,1],[2,1],[2,2]], _HK2=[[0,1],[4,1],[7,1],[7,1],[0,4]];
+const _RR=[[[0,3],[0,3],[0,2],[2,1],[4,3]],[[4,2],[2,1],[4,2],[5,1],[7,6]],[[12,1],[12,1],[12,1],[7,1],[7,1],[7,1],[4,1],[4,1],[4,1],[0,1],[0,1],[0,1]],[[7,2],[5,1],[4,2],[2,1],[0,6]]].map(p=>p.map(([s,e])=>[s,e/2]));
+SONGS.push(
+ {id:"bday", name:{en:"Happy Birthday",de:"Zum Geburtstag viel Glück",fr:"Joyeux anniversaire (Happy Birthday)"}, bpm:100, notes:_HB,
+  lyr:{en:"Hap- py birth- day to you, / Hap- py birth- day to you, / Hap- py birth- day, dear sing- er, / Hap- py birth- day to you!",
+       de:"Zum Ge- burts- tag viel Glück, / Zum Ge- burts- tag viel Glück, / Zum Ge- burts- tag, lie- ber Chor, / Zum Ge- burts- tag viel Glück!"}},
+ {id:"jingle", name:"Jingle Bells", bpm:112, notes:[_JB1,[[5,1],[5,1],[5,1.5],[5,.5],[5,1],[4,1],[4,1],[4,.5],[4,.5],[4,1],[2,1],[2,1],[4,1],[2,2],[7,2]],_JB1,[[5,1],[5,1],[5,1],[5,1],[5,1],[4,1],[4,1],[4,.5],[4,.5],[7,1],[7,1],[5,1],[2,1],[0,4]]],
+  lyr:{en:"Jin- gle bells, jin- gle bells, jin- gle all the way! / Oh, what fun it is to ride in a one- horse o- pen sleigh, hey! / Jin- gle bells, jin- gle bells, jin- gle all the way! / Oh, what fun it is to ride in a one- horse o- pen sleigh!"}},
+ {id:"row", name:"Row, row, row your boat", bpm:100, notes:_RR,
+  lyr:{en:"Row, row, row your boat, / gent- ly down the stream. / Mer- ri- ly, mer- ri- ly, mer- ri- ly, mer- ri- ly, / life is but a dream."}},
+ {id:"hans", name:"Hänschen klein", bpm:100, notes:[_HK1,[[0,1],[2,1],[4,1],[5,1],[7,1],[7,1],[7,2]],_HK1,_HK2,[[2,1],[2,1],[2,1],[2,1],[2,1],[4,1],[5,2]],[[4,1],[4,1],[4,1],[4,1],[4,1],[5,1],[7,2]],_HK1,_HK2],
+  lyr:{de:"Häns- chen klein ging al- lein / in die wei- te Welt hin- ein. / Stock und Hut steht ihm gut, / ist gar wohl- ge- mut. / A- ber Mut- ter wei- net sehr, / hat ja nun kein Häns- chen mehr. / „Wünsch dir Glück!“ sagt ihr Blick, / „Kehr nur bald zu- rück!“"}},
+ {id:"entchen", name:"Alle meine Entchen", bpm:100, notes:[[[0,1],[2,1],[4,1],[5,1],[7,2],[7,2]],[[9,1],[9,1],[9,1],[9,1],[7,4]],[[9,1],[9,1],[9,1],[9,1],[7,4]],[[5,1],[5,1],[5,1],[5,1],[4,2],[4,2]],[[2,1],[2,1],[2,1],[2,1],[0,4]]],
+  lyr:{de:"Al- le mei- ne Ent- chen / schwim- men auf dem See, / schwim- men auf dem See. / Köpf- chen in das Was- ser, / Schwänz- chen in die Höh'."}});
+
+/* ---------- own song from a recording (e.g. the part recording your choir director sends) ---------- */
+Object.assign(T.en,{my_title:"＋ Own song from a recording", my_desc:"Import a recording of a single melody line – e.g. the rehearsal recording of your part, a solo singer or one instrument (no full band: chords confuse the pitch detection) – or record it yourself. The app turns it into notes and phrases (max. 90 s) and then trains it with the same five parameters. Only use recordings you are allowed to use.", my_name:"Name of the song", my_file:"Import audio file", my_rec:"● Record the melody", my_none:"No clear melody found – use a recording of a single voice or instrument.", my_ok:"Imported: {n} notes in {p} phrases.", my_del:"Delete this song", my_tag:"own", my_pct:"% speed"});
+Object.assign(T.de,{my_title:"＋ Eigenes Lied aus einer Aufnahme", my_desc:"Importiere die Aufnahme einer einzelnen Melodiestimme – z. B. die Übe-Aufnahme deiner Stimme von der Chorleitung, eine Solostimme oder ein Instrument (keine ganze Band: Akkorde stören die Tonerkennung) – oder nimm sie selbst auf. Die App macht daraus Töne und Phrasen (max. 90 s) und trainiert sie mit denselben fünf Parametern. Nutze nur Aufnahmen, die du verwenden darfst.", my_name:"Name des Lieds", my_file:"Audiodatei importieren", my_rec:"● Melodie aufnehmen", my_none:"Keine klare Melodie gefunden – nimm eine Aufnahme mit einer einzelnen Stimme oder einem Instrument.", my_ok:"Importiert: {n} Töne in {p} Phrasen.", my_del:"Dieses Lied löschen", my_tag:"eigenes", my_pct:"% Tempo"});
+Object.assign(T.fr,{my_title:"＋ Chanson personnelle depuis un enregistrement", my_desc:"Importez l'enregistrement d'une seule ligne mélodique – p. ex. l'enregistrement de travail de votre voix envoyé par le chef de chœur, un chanteur seul ou un instrument (pas un groupe entier : les accords perturbent la détection) – ou enregistrez-la vous-même. L'appli la transforme en notes et phrases (90 s max.) puis l'entraîne avec les mêmes cinq paramètres. N'utilisez que des enregistrements que vous avez le droit d'utiliser.", my_name:"Nom de la chanson", my_file:"Importer un fichier audio", my_rec:"● Enregistrer la mélodie", my_none:"Aucune mélodie claire trouvée – utilisez l'enregistrement d'une seule voix ou d'un instrument.", my_ok:"Importé : {n} notes en {p} phrases.", my_del:"Supprimer cette chanson", my_tag:"perso", my_pct:"% de vitesse"});
+function extractSong(pcm){
+  const an=analyze(pcm.length>16000*90?pcm.subarray(0,16000*90):pcm,{minSpeech:20}); if(!an||!an.series) return null;
+  const S=an.series, hop=S.hop, m=S.f0.map(f=>f>0?hzToMidi(f):null), sm=m.map((v,i)=>{ if(v==null) return null; const w=m.slice(Math.max(0,i-2),i+3).filter(x=>x!=null); return pctl(w,0.5); });
+  const segs=[]; let cur=null, gap=0, dev=0;
+  const close=()=>{ if(cur&&cur.v.length>=6) segs.push({s:cur.s,e:cur.e,m:Math.round(pctl(cur.v,0.5))}); cur=null; };
+  sm.forEach((v,i)=>{ const tt=i*hop;
+    if(v==null){ gap++; if(gap>2) close(); return; } gap=0;
+    if(cur){ const md=pctl(cur.v,0.5); if(Math.abs(v-md)>0.7){ dev++; if(dev>=3){ const keep=cur.v.slice(0,-2); cur.v=keep; cur.e=tt-2*hop; close(); cur={s:tt-2*hop,e:tt,v:[v]}; dev=0; return; } } else dev=0; cur.v.push(v); cur.e=tt+hop; }
+    else cur={s:tt,e:tt+hop,v:[v]}; });
+  close(); if(segs.length<3) return null;
+  const phrases=[]; let ph=[], last=segs[0].s;
+  segs.forEach((g,i)=>{ const gp=g.s-last; if(i>0&&gp>=0.4){ phrases.push(ph); ph=[]; } if(gp>0.05) ph.push([null,Math.min(3,gp)]); ph.push([g.m-60,Math.max(0.12,g.e-g.s)]); last=g.e; });
+  phrases.push(ph); return phrases.filter(p=>p.some(n=>n[0]!=null));
+}
+function renderMySong(box){
+  const d=el("details",{style:"margin-top:10px"}); d.innerHTML=`<summary><b>${t("my_title")}</b></summary><p class="muted" style="font-size:.85rem">${t("my_desc")}</p>
+   <input type="text" data-nm placeholder="${esc(t("my_name"))}" style="width:100%;margin-bottom:6px"><label class="b alt" style="display:block;text-align:center">${t("my_file")}<input type="file" accept="audio/*,video/*" data-f hidden></label><div data-r style="margin-top:6px"></div><p data-msg></p>`;
+  box.append(d);
+  const add=pcm=>{ const notes=extractSong(pcm), msg=d.querySelector("[data-msg]"); if(!notes){ msg.textContent=t("my_none"); return; }
+    const s={id:"my"+Date.now(),my:true,name:d.querySelector("[data-nm]").value.trim()||t("my_tag")+" "+((store.mySongs||[]).length+1),bpm:60,notes,lyr:{}};
+    store.mySongs=(store.mySongs||[]).concat([s]); save(); SG.id=s.id; SG.bpm=null; SG.phrase=null; SG.last=null; renderSongs();
+    toast(t("my_ok",{n:notes.flat().filter(n=>n[0]!=null).length,p:notes.length})); };
+  d.querySelector("[data-f]").onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ add(await decodeFile(f)); }catch(err){ d.querySelector("[data-msg]").textContent=t("my_none"); } };
+  recControls(d.querySelector("[data-r]"),{maxSec:90,label:t("my_rec"),onDone:r=>add(r.pcm)});
 }
