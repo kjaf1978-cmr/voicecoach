@@ -80,7 +80,8 @@ function analyze(pcm, opts={}){
   for(let i=0;i<N;){ if(sp[i]){ let j=i; while(j<N&&sp[j]) j++; if(j-i<5) for(let k=i;k<j;k++) sp[k]=false; i=j; } else i++; }      // drop blips < 50 ms
   const speechFrames=sp.filter(Boolean).length;
   out.floor=floor; out.peak=peak; out.thr=thr;
-  if(speechFrames<150 || peak-floor<10){ out.tooShort=speechFrames<150; out.noVoice=peak-floor<10; out.series=mkSeries(db,new Float32Array(Math.ceil(N/2)),sp); return out; }
+  const minSp=opts.minSpeech||150;
+  if(speechFrames<minSp || peak-floor<10){ out.tooShort=speechFrames<minSp; out.noVoice=peak-floor<10; out.series=mkSeries(db,new Float32Array(Math.ceil(N/2)),sp); return out; }
   // pitch every 20 ms on speech frames
   const F=Math.ceil(N/2), f0=new Float32Array(F), W=640;
   for(let k=0;k<F;k++){ const i=k*2; if(!sp[i]) continue; const a=Math.max(0,i*hop-W/2+80); if(a+W>pcm.length) break; f0[k]=pitchFrame(pcm.subarray(a,a+W),SRATE); }

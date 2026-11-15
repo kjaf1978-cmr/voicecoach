@@ -93,7 +93,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
 </head>
 <body>
 <header>
-  <h1>VoiceCoach <span class="ver">v3.1</span></h1>
+  <h1>VoiceCoach <span class="ver">v3.2</span></h1>
   <span class="badge" id="streakBadge"></span>
   <button class="pill hidden" id="installBtn" data-t="install"></button>
   <button class="pill" id="setBtn">⚙ <span id="setSummary"></span></button>
@@ -201,6 +201,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
       <p class="muted" id="artMastery"></p>
       <p class="muted" id="drillCount"></p>
     </div>
+    <div id="serBox"></div>
   </div>
   <div class="card">
     <h2 data-t="pairs_title"></h2><p class="muted" data-t="pairs_desc"></p>
@@ -301,7 +302,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
 <nav id="nav"></nav>
 <div class="toast" id="toast"></div>
 <script>
-/* VoiceCoach v3.1 */
+/* VoiceCoach v3.2 */
 /* UI strings – en / de / fr */
 const T = {
 en:{
@@ -679,6 +680,86 @@ Object.assign(T.fr,{
  counting:"un, deux, trois, quatre, cinq, six, sept, huit, neuf, dix",
  txt_mode_note:"Le mode écrit entraîne seulement la formulation et la structure – l'expression orale n'est pas notée.",
  ctx_more:"Thèmes", hints_used:"Indices utilisés : {n}"
+});
+
+/* UI strings added in v3.2 – articulation series check */
+Object.assign(T.en,{
+ ser_title:"Series check", ser_desc:"The app checks several words in a row, hands-free: it says the word (optional), beeps, you repeat it, and it moves on by itself when you stop speaking. At the end you see what was understood, which sound went wrong and how to correct it – with your recording, the correct model and a retry round for the wrong words.",
+ ser_count:"Words", ser_model:"Say each word first (model pronunciation)", ser_start:"▶ Start series check", ser_word:"Word {i} of {n}", ser_listen:"🎤 Speak now…", ser_next:"Next ▶",
+ ser_ok:"Correct", ser_none:"nothing understood", ser_heard:"Understood: “{w}”", ser_result:"{c} of {n} correct", ser_open:"{n} still to judge yourself", ser_all_ok:"All words correct – the sound is getting solid. Try another position or a faster pace.",
+ ser_retry:"↻ Repeat the wrong words ({n})", ser_new:"New series", ser_your:"▶ Your recording", ser_model_btn:"🔊 Model", ser_slow:"🐢 Slowly", ser_practice:"🎤 Practise again", ser_self:"Listen – was it right?",
+ pos_start:"at the start", pos_mid:"in the middle", pos_end:"at the end",
+ h_sub:"The sound “{a}” {pos} came out as “{b}”.", h_end:"The final sound “{a}” is missing or unclear – finish the word deliberately.", h_start:"The first sound “{a}” is missing – start the word with a clear onset.",
+ h_del:"The sound “{a}” {pos} was swallowed – give it its own moment.", h_ins:"An extra sound (“{b}”) was heard – keep the word clean and smooth.", h_close:"Almost right – say it once more, a little slower and more precisely.",
+ h_unrec:"The word was not understood – speak slower, clearer and a little louder.", h_quiet:"Very quiet – speak louder and closer to the phone (about 30 cm).", h_words:"Not understood: {w}.",
+ conf_stop:"Your tongue closed the airflow (like t/d). For /s/ keep a narrow gap behind the teeth so the air hisses.",
+ conf_lisp:"The tongue tip came between the teeth (lisp). Keep the tip behind the teeth and the teeth close together.",
+ conf_s_sh:"The lips were rounded. For /s/ spread the lips slightly, like a smile.",
+ conf_sh_s:"Round and push the lips forward (kiss shape) and pull the tongue slightly back.",
+ conf_ch_sh:"Don't round the lips. Keep the tongue broad under the hard palate – the air rubs there.",
+ conf_front:"The sound was made at the front. Keep the tongue tip down behind the lower teeth and lift the back of the tongue.",
+ conf_back:"The sound was made at the back. Tap the tongue tip behind the upper front teeth.",
+ conf_r_l:"The tongue tip touched the ridge (like L). For R keep the tip free; start from a long “errr”.",
+ conf_r_w:"The lips made the sound (like W). For R keep the lips relaxed and curl the tongue tip slightly back without touching.",
+ conf_l_r:"For L press the tongue tip firmly behind the upper front teeth and let the air flow around the sides.",
+ conf_r_vowel:"The R disappeared. Give it a short, clear moment.",
+ conf_f_p:"The lips closed completely. Rest the upper teeth on the lower lip and let the air flow.",
+ conf_th:"Put the tongue tip lightly between the teeth and blow air over it.",
+ conf_voice:"The sound lost its voice. Feel the buzz at your throat (voiced) for this sound.",
+ conf_devoice:"The sound was voiced (buzzing). This sound needs only air – no buzz at the throat.",
+ conf_ts_s:"Start with a short t-closure, then hiss: t+s."
+});
+Object.assign(T.de,{
+ ser_title:"Serienprüfung", ser_desc:"Die App prüft mehrere Wörter nacheinander, freihändig: Sie spricht das Wort vor (wahlweise), piept, du sprichst nach, und sie geht von selbst weiter, wenn du aufhörst zu sprechen. Am Ende siehst du, was verstanden wurde, welcher Laut falsch war und wie du ihn korrigierst – mit deiner Aufnahme, dem korrekten Vorsprechen und einer Wiederholungsrunde für die Fehlerwörter.",
+ ser_count:"Wörter", ser_model:"Jedes Wort vorher vorsprechen lassen", ser_start:"▶ Serienprüfung starten", ser_word:"Wort {i} von {n}", ser_listen:"🎤 Jetzt sprechen …", ser_next:"Weiter ▶",
+ ser_ok:"Richtig", ser_none:"nichts verstanden", ser_heard:"Verstanden: „{w}“", ser_result:"{c} von {n} richtig", ser_open:"{n} noch selbst beurteilen", ser_all_ok:"Alle Wörter richtig – der Laut wird sicher. Probiere eine andere Position oder ein schnelleres Tempo.",
+ ser_retry:"↻ Fehlerwörter wiederholen ({n})", ser_new:"Neue Serie", ser_your:"▶ Deine Aufnahme", ser_model_btn:"🔊 Vorsprechen", ser_slow:"🐢 Langsam", ser_practice:"🎤 Nochmal üben", ser_self:"Anhören – war es richtig?",
+ pos_start:"am Wortanfang", pos_mid:"in der Wortmitte", pos_end:"am Wortende",
+ h_sub:"Der Laut „{a}“ {pos} klang wie „{b}“.", h_end:"Der Endlaut „{a}“ fehlt oder ist undeutlich – sprich das Wort bewusst zu Ende.", h_start:"Der erste Laut „{a}“ fehlt – setze den Wortanfang deutlich ein.",
+ h_del:"Der Laut „{a}“ {pos} wurde verschluckt – gib ihm einen eigenen Moment.", h_ins:"Ein zusätzlicher Laut („{b}“) war zu hören – sprich das Wort sauber und fließend.", h_close:"Fast richtig – sprich es noch einmal etwas langsamer und genauer.",
+ h_unrec:"Das Wort wurde nicht verstanden – sprich langsamer, deutlicher und etwas lauter.", h_quiet:"Sehr leise – lauter und näher am Handy sprechen (ca. 30 cm).", h_words:"Nicht verstanden: {w}.",
+ conf_stop:"Die Zunge hat den Luftstrom verschlossen (wie t/d). Für /s/ bleibt hinter den Zähnen ein schmaler Spalt, damit die Luft zischt.",
+ conf_lisp:"Die Zungenspitze kam zwischen die Zähne (Lispeln). Zungenspitze hinter den Zähnen lassen, Zähne fast geschlossen.",
+ conf_s_sh:"Die Lippen waren gerundet. Für /s/ die Lippen leicht breit ziehen, wie beim Lächeln.",
+ conf_sh_s:"Lippen rund nach vorne schieben (Kussmund) und die Zunge etwas zurückziehen.",
+ conf_ch_sh:"Lippen nicht runden. Zunge breit unter den harten Gaumen – dort reibt die Luft (wie leises Fauchen).",
+ conf_front:"Der Laut wurde vorne gebildet. Zungenspitze unten hinter den unteren Zähnen lassen und den Zungenrücken hinten anheben.",
+ conf_back:"Der Laut wurde hinten gebildet. Mit der Zungenspitze hinter die oberen Schneidezähne tippen.",
+ conf_r_l:"Die Zungenspitze berührte den Zahndamm (wie L). Für das R die Spitze frei lassen; Zäpfchen-R wie leises Gurgeln.",
+ conf_r_w:"Die Lippen haben den Laut gebildet (wie W). Für das R die Lippen locker lassen; das R entsteht hinten (Zäpfchen) bzw. mit der Zungenspitze.",
+ conf_l_r:"Für L die Zungenspitze fest hinter die oberen Schneidezähne legen und die Luft seitlich vorbeiströmen lassen.",
+ conf_r_vowel:"Das R ist verschwunden. Gib ihm einen kurzen, deutlichen Moment.",
+ conf_f_p:"Die Lippen haben sich ganz geschlossen. Obere Zähne auf die Unterlippe legen und die Luft strömen lassen.",
+ conf_th:"Zungenspitze leicht zwischen die Zähne legen und Luft darüber blasen.",
+ conf_voice:"Dem Laut fehlte die Stimme. Bei diesem Laut muss es am Hals summen (stimmhaft).",
+ conf_devoice:"Der Laut war stimmhaft (summend). Dieser Laut braucht nur Luft – kein Summen am Hals.",
+ conf_ts_s:"Mit einem kurzen t-Verschluss beginnen, dann zischen: t+s."
+});
+Object.assign(T.fr,{
+ ser_title:"Contrôle en série", ser_desc:"L'appli vérifie plusieurs mots à la suite, mains libres : elle dit le mot (au choix), bipe, vous répétez, et elle passe d'elle-même au suivant quand vous vous taisez. À la fin, vous voyez ce qui a été compris, quel son était faux et comment le corriger – avec votre enregistrement, le modèle correct et une série de reprise pour les mots ratés.",
+ ser_count:"Mots", ser_model:"Faire dire chaque mot avant (modèle)", ser_start:"▶ Démarrer le contrôle", ser_word:"Mot {i} sur {n}", ser_listen:"🎤 Parlez maintenant…", ser_next:"Suivant ▶",
+ ser_ok:"Correct", ser_none:"rien compris", ser_heard:"Compris : « {w} »", ser_result:"{c} sur {n} corrects", ser_open:"{n} à juger vous-même", ser_all_ok:"Tous les mots sont corrects – le son se consolide. Essayez une autre position ou un rythme plus rapide.",
+ ser_retry:"↻ Reprendre les mots ratés ({n})", ser_new:"Nouvelle série", ser_your:"▶ Votre enregistrement", ser_model_btn:"🔊 Modèle", ser_slow:"🐢 Lentement", ser_practice:"🎤 Réessayer", ser_self:"Écoutez – c'était juste ?",
+ pos_start:"au début du mot", pos_mid:"au milieu du mot", pos_end:"à la fin du mot",
+ h_sub:"Le son « {a} » {pos} a été prononcé comme « {b} ».", h_end:"Le son final « {a} » manque ou n'est pas net – terminez le mot volontairement.", h_start:"Le premier son « {a} » manque – attaquez le mot nettement.",
+ h_del:"Le son « {a} » {pos} a été avalé – donnez-lui son propre moment.", h_ins:"Un son en trop (« {b} ») a été entendu – gardez le mot net et fluide.", h_close:"Presque – redites-le un peu plus lentement et plus précisément.",
+ h_unrec:"Le mot n'a pas été compris – parlez plus lentement, plus nettement et un peu plus fort.", h_quiet:"Très faible – parlez plus fort et plus près du téléphone (env. 30 cm).", h_words:"Non compris : {w}.",
+ conf_stop:"La langue a bloqué l'air (comme t/d). Pour /s/, gardez une fente étroite derrière les dents pour que l'air siffle.",
+ conf_lisp:"La pointe de la langue est passée entre les dents (zézaiement). Gardez-la derrière les dents, dents presque serrées.",
+ conf_s_sh:"Les lèvres étaient arrondies. Pour /s/, étirez légèrement les lèvres, comme un sourire.",
+ conf_sh_s:"Arrondissez et avancez les lèvres (bisou) et reculez un peu la langue.",
+ conf_ch_sh:"N'arrondissez pas les lèvres. Langue large sous le palais dur – l'air frotte à cet endroit.",
+ conf_front:"Le son a été formé à l'avant. Gardez la pointe de la langue derrière les dents du bas et levez l'arrière de la langue.",
+ conf_back:"Le son a été formé à l'arrière. Touchez avec la pointe de la langue derrière les incisives du haut.",
+ conf_r_l:"La pointe de la langue a touché la crête (comme L). Pour le R français, la pointe reste en bas ; l'arrière de la langue frotte vers la luette.",
+ conf_r_w:"Ce sont les lèvres qui ont formé le son (comme W). Pour le R, lèvres détendues ; le son se forme à l'arrière de la langue, vers la luette.",
+ conf_l_r:"Pour le L, appuyez la pointe de la langue derrière les incisives du haut et laissez l'air passer sur les côtés.",
+ conf_r_vowel:"Le R a disparu. Donnez-lui un court moment bien net.",
+ conf_f_p:"Les lèvres se sont fermées. Posez les dents du haut sur la lèvre inférieure et laissez passer l'air.",
+ conf_th:"Placez la pointe de la langue légèrement entre les dents et soufflez dessus.",
+ conf_voice:"Le son a perdu sa voix. Pour ce son, la gorge doit vibrer (sonore).",
+ conf_devoice:"Le son était sonore (vibrant). Ce son n'a besoin que d'air – sans vibration de la gorge.",
+ conf_ts_s:"Commencez par une brève fermeture t, puis sifflez : t+s."
 });
 
 /* Training content – en / de / fr.
@@ -1193,7 +1274,8 @@ function analyze(pcm, opts={}){
   for(let i=0;i<N;){ if(sp[i]){ let j=i; while(j<N&&sp[j]) j++; if(j-i<5) for(let k=i;k<j;k++) sp[k]=false; i=j; } else i++; }      // drop blips < 50 ms
   const speechFrames=sp.filter(Boolean).length;
   out.floor=floor; out.peak=peak; out.thr=thr;
-  if(speechFrames<150 || peak-floor<10){ out.tooShort=speechFrames<150; out.noVoice=peak-floor<10; out.series=mkSeries(db,new Float32Array(Math.ceil(N/2)),sp); return out; }
+  const minSp=opts.minSpeech||150;
+  if(speechFrames<minSp || peak-floor<10){ out.tooShort=speechFrames<minSp; out.noVoice=peak-floor<10; out.series=mkSeries(db,new Float32Array(Math.ceil(N/2)),sp); return out; }
   // pitch every 20 ms on speech frames
   const F=Math.ceil(N/2), f0=new Float32Array(F), W=640;
   for(let k=0;k<F;k++){ const i=k*2; if(!sp[i]) continue; const a=Math.max(0,i*hop-W/2+80); if(a+W>pcm.length) break; f0[k]=pitchFrame(pcm.subarray(a,a+W),SRATE); }
@@ -1418,16 +1500,16 @@ let wakeLock=null;
 async function keepAwake(on){ try{ if(on&&"wakeLock" in navigator&&!wakeLock){ wakeLock=await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release",()=>wakeLock=null);} if(!on&&wakeLock){ wakeLock.release(); wakeLock=null; } }catch(e){} }
 
 /* ---------- text-to-speech (partner voice) ---------- */
-function speak(text, lang, onend){
+function speak(text, lang, onend, rate){
   let done=false; const fin=()=>{ if(!done){ done=true; onend&&onend(); } };
   try{
     if(!("speechSynthesis" in window)) return fin();
     speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(text); u.lang=LOCALE[lang]; u.rate=+SET.rate||1;
+    const u=new SpeechSynthesisUtterance(text); u.lang=LOCALE[lang]; u.rate=rate||+SET.rate||1;
     const vs=speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.replace("_","-").toLowerCase().startsWith(lang));
     const pref=vs.find(v=>v.lang.replace("_","-")===LOCALE[lang])||vs[0]; if(pref) u.voice=pref;
     u.onend=fin; u.onerror=fin; speechSynthesis.speak(u);
-    setTimeout(fin, 1500+text.length*90/(+SET.rate||1));
+    setTimeout(fin, 1500+text.length*90/(rate||+SET.rate||1));
   }catch(e){ fin(); }
 }
 try{ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=()=>{}; }catch(e){}
@@ -1664,7 +1746,7 @@ function renderSpeech(){
   chipSet($("#soundChips"),Object.keys(ART[SET.tl]).map(k=>[k,k+(artStats(SET.tl,k).mastered?" ✓":"")]),SP.snd,v=>{ SP.snd=v; SP.idx=0; renderSpeech(); });
   chipSet($("#posChips"),[["i",t("pos_i")],["m",t("pos_m")],["f",t("pos_f")],["s",t("pos_s")]],SP.pos,v=>{ SP.pos=v; SP.idx=0; renderSpeech(); });
   $("#soundTip").innerHTML="<b>"+t("how_sound")+"</b> "+esc(ART[SET.tl][SP.snd].tip);
-  showWord(); showArtMastery();
+  showWord(); showArtMastery(); if(typeof renderSerSetup==="function") renderSerSetup();
 }
 function curList(){ return ART[SET.tl][SP.snd][SP.pos]; }
 function showWord(){ const L=curList(); SP.idx=(SP.idx+L.length)%L.length; const w=L[SP.idx]; $("#drillWord").textContent=w; $("#drillWord").style.fontSize=w.length>18?"1.35rem":"2.1rem"; $("#drillHeard").textContent="";
@@ -1939,6 +2021,167 @@ function finishAttempt(){
   if(passed&&mode==="level"&&lvl<3) add(t("btn_nextlvl"),"",()=>startAttempt(sc,lang,lvl+1,"level"));
   add(t("btn_back"),"alt",closeAttempt);
   beep(passed?1180:440,.35,.12); keepAwake(false); refreshStats();
+}
+
+/* ================= articulation: series check with error analysis (v3.2) ================= */
+/* Rough grapheme → sound-class tokens, so that "Sonne" vs "Tonne" becomes s→t, "Schule" vs "Sule" ʃ→s */
+const SND_TOKENS={de:/sch|ch|ck|ng|qu|ph|ß|[a-zäöü]/g, en:/sh|ch|th|ck|ng|qu|ph|wh|[a-z]/g, fr:/ch|gn|qu|ph|ou|au|eau|an|en|on|in|[a-zàâçéèêëîïôûùü]/g};
+function sndClass(tok,next,lang){
+  const v="aeiouyäöüàâéèêëîïôûùœ";
+  if(lang==="de"){ return ({sch:"ʃ",ch:"ç",ck:"k",ng:"ŋ",qu:"kv",ph:"f",ß:"s",z:"ts",v:"f",w:"v",c:"k",j:"j",x:"ks"}[tok])||(v.includes(tok)?"V":tok); }
+  if(lang==="en"){ if(tok==="c") return "eiy".includes(next||"")?"s":"k"; return ({sh:"ʃ",ch:"tʃ",th:"θ",ck:"k",ng:"ŋ",qu:"kw",ph:"f",wh:"w",x:"ks",j:"dʒ"}[tok])||(v.includes(tok)?"V":tok); }
+  if(tok==="c") return "eiy".includes(next||"")?"s":"k"; if(tok==="g") return "eiy".includes(next||"")?"ʒ":"g";
+  return ({ch:"ʃ",gn:"ɲ",qu:"k",ph:"f",ç:"s",j:"ʒ",ou:"V",au:"V",eau:"V",an:"Ṽ",en:"Ṽ",on:"Ṽ",in:"Ṽ",h:"",x:"ks"}[tok])??(v.includes(tok)?"V":tok);
+}
+function toSounds(word,lang){ const w=String(word).toLowerCase().replace(/[^a-zäöüßàâçéèêëîïôûùœ]/g,""); const toks=w.match(SND_TOKENS[lang])||[];
+  if(lang==="fr"&&toks.length>2){ if(toks[toks.length-1]==="e") toks.pop(); if("tsdxz".includes(toks[toks.length-1])&&toks.length>2) toks.pop(); if(toks[toks.length-1]==="e"&&toks.length>2) toks.pop(); }
+  const isV=x=>!!x&&/^[aeiouyäöüàâéèêëîïôûùœ]|^(ou|au|eau|an|en|on|in)$/.test(x);
+  const out=[]; toks.forEach((tk,i)=>{ let c=sndClass(tk,toks[i+1]&&toks[i+1][0],lang); if(!c) return;
+    if(lang==="fr"&&tk==="s"&&isV(toks[i-1])&&isV(toks[i+1])) c="z";
+    if(c!=="V"&&c.length===1&&out[out.length-1]===c) return; [...(c.length===2&&c!=="tʃ"&&c!=="dʒ"?c:[c])].forEach(x=>{ if(!(x==="V"&&out[out.length-1]==="V")) out.push(x); }); }); return out; }
+/* Levenshtein alignment over sound classes → list of operations */
+function alignSounds(a,b){ const n=a.length,m=b.length,D=[...Array(n+1)].map(()=>new Array(m+1).fill(0));
+  for(let i=0;i<=n;i++) D[i][0]=i; for(let j=0;j<=m;j++) D[0][j]=j;
+  for(let i=1;i<=n;i++) for(let j=1;j<=m;j++) D[i][j]=Math.min(D[i-1][j]+1,D[i][j-1]+1,D[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+  const ops=[]; let i=n,j=m;
+  while(i>0||j>0){ if(i>0&&j>0&&D[i][j]===D[i-1][j-1]+(a[i-1]===b[j-1]?0:1)){ if(a[i-1]!==b[j-1]) ops.unshift({op:"sub",a:a[i-1],b:b[j-1],i:i-1}); i--; j--; }
+    else if(i>0&&D[i][j]===D[i-1][j]+1){ ops.unshift({op:"del",a:a[i-1],i:i-1}); i--; } else { ops.unshift({op:"ins",b:b[j-1],i}); j--; } }
+  return {dist:D[n][m],ops}; }
+const SND_LABEL={"ʃ":{de:"sch",en:"sh",fr:"ch"},"ç":{de:"ch",en:"ch",fr:"ch"},"θ":{en:"th"},"ʒ":{fr:"j",en:"zh",de:"j"},"ŋ":{de:"ng",en:"ng",fr:"ng"},"ts":{de:"z"},"tʃ":{en:"ch"},"dʒ":{en:"j"},"V":{de:"Vokal",en:"vowel",fr:"voyelle"},"Ṽ":{fr:"voyelle nasale",de:"Nasalvokal",en:"nasal vowel"},"ɲ":{fr:"gn"}};
+const sndLabel=(c,l)=>(SND_LABEL[c]&&(SND_LABEL[c][l]||SND_LABEL[c].de||SND_LABEL[c].en))||c;
+/* specific correction hints for typical substitutions: key "target>heard" */
+const CONF_KEYS={"s>t":"stop","s>d":"stop","z>d":"stop","s>θ":"lisp","z>θ":"lisp","s>f":"lisp","s>ʃ":"s_sh","z>ʒ":"s_sh","ʃ>s":"sh_s","ʒ>z":"sh_s","ʃ>ç":"sh_s","ç>ʃ":"ch_sh","ç>s":"ch_sh","k>t":"front","g>d":"front","k>p":"front","t>k":"back","d>g":"back","r>l":"r_l","r>w":"r_w","r>v":"r_w","l>r":"l_r","r>V":"r_vowel","f>p":"f_p","v>b":"f_p","θ>f":"th","θ>s":"th","θ>t":"th","ð>d":"th","ʒ>ʃ":"voice","z>s":"voice","v>f":"voice","b>p":"voice","d>t":"voice","g>k":"voice","s>z":"devoice","p>b":"devoice","t>d":"devoice","k>g":"devoice","ts>s":"ts_s","ts>t":"ts_s"};
+function wordDiagnosis(target,heardText,lang){
+  const words=norm(heardText||"").split(" ").filter(Boolean), tn=norm(target);
+  if(!words.length) return {ok:false,heard:"",hints:[{k:"h_unrec"}]};
+  if(tn.includes(" ")){ // sentence: word-level check
+    const hs=new Set(words), tw=tn.split(" "), miss=tw.filter(w=>!hs.has(w));
+    const ok=miss.length/tw.length<=0.2; return {ok,heard:heardText,hints:ok?[]:[{k:"h_words",w:miss.join(", ")}],miss}; }
+  if(words.includes(tn)) return {ok:true,heard:heardText,hints:[]};
+  const T=toSounds(target,lang); let best=null;
+  words.forEach(w=>{ const H=toSounds(w,lang), al=alignSounds(T,H); if(!best||al.dist<best.al.dist) best={w,H,al}; });
+  const hints=[]; const al=best.al, rel=al.dist/Math.max(1,T.length);
+  if(rel>0.6){ hints.push({k:"h_unrec"}); return {ok:false,heard:heardText,best:best.w,hints}; }
+  const posOf=i=>i<=0?"pos_start":i>=T.length-1?"pos_end":"pos_mid";
+  al.ops.slice(0,2).forEach(o=>{
+    if(o.op==="sub"&&!(o.a==="V"&&o.b==="V")){ const key=CONF_KEYS[o.a+">"+o.b]; hints.push({k:"h_sub",a:sndLabel(o.a,lang),b:sndLabel(o.b,lang),pos:posOf(o.i),conf:key}); }
+    else if(o.op==="del"){ if(o.i>=T.length-1) hints.push({k:"h_end",a:sndLabel(o.a,lang)}); else if(o.i===0) hints.push({k:"h_start",a:sndLabel(o.a,lang)}); else hints.push({k:"h_del",a:sndLabel(o.a,lang),pos:posOf(o.i)}); }
+    else if(o.op==="ins") hints.push({k:"h_ins",b:sndLabel(o.b,lang)});
+  });
+  if(!hints.length) hints.push({k:"h_close"});
+  return {ok:false,heard:heardText,best:best.w,hints};
+}
+function hintText(h){ const s=t(h.k,{a:h.a,b:h.b,w:h.w||"",pos:h.pos?t(h.pos):""}); return h.conf?s+" "+t("conf_"+h.conf):s; }
+
+/* ---------- series runner ---------- */
+let SER=null;
+function artRecord(lang,snd,ok){ const k=lang+"|"+snd, a=store.art[k]||[]; a.push(ok?1:0); store.art[k]=a.slice(-50); store.artDay[today()]=(store.artDay[today()]||0)+1; if(store.artDay[today()]===10) markPlan("drill","art"); save(); }
+function serWords(n){ const L=ART[SET.tl][SP.snd][SP.pos].slice(); for(let i=L.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [L[i],L[j]]=[L[j],L[i]]; } return L.slice(0,Math.min(n,L.length)); }
+function renderSerSetup(){
+  const box=$("#serBox"); if(!box) return; if(SER&&SER.running) return;
+  if(SER&&(SER.snd!==SP.snd||SER.lang!==SET.tl||SER.pos!==SP.pos)){ SER.results.forEach(r=>r.url&&URL.revokeObjectURL(r.url)); SER=null; }
+  const cnt=store.set.serN||8, model=store.set.serModel!==false;
+  box.innerHTML=`<h3 style="margin-top:4px">${t("ser_title")}</h3><p class="muted">${t("ser_desc")}</p>
+    <div class="row"><span class="muted">${t("ser_count")}:</span><div class="chips" id="serN"></div></div>
+    <label class="check"><input type="checkbox" id="serModel" ${model?"checked":""}> <span>${t("ser_model")}</span></label>
+    <button class="b warm" style="width:100%" id="serStart">${t("ser_start")}</button><div id="serOut"></div>`;
+  chipSet($("#serN"),[[5,"5"],[8,"8"],[10,"10"]],cnt,v=>{ store.set.serN=+v; save(); renderSerSetup(); });
+  $("#serModel").onchange=e=>{ store.set.serModel=e.target.checked; save(); };
+  $("#serStart").onclick=()=>startSeries(serWords(cnt));
+  if(SER&&SER.results) renderSerSummary();
+}
+function startSeries(words){
+  if(SER&&SER.results) SER.results.forEach(r=>r.url&&URL.revokeObjectURL(r.url));
+  ac(); keepAwake(true);
+  SER={words,i:0,results:[],running:true,lang:SET.tl,snd:SP.snd,pos:SP.pos,model:store.set.serModel!==false,auto:!!srLang(),t0:Date.now()};
+  serWord();
+}
+function serWord(){
+  const S=SER, box=$("#serBox"); if(!S||!S.running) return;
+  if(S.i>=S.words.length){ S.running=false; keepAwake(false); finishSeries(); return; }
+  const w=S.words[S.i];
+  box.innerHTML=`<div class="row"><b class="grow">${t("ser_word",{i:S.i+1,n:S.words.length})}</b><button class="b sm alt" id="serStop">${t("cancel")}</button></div>
+    <div class="step">${S.words.map((_,k)=>`<i class="${k<S.i?'d':''}" style="${k<S.i?(S.results[k].ok?'':'background:var(--warn)'):''}"></i>`).join("")}</div>
+    <div class="huge" style="font-size:${w.length>18?'1.4rem':'2.4rem'}">${esc(w)}</div>
+    <div class="meter"><i id="serLv"></i></div><p class="muted" id="serState" style="text-align:center;min-height:1.3em"></p>
+    <div class="bubble me hidden" id="serHeard"></div>
+    <div class="row"><button class="b grow" id="serGo">${t("ser_next")}</button></div>`;
+  $("#serStop").onclick=()=>{ if(S.take) S.take.stop().catch(()=>{}); S.running=false; keepAwake(false); SER=null; renderSerSetup(); };
+  const go=()=>{ $("#serState").textContent=t("ser_listen"); beep(880,.07,.08); recordWord(w); };
+  if(S.model){ $("#serState").textContent="🔊"; speak(w,S.lang,()=>{ if(SER===S&&S.running) setTimeout(go,250); }, 0.85); } else go();
+  $("#serGo").onclick=()=>{ if(S.take) S.stopNow&&S.stopNow(); };
+}
+async function recordWord(w){
+  const S=SER, isSent=w.includes(" "), maxMs=isSent?9000:4500; let floor=null, fl=[], started=false, quietSince=null, stopped=false;
+  const stopNow=async()=>{ if(stopped||!S.take) return; stopped=true; const tk=S.take; S.take=null; $("#serState").textContent=t("analysing"); const r=await tk.stop(); evalWord(w,r); };
+  S.stopNow=stopNow;
+  try{
+    S.take=await startTake({lang:S.auto?S.lang:null,onText:txt=>{ const h=$("#serHeard"); if(h){ h.classList.remove("hidden"); h.textContent=txt; } },
+      onLevel:(db,sec)=>{ const lv=$("#serLv"); if(lv) lv.style.width=Math.max(0,Math.min(100,(db+70)/60*100))+"%";
+        if(sec<0.3){ fl.push(db); return; } if(floor===null) floor=Math.min(-50,fl.reduce((a,b)=>a+b,0)/Math.max(1,fl.length));
+        if(!started&&db>floor+14) started=true;
+        if(started){ if(db<floor+7){ if(quietSince===null) quietSince=sec; else if(sec-quietSince>0.8) stopNow(); } else quietSince=null; }
+        if(sec*1000>maxMs) stopNow(); }});
+  }catch(e){ micError(e); toast(t("mic_title")+" ✗"); S.running=false; keepAwake(false); SER=null; renderSerSetup(); }
+}
+function evalWord(w,r){
+  const S=SER; if(!S) return;
+  const an=analyze(r.pcm,{minSpeech:20}), url=r.blob?URL.createObjectURL(r.blob):null;
+  let res={word:w,blob:r.blob,url,an,heard:r.sr.text||"",ok:null,hints:[]};
+  if(S.auto&&(r.sr.text||!an.ok)){ Object.assign(res,wordDiagnosis(w,r.sr.text,S.lang)); }
+  if(an.ok&&an.meanDb<-42) res.hints.push({k:"h_quiet"});
+  if(!r.sr.text){ res.ok=null; if(!an.ok) res.hints=[{k:"h_unrec"}]; if(S.auto&&an.ok){ S.srMiss=(S.srMiss||0)+1; if(S.srMiss>=2){ S.auto=false; toast(t("conc_note")); } } }
+  S.results[S.i]=res;
+  if(res.ok!==null) artRecord(S.lang,S.snd,res.ok);
+  const st=$("#serState"); if(st) st.innerHTML=res.ok===true?`<b style="color:var(--ok)">✓ ${t("ser_ok")}</b>`:res.ok===false?`<b style="color:var(--warn)">✗ ${esc(res.heard||t("ser_none"))}</b>`:"";
+  beep(res.ok===false?440:res.ok?990:700,.1,.08);
+  S.i++; setTimeout(serWord,res.ok===null?500:1100);
+}
+function finishSeries(){ logSession(t("ser_title")+" "+SER.snd,Math.max(0.5,(Date.now()-SER.t0)/60000)); markPlan("drill","art"); renderSerSummary(); showArtMastery(); renderSpeech(); }
+function renderSerSummary(){
+  const S=SER, box=$("#serBox"); if(!S) return;
+  const judged=S.results.filter(r=>r.ok!==null), ok=judged.filter(r=>r.ok).length, open=S.results.filter(r=>r.ok===null).length;
+  box.innerHTML=`<h3 style="margin-top:4px">${t("ser_title")} – ${esc(S.snd)} (${t("pos_"+S.pos)})</h3>
+    <div class="scorebig" style="color:${ok===S.results.length?'var(--ok)':'var(--accent2)'}">${ok}/${S.results.length}</div>
+    <p style="text-align:center" class="muted">${t("ser_result",{c:ok,n:S.results.length})}${open?" · "+t("ser_open",{n:open}):""}</p>
+    ${ok===S.results.length?`<div class="okbox">${t("ser_all_ok")}</div>`:""}
+    <div id="serList"></div><div class="row" style="margin-top:10px" id="serBtns"></div>`;
+  const L=$("#serList");
+  S.results.forEach((r,idx)=>{
+    const c=el("div",{class:"card",style:"padding:10px;margin:8px 0;border-left:5px solid "+(r.ok===true?"var(--ok)":r.ok===false?"var(--warn)":"var(--line)")});
+    c.innerHTML=`<div class="row"><b class="grow" style="font-size:1.2rem">${r.ok===true?"✓":r.ok===false?"✗":"?"} ${esc(r.word)}</b></div>
+      ${r.heard||r.ok===false?`<p class="muted">${t("ser_heard",{w:esc(r.heard||t("ser_none"))})}</p>`:""}
+      ${r.hints.length?`<ul class="list">${r.hints.map(h=>`<li>${esc(hintText(h))}</li>`).join("")}</ul>`:""}
+      ${r.ok===false?`<p class="muted"><b>${t("how_sound")}</b> ${esc(ART[S.lang][S.snd].tip)}</p>`:""}
+      <div class="row"></div>`;
+    const row=c.querySelector(".row:last-child");
+    if(r.url){ const a=new Audio(r.url); const pb=el("button",{class:"b sm alt"},t("ser_your")); pb.onclick=()=>{ a.currentTime=0; a.play().catch(()=>{}); }; row.append(pb); }
+    const m1=el("button",{class:"b sm alt"},t("ser_model_btn")); m1.onclick=()=>speak(r.word,S.lang,null,0.9);
+    const m2=el("button",{class:"b sm alt"},t("ser_slow")); m2.onclick=()=>speak(r.word,S.lang,null,0.55); row.append(m1,m2);
+    if(r.ok===null){ const y=el("button",{class:"b sm",style:"background:var(--ok)"},"✓"), n=el("button",{class:"b sm",style:"background:var(--warn)"},"✗");
+      y.onclick=()=>{ r.ok=true; artRecord(S.lang,S.snd,true); renderSerSummary(); showArtMastery(); }; n.onclick=()=>{ r.ok=false; artRecord(S.lang,S.snd,false); renderSerSummary(); showArtMastery(); };
+      row.append(el("span",{class:"muted"},t("ser_self")),y,n); }
+    if(r.ok===false){ const pr=el("button",{class:"b sm warm"},t("ser_practice")); pr.onclick=()=>practiceOne(idx,c); row.append(pr); }
+    L.append(c);
+  });
+  const B=$("#serBtns"), wrong=S.results.filter(r=>r.ok===false).map(r=>r.word);
+  if(wrong.length){ const b=el("button",{class:"b warm grow"},t("ser_retry",{n:wrong.length})); b.onclick=()=>startSeries(wrong); B.append(b); }
+  const nb=el("button",{class:"b grow"},t("ser_new")); nb.onclick=()=>startSeries(serWords(store.set.serN||8)); B.append(nb);
+  const cb=el("button",{class:"b alt"},t("close")); cb.onclick=()=>{ SER=null; renderSerSetup(); }; B.append(cb);
+}
+/* single-word practice: model first, then record, then update the entry in the summary */
+function practiceOne(idx,card){
+  const S=SER, r0=S.results[idx], w=r0.word, st=el("p",{class:"muted"},"🔊"); card.append(st);
+  speak(w,S.lang,async()=>{ st.textContent=t("ser_listen"); beep(880,.07,.08);
+    let floor=null,fl=[],started=false,qs=null,done=false,tk=null;
+    const fin=async()=>{ if(done||!tk) return; done=true; st.textContent=t("analysing"); const r=await tk.stop();
+      const res={word:w,url:r.blob?URL.createObjectURL(r.blob):null,an:analyze(r.pcm,{minSpeech:20}),heard:r.sr.text||"",ok:null,hints:[]};
+      if(r.sr.text) Object.assign(res,wordDiagnosis(w,r.sr.text,S.lang)); if(res.ok!==null) artRecord(S.lang,S.snd,res.ok);
+      if(r0.url) URL.revokeObjectURL(r0.url); S.results[idx]=res; renderSerSummary(); showArtMastery(); };
+    try{ tk=await startTake({lang:S.auto?S.lang:null,onLevel:(db,sec)=>{ if(sec<0.3){ fl.push(db); return; } if(floor===null) floor=Math.min(-50,fl.reduce((a,b)=>a+b,0)/Math.max(1,fl.length));
+        if(!started&&db>floor+14) started=true; if(started){ if(db<floor+7){ if(qs===null) qs=sec; else if(sec-qs>0.8) fin(); } else qs=null; } if(sec>5) fin(); }}); }
+    catch(e){ micError(e); st.textContent="✗"; }
+  },0.8);
 }
 
 /* ================= v3: plan, lessons, voice test, studio, drills, library ================= */

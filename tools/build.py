@@ -2,9 +2,9 @@
 import pathlib, json
 root = pathlib.Path(__file__).resolve().parent.parent
 src = root/"src"; dist = root/"dist"; dist.mkdir(exist_ok=True)
-VERSION = "3.1"
+VERSION = "3.2"
 html = (src/"index.html").read_text(encoding="utf-8").replace("__VERSION__", VERSION)
-js = "\n".join((src/f).read_text(encoding="utf-8") for f in ["i18n.js","i18n2.js","content.js","content2.js","media.js","app.js","conv.js","app2.js"])
+js = "\n".join((src/f).read_text(encoding="utf-8") for f in ["i18n.js","i18n2.js","i18n3.js","content.js","content2.js","media.js","app.js","conv.js","artseries.js","app2.js"])
 scripts = "<script>\n/* VoiceCoach v%s */\n" % VERSION + js.replace("</script","<\\/script") + "\n</script>"
 (dist/"artifact.html").write_text(html.replace("<!--MANIFEST-->","").replace("<!--SCRIPTS-->",scripts), encoding="utf-8")
 (root/"index.html").write_text(html.replace("<!--MANIFEST-->",'<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">').replace("<!--SCRIPTS-->",scripts), encoding="utf-8")

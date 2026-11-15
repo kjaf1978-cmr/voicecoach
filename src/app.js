@@ -28,16 +28,16 @@ let wakeLock=null;
 async function keepAwake(on){ try{ if(on&&"wakeLock" in navigator&&!wakeLock){ wakeLock=await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release",()=>wakeLock=null);} if(!on&&wakeLock){ wakeLock.release(); wakeLock=null; } }catch(e){} }
 
 /* ---------- text-to-speech (partner voice) ---------- */
-function speak(text, lang, onend){
+function speak(text, lang, onend, rate){
   let done=false; const fin=()=>{ if(!done){ done=true; onend&&onend(); } };
   try{
     if(!("speechSynthesis" in window)) return fin();
     speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(text); u.lang=LOCALE[lang]; u.rate=+SET.rate||1;
+    const u=new SpeechSynthesisUtterance(text); u.lang=LOCALE[lang]; u.rate=rate||+SET.rate||1;
     const vs=speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.replace("_","-").toLowerCase().startsWith(lang));
     const pref=vs.find(v=>v.lang.replace("_","-")===LOCALE[lang])||vs[0]; if(pref) u.voice=pref;
     u.onend=fin; u.onerror=fin; speechSynthesis.speak(u);
-    setTimeout(fin, 1500+text.length*90/(+SET.rate||1));
+    setTimeout(fin, 1500+text.length*90/(rate||+SET.rate||1));
   }catch(e){ fin(); }
 }
 try{ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=()=>{}; }catch(e){}
@@ -274,7 +274,7 @@ function renderSpeech(){
   chipSet($("#soundChips"),Object.keys(ART[SET.tl]).map(k=>[k,k+(artStats(SET.tl,k).mastered?" ✓":"")]),SP.snd,v=>{ SP.snd=v; SP.idx=0; renderSpeech(); });
   chipSet($("#posChips"),[["i",t("pos_i")],["m",t("pos_m")],["f",t("pos_f")],["s",t("pos_s")]],SP.pos,v=>{ SP.pos=v; SP.idx=0; renderSpeech(); });
   $("#soundTip").innerHTML="<b>"+t("how_sound")+"</b> "+esc(ART[SET.tl][SP.snd].tip);
-  showWord(); showArtMastery();
+  showWord(); showArtMastery(); if(typeof renderSerSetup==="function") renderSerSetup();
 }
 function curList(){ return ART[SET.tl][SP.snd][SP.pos]; }
 function showWord(){ const L=curList(); SP.idx=(SP.idx+L.length)%L.length; const w=L[SP.idx]; $("#drillWord").textContent=w; $("#drillWord").style.fontSize=w.length>18?"1.35rem":"2.1rem"; $("#drillHeard").textContent="";
