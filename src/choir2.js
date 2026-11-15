@@ -70,7 +70,7 @@ const SONGS=[
 const LV={b:{pitch:70,stab:35,time:250,sus:70,dyn:8},i:{pitch:85,stab:25,time:160,sus:80,dyn:6},a:{pitch:95,stab:15,time:110,sus:90,dyn:4}};
 const LANG_NAME={en:{en:"English",de:"German",fr:"French"},de:{en:"Englisch",de:"Deutsch",fr:"Französisch"},fr:{en:"anglais",de:"allemand",fr:"français"}};
 const allSongs=()=>SONGS.concat(store.mySongs||[]);
-let SG={id:null,lv:"i",guide:true,bpm:null,phrase:null,phStreak:0,last:null};
+let SG={id:null,lv:"i",guide:true,gm:null,bpm:null,phrase:null,phStreak:0,last:null};
 const songName=s=>typeof s.name==="string"?s.name:(s.name[SET.ui]||s.name.en);
 function songLang(s){ return s.lyr[SET.tl]?SET.tl:(Object.keys(s.lyr)[0]||SET.tl); }
 function sgStore(id){ store.choirSongs=store.choirSongs||{}; return store.choirSongs[id]=store.choirSongs[id]||{runs:0,best:0,mastered:{}}; }
@@ -104,18 +104,21 @@ function renderSongs(){
    <div class="row"><span class="muted">${t("sg_song")}:</span></div><div class="chips" data-s></div>
    <div class="row"><span class="muted">${t("sg_level")}:</span><div class="chips" data-l></div></div>
    <div class="row"><span class="muted">${t("pt_slow")}:</span><div class="chips" data-t></div><span class="muted">${t("sg_guide")}:</span><div class="chips" data-g></div></div>
-   <p class="muted" style="font-size:.8rem">${s.my?"🎙 "+t("my_tag"):t("sg_lyr",{l:LANG_NAME[SET.ui][l]})+(s.lyr[SET.tl]?"":" "+t("sg_orig"))} · ${t("nt_key",{n:nName(60+shift)})} · ${t("sg_hist",{n:st.runs})}${st.best?" · "+t("sg_best",{p:st.best}):""}${Object.keys(st.mastered).length?" · "+t("sg_mastered",{l:Object.keys(st.mastered).map(k=>t("lv_"+k)).join(", ")}):""}</p>
+   <p class="muted" style="font-size:.8rem">${s.my&&s.audio===undefined?`<span class="warnbox" style="display:block;margin-bottom:4px">${t("my_old")}</span>`:""}${s.my?"🎙 "+t("my_tag"):t("sg_lyr",{l:LANG_NAME[SET.ui][l]})+(s.lyr[SET.tl]?"":" "+t("sg_orig"))} · ${t("nt_key",{n:nName(60+shift)})} · ${t("sg_hist",{n:st.runs})}${st.best?" · "+t("sg_best",{p:st.best}):""}${Object.keys(st.mastered).length?" · "+t("sg_mastered",{l:Object.keys(st.mastered).map(k=>t("lv_"+k)).join(", ")}):""}</p>
    <div class="card flat" data-lyr ${tlAttr(l)} style="line-height:1.9;font-size:1.02rem"></div>
    ${SG.phrase!=null?`<div class="warnbox">${t("sg_phrase_mode",{n:SG.phrase+1,a:SG.phStreak})}</div>`:""}
    <div data-lane></div>
    <div class="row"><button class="b alt grow" data-lis>${t("sg_listen")}</button><button class="b warm grow" data-go>${SG.phrase!=null?t("sg_phrase_go",{n:SG.phrase+1}):t("sg_go")}</button></div>
    ${SG.phrase!=null?`<button class="b alt sm" data-back style="margin-top:6px">${t("sg_back")}</button>`:""}<div data-out></div>${s.my?`<button class="b alt sm" data-del style="margin-top:8px">🗑 ${t("my_del")}</button>`:""}`;
-  if(s.my) box.querySelector("[data-del]").onclick=()=>{ store.mySongs=(store.mySongs||[]).filter(x=>x.id!==s.id); save(); SG.id=null; SG.last=null; renderSongs(); };
+  if(s.my) box.querySelector("[data-del]").onclick=()=>{ SongAudio.del(s.id); store.mySongs=(store.mySongs||[]).filter(x=>x.id!==s.id); save(); SG.id=null; SG.last=null; renderSongs(); };
   renderMySong(box);
   chipSet(box.querySelector("[data-s]"),ALL.slice().sort((a,b)=>(!!b.lyr[SET.tl]-!!a.lyr[SET.tl])||(!!a.my-!!b.my)).map(x=>[x.id,(x.my?"🎙 ":"")+songName(x)+(sgStore(x.id).mastered[SG.lv]?" ✓":"")]),s.id,v=>{ SG.id=v; SG.bpm=null; SG.phrase=null; SG.last=null; renderSongs(); });
   chipSet(box.querySelector("[data-l]"),["b","i","a"].map(k=>[k,t("lv_"+k)]),SG.lv,v=>{ SG.lv=v; renderSongs(); });
   chipSet(box.querySelector("[data-t]"),[Math.round(s.bpm*0.75),s.bpm,Math.round(s.bpm*1.15)].map(v=>[v,s.my?Math.round(v/s.bpm*100)+" "+t("my_pct"):String(v)]),bpm,v=>{ SG.bpm=+v; renderSongs(); });
-  chipSet(box.querySelector("[data-g]"),[[1,t("sg_on")],[0,t("sg_off")]],SG.guide?1:0,v=>{ SG.guide=!!+v; renderSongs(); });
+  const gms=s.my&&s.audio?[["orig",t("my_orig")],["synth",t("my_synth")],["off",t("sg_off")]]:[["synth",t("sg_on")],["off",t("sg_off")]];
+  if(!SG.gm||!gms.find(g=>g[0]===SG.gm)) SG.gm=s.my&&s.audio?"orig":(SG.guide?"synth":"off");
+  chipSet(box.querySelector("[data-g]"),gms,SG.gm,v=>{ SG.gm=v; SG.guide=v!=="off"; renderSongs(); });
+  const useOrig=SG.gm==="orig"&&bpm===s.bpm;
   const beat=60/bpm, {targets,dur}=songTargets(s,shift,beat,SG.phrase);
   // lyrics with one span per syllable
   const ly=box.querySelector("[data-lyr]"); let lines={}; targets.forEach((n,i)=>{ (lines[n.ph]=lines[n.ph]||[]).push(`<span data-i="${i}" style="padding:1px 2px;border-radius:4px">${esc(n.label)}</span>`); });
@@ -123,12 +126,16 @@ function renderSongs(){
   const mid=Math.round((Math.min(...targets.map(n=>n.m))+Math.max(...targets.map(n=>n.m)))/2), lane=laneView(box.querySelector("[data-lane]"),targets,mid);
   const hl=i=>{ ly.querySelectorAll("span[data-i]").forEach(e=>{ const k=+e.dataset.i; e.style.background=k===i?"var(--accent2)":""; e.style.color=k===i?"#fff":(k<i?"var(--muted)":""); }); };
   if(SG.last&&SG.last.id===s.id&&SG.last.phrase===SG.phrase) showSongResult(box,s,SG.last.res,SG.last.m);
-  box.querySelector("[data-lis]").onclick=()=>{ const c=ac(), t0=c.currentTime+0.2; targets.forEach((n,i)=>{ synthNote(c,n.m,t0+n.t,n.d*0.92,0.14); setTimeout(()=>hl(i),(0.2+n.t)*1000); }); setTimeout(()=>hl(-1),(0.3+dur)*1000); };
+  const origOff=()=>s.phT?s.phT[SG.phrase==null?0:SG.phrase]:0;
+  box.querySelector("[data-lis]").onclick=async()=>{ const c=ac(), t0=c.currentTime+0.25, buf=useOrig?await SongAudio.get(s.id):null;
+    if(buf){ const src=c.createBufferSource(); src.buffer=buf; src.connect(c.destination); src.start(t0,origOff(),dur+0.3); } else targets.forEach(n=>synthNote(c,n.m,t0+n.t,n.d*0.92,0.14));
+    targets.forEach((n,i)=>setTimeout(()=>hl(i),(0.25+n.t)*1000)); setTimeout(()=>hl(-1),(0.4+dur)*1000); };
   if(box.querySelector("[data-back]")) box.querySelector("[data-back]").onclick=()=>{ SG.phrase=null; SG.phStreak=0; SG.last=null; renderSongs(); };
   box.querySelector("[data-go]").onclick=async()=>{ const go=box.querySelector("[data-go]"); go.disabled=true; lane.reset();
-    const acc=SG.guide?targets.map(n=>({m:n.m,t:n.t,d:n.d*0.92,v:0.07})):[];
+    const buf=useOrig?await SongAudio.get(s.id):null;
+    const acc=buf?[{buf,t:0,off:origOff(),d:dur+0.2,v:0.8}]:(SG.gm!=="off"?targets.map(n=>({m:n.m,t:n.t,d:n.d*0.92,v:0.07})):[]);
     // light chord support on the key note at each phrase start, also without the guide melody
-    [...new Set(targets.map(n=>n.ph))].forEach(p=>{ const f=targets.find(n=>n.ph===p); acc.push({m:60+shift-12,t:f.t,d:Math.min(2,beat*2),v:0.05,organ:true}); });
+    if(!s.my) [...new Set(targets.map(n=>n.ph))].forEach(p=>{ const f=targets.find(n=>n.ph===p); acc.push({m:60+shift-12,t:f.t,d:Math.min(2,beat*2),v:0.05,organ:true}); });
     const out=await singSession({acc,targets,countIn:4,beat,total:dur,onLive:(f,rel)=>{ if(rel>=-0.2) lane.pushAt(f,rel); },onPhase:i=>hl(i)});
     go.disabled=false; hl(-1); if(!out) return;
     const m=songMetrics(out.res); st.runs++; if(SG.phrase==null) st.best=Math.max(st.best,m.pitch);
@@ -186,31 +193,107 @@ SONGS.push(
   lyr:{de:"Al- le mei- ne Ent- chen / schwim- men auf dem See, / schwim- men auf dem See. / Köpf- chen in das Was- ser, / Schwänz- chen in die Höh'."}});
 
 /* ---------- own song from a recording (e.g. the part recording your choir director sends) ---------- */
-Object.assign(T.en,{my_title:"＋ Own song from a recording", my_desc:"Import a recording of a single melody line – e.g. the rehearsal recording of your part, a solo singer or one instrument (no full band: chords confuse the pitch detection) – or record it yourself. The app turns it into notes and phrases (max. 90 s) and then trains it with the same five parameters. Only use recordings you are allowed to use.", my_name:"Name of the song", my_file:"Import audio file", my_rec:"● Record the melody", my_none:"No clear melody found – use a recording of a single voice or instrument.", my_ok:"Imported: {n} notes in {p} phrases.", my_del:"Delete this song", my_tag:"own", my_pct:"% speed"});
-Object.assign(T.de,{my_title:"＋ Eigenes Lied aus einer Aufnahme", my_desc:"Importiere die Aufnahme einer einzelnen Melodiestimme – z. B. die Übe-Aufnahme deiner Stimme von der Chorleitung, eine Solostimme oder ein Instrument (keine ganze Band: Akkorde stören die Tonerkennung) – oder nimm sie selbst auf. Die App macht daraus Töne und Phrasen (max. 90 s) und trainiert sie mit denselben fünf Parametern. Nutze nur Aufnahmen, die du verwenden darfst.", my_name:"Name des Lieds", my_file:"Audiodatei importieren", my_rec:"● Melodie aufnehmen", my_none:"Keine klare Melodie gefunden – nimm eine Aufnahme mit einer einzelnen Stimme oder einem Instrument.", my_ok:"Importiert: {n} Töne in {p} Phrasen.", my_del:"Dieses Lied löschen", my_tag:"eigenes", my_pct:"% Tempo"});
-Object.assign(T.fr,{my_title:"＋ Chanson personnelle depuis un enregistrement", my_desc:"Importez l'enregistrement d'une seule ligne mélodique – p. ex. l'enregistrement de travail de votre voix envoyé par le chef de chœur, un chanteur seul ou un instrument (pas un groupe entier : les accords perturbent la détection) – ou enregistrez-la vous-même. L'appli la transforme en notes et phrases (90 s max.) puis l'entraîne avec les mêmes cinq paramètres. N'utilisez que des enregistrements que vous avez le droit d'utiliser.", my_name:"Nom de la chanson", my_file:"Importer un fichier audio", my_rec:"● Enregistrer la mélodie", my_none:"Aucune mélodie claire trouvée – utilisez l'enregistrement d'une seule voix ou d'un instrument.", my_ok:"Importé : {n} notes en {p} phrases.", my_del:"Supprimer cette chanson", my_tag:"perso", my_pct:"% de vitesse"});
-function extractSong(pcm){
-  const an=analyze(pcm.length>16000*90?pcm.subarray(0,16000*90):pcm,{minSpeech:20}); if(!an||!an.series) return null;
-  const S=an.series, hop=S.hop, m=S.f0.map(f=>f>0?hzToMidi(f):null), sm=m.map((v,i)=>{ if(v==null) return null; const w=m.slice(Math.max(0,i-2),i+3).filter(x=>x!=null); return pctl(w,0.5); });
-  const segs=[]; let cur=null, gap=0, dev=0;
-  const close=()=>{ if(cur&&cur.v.length>=6) segs.push({s:cur.s,e:cur.e,m:Math.round(pctl(cur.v,0.5))}); cur=null; };
-  sm.forEach((v,i)=>{ const tt=i*hop;
-    if(v==null){ gap++; if(gap>2) close(); return; } gap=0;
-    if(cur){ const md=pctl(cur.v,0.5); if(Math.abs(v-md)>0.7){ dev++; if(dev>=3){ const keep=cur.v.slice(0,-2); cur.v=keep; cur.e=tt-2*hop; close(); cur={s:tt-2*hop,e:tt,v:[v]}; dev=0; return; } } else dev=0; cur.v.push(v); cur.e=tt+hop; }
-    else cur={s:tt,e:tt+hop,v:[v]}; });
-  close(); if(segs.length<3) return null;
-  const phrases=[]; let ph=[], last=segs[0].s;
-  segs.forEach((g,i)=>{ const gp=g.s-last; if(i>0&&gp>=0.4){ phrases.push(ph); ph=[]; } if(gp>0.05) ph.push([null,Math.min(3,gp)]); ph.push([g.m-60,Math.max(0.12,g.e-g.s)]); last=g.e; });
-  phrases.push(ph); return phrases.filter(p=>p.some(n=>n[0]!=null));
+Object.assign(T.en,{my_old:"This song was imported with an older version whose melody detection broke up the notes. Delete it and import the file again for a much cleaner result.", my_orig:"original recording", my_synth:"melody (synth)", my_prog:"Analysing the recording … {p} %", my_mix:"Note: only {v} % of the recording contains a clear melody line. With full accompaniment some notes may be wrong – the result is best with a vocal-only or a cappella recording. Check it with “Listen first”.", my_octnote:"With the original recording as guide, sing in your own octave – octave differences are not counted as errors.", my_title:"＋ Own song from a recording", my_desc:"Import a recording of a single melody line – e.g. the rehearsal recording of your part, a solo singer or one instrument (no full band: chords confuse the pitch detection) – or record it yourself. The app turns it into notes and phrases (max. 90 s) and then trains it with the same five parameters. Only use recordings you are allowed to use.", my_name:"Name of the song", my_file:"Import audio file", my_rec:"● Record the melody", my_none:"No clear melody found – use a recording of a single voice or instrument.", my_ok:"Imported: {n} notes in {p} phrases.", my_del:"Delete this song", my_tag:"own", my_pct:"% speed"});
+Object.assign(T.de,{my_old:"Dieses Lied wurde mit einer älteren Version importiert, deren Tonerkennung die Töne zerstückelt hat. Lösche es und importiere die Datei erneut – das Ergebnis ist deutlich sauberer.", my_orig:"Originalaufnahme", my_synth:"Melodie (Synth)", my_prog:"Aufnahme wird analysiert … {p} %", my_mix:"Hinweis: Nur {v} % der Aufnahme enthalten eine klare Melodielinie. Mit voller Begleitung können einzelne Töne falsch sein – am besten geht es mit einer reinen Gesangs- oder A-cappella-Aufnahme. Prüfe es mit „Erst anhören“.", my_octnote:"Mit der Originalaufnahme als Begleitung singst du in deiner eigenen Oktave – Oktavunterschiede zählen nicht als Fehler.", my_title:"＋ Eigenes Lied aus einer Aufnahme", my_desc:"Importiere die Aufnahme einer einzelnen Melodiestimme – z. B. die Übe-Aufnahme deiner Stimme von der Chorleitung, eine Solostimme oder ein Instrument (keine ganze Band: Akkorde stören die Tonerkennung) – oder nimm sie selbst auf. Die App macht daraus Töne und Phrasen (max. 90 s) und trainiert sie mit denselben fünf Parametern. Nutze nur Aufnahmen, die du verwenden darfst.", my_name:"Name des Lieds", my_file:"Audiodatei importieren", my_rec:"● Melodie aufnehmen", my_none:"Keine klare Melodie gefunden – nimm eine Aufnahme mit einer einzelnen Stimme oder einem Instrument.", my_ok:"Importiert: {n} Töne in {p} Phrasen.", my_del:"Dieses Lied löschen", my_tag:"eigenes", my_pct:"% Tempo"});
+Object.assign(T.fr,{my_old:"Cette chanson a été importée avec une version plus ancienne dont la détection découpait les notes. Supprimez-la et importez à nouveau le fichier pour un résultat bien plus propre.", my_orig:"enregistrement original", my_synth:"mélodie (synthé)", my_prog:"Analyse de l'enregistrement … {p} %", my_mix:"Remarque : seulement {v} % de l'enregistrement contient une ligne mélodique claire. Avec un accompagnement complet, certaines notes peuvent être fausses – le résultat est meilleur avec un enregistrement voix seule ou a cappella. Vérifiez avec « Écouter d'abord ».", my_octnote:"Avec l'enregistrement original comme guide, chantez dans votre propre octave – les différences d'octave ne comptent pas comme erreurs.", my_title:"＋ Chanson personnelle depuis un enregistrement", my_desc:"Importez l'enregistrement d'une seule ligne mélodique – p. ex. l'enregistrement de travail de votre voix envoyé par le chef de chœur, un chanteur seul ou un instrument (pas un groupe entier : les accords perturbent la détection) – ou enregistrez-la vous-même. L'appli la transforme en notes et phrases (90 s max.) puis l'entraîne avec les mêmes cinq paramètres. N'utilisez que des enregistrements que vous avez le droit d'utiliser.", my_name:"Nom de la chanson", my_file:"Importer un fichier audio", my_rec:"● Enregistrer la mélodie", my_none:"Aucune mélodie claire trouvée – utilisez l'enregistrement d'une seule voix ou d'un instrument.", my_ok:"Importé : {n} notes en {p} phrases.", my_del:"Supprimer cette chanson", my_tag:"perso", my_pct:"% de vitesse"});
+/* melody extraction for music recordings: proper resampling + band-pass (voice band), YIN pitch tracker 70–1100 Hz,
+   octave correction, note hysteresis, bridging of consonant/breath gaps, phrase splitting */
+async function songPcm(ab,filtered){
+  const dur=Math.min(ab.duration,90), oc=new OfflineAudioContext(1,Math.ceil(dur*16000),16000), src=oc.createBufferSource(); src.buffer=ab; let node=src;
+  if(filtered){ const hp=oc.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=150; hp.Q.value=0.7; const hp2=oc.createBiquadFilter(); hp2.type="highpass"; hp2.frequency.value=150; hp2.Q.value=0.7; const lp=oc.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=2200; node.connect(hp); hp.connect(hp2); hp2.connect(lp); node=lp; }
+  node.connect(oc.destination); src.start(0,0,dur); return (await oc.startRendering()).getChannelData(0);
 }
+async function yinTrack(x16,onProg){
+  const N8=Math.floor(x16.length/2), x=new Float32Array(N8); for(let i=0;i<N8;i++) x[i]=(x16[2*i]+x16[2*i+1])/2;
+  const sr=8000, hop=160, W=320, minLag=7, maxLag=118, F=Math.max(0,Math.floor((N8-W-maxLag)/hop)), f0=new Float32Array(F), conf=new Float32Array(F), rms=new Float32Array(F), d=new Float32Array(maxLag+1);
+  for(let k=0;k<F;k++){ const o=k*hop; let e=0; for(let j=0;j<W;j++) e+=x[o+j]*x[o+j]; rms[k]=Math.sqrt(e/W);
+    d[0]=0; for(let tau=1;tau<=maxLag;tau++){ let s=0; for(let j=0;j<W;j++){ const q=x[o+j]-x[o+j+tau]; s+=q*q; } d[tau]=s; }
+    let run=0, best=-1, bv=9; for(let tau=1;tau<=maxLag;tau++){ run+=d[tau]; const c=run>0?d[tau]*tau/run:1; d[tau]=c; }
+    for(let tau=minLag;tau<maxLag;tau++){ if(d[tau]<0.2){ while(tau+1<maxLag&&d[tau+1]<d[tau]) tau++; best=tau; bv=d[tau]; break; } }
+    if(best<0){ for(let tau=minLag;tau<maxLag;tau++) if(d[tau]<bv){ bv=d[tau]; best=tau; } }
+    if(best>minLag&&best<maxLag&&bv<0.45){ const a=d[best-1],b=d[best],c=d[best+1], den=a-2*b+c, sh=den?0.5*(a-c)/den:0; f0[k]=sr/(best+(Math.abs(sh)<1?sh:0)); conf[k]=1-bv; }
+    if(k%150===0){ onProg&&onProg(k/F); await new Promise(r=>setTimeout(r,0)); } }
+  return {f0,conf,rms,hop:0.02,off:W/2/sr};
+}
+function notesFromTrack(tr){
+  const F=tr.f0.length, top=pctl(Array.from(tr.rms).filter(v=>v>0),0.9)||1e-6, m=new Array(F).fill(null);
+  for(let k=0;k<F;k++) if(tr.f0[k]>0&&tr.conf[k]>=0.6&&tr.rms[k]>=top*0.08) m[k]=hzToMidi(tr.f0[k]);
+  const sm=m.map((v,k)=>{ if(v==null) return null; const w=[]; for(let q=k-3;q<=k+3;q++) if(m[q]!=null) w.push(m[q]); return w.length>=3?pctl(w,0.5):null; });
+  let ref=null; const hist=[]; for(let k=0;k<F;k++){ let v=sm[k]; if(v==null) continue; if(ref!=null){ if(Math.abs(v-12-ref)<1.2) v-=12; else if(Math.abs(v+12-ref)<1.2) v+=12; } sm[k]=v; hist.push(v); if(hist.length>15) hist.shift(); ref=pctl(hist,0.5); }
+  const voiced=Math.round(100*sm.filter(v=>v!=null).length/Math.max(1,F));
+  // note hysteresis + gap bridging
+  const segs=[]; let cur=null, gap=0, dev=[];
+  const close=()=>{ if(cur&&cur.e-cur.s>=0.1) segs.push({s:cur.s,e:cur.e,m:Math.round(pctl(cur.v,0.5))}); cur=null; };
+  for(let k=0;k<F;k++){ const v=sm[k], tt=k*tr.hop+tr.off;
+    if(v==null){ gap++; if(cur&&gap*tr.hop>0.16) close(); dev=[]; continue; }
+    if(cur&&Math.abs(v-cur.p)<=0.75){ cur.v.push(v); cur.e=tt+tr.hop; gap=0; dev=[]; continue; }
+    if(cur&&gap===0){ dev.push({v,tt}); if(dev.length<3) continue; cur.e=dev[0].tt; close(); cur={s:dev[0].tt,e:tt+tr.hop,v:dev.map(x=>x.v),p:Math.round(pctl(dev.map(x=>x.v),0.5))}; dev=[]; continue; }
+    if(cur) close(); gap=0; dev=[]; cur={s:tt,e:tt+tr.hop,v:[v],p:Math.round(v)}; }
+  close();
+  // merge same pitch across short gaps, drop isolated blips
+  const out=[]; segs.forEach(g=>{ const L=out[out.length-1]; if(L&&L.m===g.m&&g.s-L.e<0.1){ L.e=g.e; return; } out.push(g); });
+  const fr=tt=>Math.max(0,Math.min(F-1,Math.round((tt-tr.off)/tr.hop))), sp=[];
+  out.forEach(g=>{ const a=fr(g.s), b=fr(g.e); let start=g.s; for(let k=a+3;k<b-3;k++){ const r=tr.rms[k], l=Math.max(...Array.from(tr.rms.slice(Math.max(a,k-8),k))), rr=Math.max(...Array.from(tr.rms.slice(k+1,Math.min(b,k+9))));
+      if(r<0.55*l&&r<0.55*rr&&r<=tr.rms[k-1]&&r<=tr.rms[k+1]){ const tt=k*tr.hop+tr.off; if(tt-start>=0.15&&g.e-tt>=0.15){ sp.push({s:start,e:tt,m:g.m}); start=tt; k+=4; } } } sp.push({s:start,e:g.e,m:g.m}); });
+  const notes=sp.filter(g=>g.e-g.s>=0.12); if(notes.length<3) return {phrases:null,voiced};
+  // phrases: split at gaps ≥ 0.45 s, and long phrases (> 10 s) at their biggest gap
+  let groups=[[notes[0]]]; for(let i=1;i<notes.length;i++){ if(notes[i].s-notes[i-1].e>=0.45) groups.push([]); groups[groups.length-1].push(notes[i]); }
+  const split=g=>{ if(g.length<4||g[g.length-1].e-g[0].s<=10) return [g]; let bi=1,bg=-1; for(let i=1;i<g.length;i++){ const gp=g[i].s-g[i-1].e; if(gp>bg){ bg=gp; bi=i; } } return split(g.slice(0,bi)).concat(split(g.slice(bi))); };
+  groups=groups.flatMap(split);
+  const phrases=[], phT=[]; let last=groups[0][0].s;
+  groups.forEach(g=>{ const ph=[]; phT.push(g[0].s); g.forEach((n,i)=>{ const gp=n.s-last; if(gp>0.05) ph.push([null,Math.min(4,gp)]); ph.push([n.m-60,Math.max(0.12,n.e-n.s)]); last=n.e; }); phrases.push(ph); });
+  return {phrases,phT,t0:groups[0][0].s,voiced};
+}
+
+/* predominant-melody tracker for mixes: FFT + harmonic summation (salience) with continuity */
+function fftMag(re,im){ const n=re.length; for(let i=1,j=0;i<n;i++){ let b=n>>1; for(;j&b;b>>=1) j^=b; j^=b; if(i<j){ let t=re[i]; re[i]=re[j]; re[j]=t; t=im[i]; im[i]=im[j]; im[j]=t; } }
+  for(let len=2;len<=n;len<<=1){ const a=-2*Math.PI/len, wr=Math.cos(a), wi=Math.sin(a); for(let i=0;i<n;i+=len){ let cr=1,ci=0; for(let k=0;k<len/2;k++){ const ur=re[i+k],ui=im[i+k], vr=re[i+k+len/2]*cr-im[i+k+len/2]*ci, vi=re[i+k+len/2]*ci+im[i+k+len/2]*cr; re[i+k]=ur+vr; im[i+k]=ui+vi; re[i+k+len/2]=ur-vr; im[i+k+len/2]=ui-vi; const nr=cr*wr-ci*wi; ci=cr*wi+ci*wr; cr=nr; } } }
+  const m=new Float32Array(n/2); for(let i=0;i<n/2;i++) m[i]=Math.hypot(re[i],im[i]); return m; }
+async function salienceTrack(x,onProg){
+  const sr=16000, N=2048, hop=320, F=Math.max(0,Math.floor((x.length-N)/hop)), win=new Float32Array(N); for(let i=0;i<N;i++) win[i]=0.5-0.5*Math.cos(2*Math.PI*i/(N-1));
+  const cands=[]; for(let c=hzToMidi(100);c<=hzToMidi(1100);c+=0.1) cands.push(midiToHz(c));
+  const f0=new Float32Array(F), conf=new Float32Array(F), rms=new Float32Array(F), sal=new Float32Array(F); let prev=0;
+  for(let k=0;k<F;k++){ const o=k*hop, re=new Float32Array(N), im=new Float32Array(N); let e=0; for(let i=0;i<N;i++){ re[i]=x[o+i]*win[i]; } for(let i=N/2-160;i<N/2+160;i++) e+=x[o+i]*x[o+i]; rms[k]=Math.sqrt(e/320);
+    const raw=fftMag(re,im), L=raw.length, lg=new Float32Array(L), mg=new Float32Array(L); for(let i=0;i<L;i++) lg[i]=Math.log(1+60*raw[i]);
+    // spectral whitening: remove the local floor (broadband drums/noise), keep only peaks
+    let acc=0; const R=15; for(let i=0;i<Math.min(L,R);i++) acc+=lg[i]; for(let i=0;i<L;i++){ if(i+R<L) acc+=lg[i+R]; if(i-R-1>=0) acc-=lg[i-R-1]; const cnt=Math.min(L,i+R+1)-Math.max(0,i-R); mg[i]=Math.max(0,lg[i]-1.15*acc/cnt); }
+    const sc=cands.map(f=>{ let s=0, nh=0; for(let h=1;h<=8;h++){ const b=h*f*N/sr; if(b>=L-2) break; const i=Math.round(b), v=Math.max(mg[i-1],mg[i],mg[i+1]); if(v>0.05) nh++; s+=Math.pow(0.84,h-1)*v; } return nh>=3?s:s*0.3; });
+    let bi=0; for(let i=1;i<sc.length;i++) if(sc[i]>sc[bi]) bi=i;
+    if(prev){ let ci=-1; for(let i=0;i<sc.length;i++){ if(sc[i]>=0.8*sc[bi]&&Math.abs(hzToMidi(cands[i])-hzToMidi(prev))<1.5&&(ci<0||sc[i]>sc[ci])) ci=i; } if(ci>=0) bi=ci; }
+    f0[k]=cands[bi]; sal[k]=sc[bi]; prev=f0[k];
+    if(k%120===0){ onProg&&onProg(k/F); await new Promise(r=>setTimeout(r,0)); } }
+  const top=pctl(Array.from(sal),0.9)||1; for(let k=0;k<F;k++){ conf[k]=Math.min(1,sal[k]/top); if(conf[k]<0.55) prev=0; }
+  return {f0,conf,rms,hop:0.02,off:N/2/sr};
+}
+async function bestTrack(filt,onProg){
+  const y=await yinTrack(filt,p=>onProg&&onProg(p*0.3)), loud=pctl(Array.from(y.rms),0.6), cs=Array.from(y.conf).filter((c,k)=>y.rms[k]>=loud);
+  const solo=cs.length&&pctl(cs,0.5)>=0.8; if(solo) return {tr:y,solo:true};
+  return {tr:await salienceTrack(filt,p=>onProg&&onProg(0.3+p*0.7)),solo:false};
+}
+async function importSongAudio(file,onProg){
+  const c=ac(), ab=await c.decodeAudioData(await file.arrayBuffer());
+  const raw=await songPcm(ab,false), filt=await songPcm(ab,true);
+  const b=await bestTrack(filt,onProg), r=notesFromTrack(b.tr); return {notes:r.phrases,phT:r.phT,t0:r.t0,voiced:r.voiced,pcm:raw,solo:b.solo};
+}
+async function importSongPcm(pcm,onProg){ const b=await bestTrack(pcm,onProg), r=notesFromTrack(b.tr); return {notes:r.phrases,phT:r.phT,t0:r.t0,voiced:r.voiced,pcm}; }
+function extractSong(pcm){ return null; } // legacy (replaced by importSongPcm)
+/* original audio of own songs, kept on the phone (IndexedDB) for the "original" guide */
+const SongAudio={ db:null, open(){ if(this.db) return Promise.resolve(this.db); return new Promise((res,rej)=>{ try{ const r=indexedDB.open("voicecoach-songs",1); r.onupgradeneeded=()=>r.result.createObjectStore("audio"); r.onsuccess=()=>{ this.db=r.result; res(r.result); }; r.onerror=()=>rej(r.error); }catch(e){ rej(e); } }); },
+  async put(id,pcm){ const db=await this.open(), i16=new Int16Array(pcm.length); for(let k=0;k<pcm.length;k++) i16[k]=Math.max(-32767,Math.min(32767,pcm[k]*32767)); return new Promise(r=>{ const tx=db.transaction("audio","readwrite"); tx.objectStore("audio").put(i16.buffer,id); tx.oncomplete=()=>r(true); tx.onerror=()=>r(false); }); },
+  async get(id){ if(SongAudio.cache[id]) return SongAudio.cache[id]; try{ const db=await this.open(); const ab=await new Promise(r=>{ const q=db.transaction("audio").objectStore("audio").get(id); q.onsuccess=()=>r(q.result); q.onerror=()=>r(null); }); if(!ab) return null;
+    const i16=new Int16Array(ab), c=ac(), buf=c.createBuffer(1,i16.length,16000), ch=buf.getChannelData(0); for(let k=0;k<i16.length;k++) ch[k]=i16[k]/32767; return SongAudio.cache[id]=buf; }catch(e){ return null; } },
+  async del(id){ try{ const db=await this.open(); db.transaction("audio","readwrite").objectStore("audio").delete(id); }catch(e){} delete SongAudio.cache[id]; }, cache:{} };
 function renderMySong(box){
   const d=el("details",{style:"margin-top:10px"}); d.innerHTML=`<summary><b>${t("my_title")}</b></summary><p class="muted" style="font-size:.85rem">${t("my_desc")}</p>
    <input type="text" data-nm placeholder="${esc(t("my_name"))}" style="width:100%;margin-bottom:6px"><label class="b alt" style="display:block;text-align:center">${t("my_file")}<input type="file" accept="audio/*,video/*" data-f hidden></label><div data-r style="margin-top:6px"></div><p data-msg></p>`;
-  box.append(d);
-  const add=pcm=>{ const notes=extractSong(pcm), msg=d.querySelector("[data-msg]"); if(!notes){ msg.textContent=t("my_none"); return; }
-    const s={id:"my"+Date.now(),my:true,name:d.querySelector("[data-nm]").value.trim()||t("my_tag")+" "+((store.mySongs||[]).length+1),bpm:60,notes,lyr:{}};
-    store.mySongs=(store.mySongs||[]).concat([s]); save(); SG.id=s.id; SG.bpm=null; SG.phrase=null; SG.last=null; renderSongs();
-    toast(t("my_ok",{n:notes.flat().filter(n=>n[0]!=null).length,p:notes.length})); };
-  d.querySelector("[data-f]").onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ add(await decodeFile(f)); }catch(err){ d.querySelector("[data-msg]").textContent=t("my_none"); } };
-  recControls(d.querySelector("[data-r]"),{maxSec:90,label:t("my_rec"),onDone:r=>add(r.pcm)});
+  box.append(d); const msg=d.querySelector("[data-msg]");
+  const add=async r=>{ if(!r||!r.notes){ msg.innerHTML=`<span class="warnbox" style="display:block">${t("my_none")}</span>`; return; }
+    const s={id:"my"+Date.now(),my:true,name:d.querySelector("[data-nm]").value.trim()||t("my_tag")+" "+((store.mySongs||[]).length+1),bpm:60,notes:r.notes,phT:r.phT,t0:r.t0,lyr:{},audio:false};
+    if(r.pcm) s.audio=await SongAudio.put(s.id,r.pcm);
+    store.mySongs=(store.mySongs||[]).concat([s]); save(); SG.id=s.id; SG.bpm=null; SG.phrase=null; SG.last=null; SG.guideMode=s.audio?"orig":"synth"; renderSongs();
+    const n=r.notes.flat().filter(x=>x[0]!=null).length; toast(t("my_ok",{n,p:r.notes.length}));
+    if(r.voiced<35) setTimeout(()=>{ const w=$("#sgBody [data-out]"); if(w) w.innerHTML=`<div class="warnbox" style="margin-top:8px">${t("my_mix",{v:r.voiced})}</div>`; },50); };
+  const prog=p=>{ msg.textContent=t("my_prog",{p:Math.round(p*100)}); };
+  d.querySelector("[data-f]").onchange=async e=>{ const f=e.target.files[0]; if(!f) return; msg.textContent=t("analysing"); try{ await add(await importSongAudio(f,prog)); }catch(err){ msg.innerHTML=`<span class="warnbox" style="display:block">${t("my_none")}</span>`; } e.target.value=""; };
+  recControls(d.querySelector("[data-r]"),{maxSec:90,label:t("my_rec"),onDone:async r=>{ msg.textContent=t("analysing"); add(await importSongPcm(r.pcm,prog)); }});
 }

@@ -70,7 +70,7 @@ async function singSession({acc,targets,countIn=0,beat=0.6,total,onLive,onPhase,
   const c=ac(), pts=[]; let take, pStart=null; try{ take=await startTake({onPitch:(f,sec,db)=>{ if(pStart===null) return; const rel=(performance.now()-pStart)/1000; pts.push({t:rel,f:db>-58?f:0,db}); onLive&&onLive(f,rel,db); }}); }catch(e){ micError(e); toast(t("mic_fail")); return null; }
   const lead=0.35+countIn*beat, cNow=c.currentTime, start=cNow+lead; pStart=performance.now()+lead*1000;
   for(let k=0;k<countIn;k++) click(c,cNow+0.35+k*beat,k===0);
-  acc.forEach(n=>n.vib!=null&&typeof synthVib==="function"?synthVib(c,n.m,start+n.t,n.d,n.v||0.12,n.vib):synthNote(c,n.m,start+n.t,n.d,n.v||0.12,n.organ)); onStart&&onStart(lead);
+  acc.forEach(n=>n.buf?(()=>{ const src=c.createBufferSource(), g=c.createGain(); src.buffer=n.buf; g.gain.value=n.v||0.8; src.connect(g).connect(c.destination); src.start(start+n.t,n.off||0,n.d); })():n.vib!=null&&typeof synthVib==="function"?synthVib(c,n.m,start+n.t,n.d,n.v||0.12,n.vib):synthNote(c,n.m,start+n.t,n.d,n.v||0.12,n.organ)); onStart&&onStart(lead);
   if(onPhase) targets.forEach((n,i)=>setTimeout(()=>onPhase(i,n),Math.max(0,(lead+n.t)*1000)));
   keepAwake(true);
   await new Promise(r=>setTimeout(r,(lead+total+0.4)*1000));
