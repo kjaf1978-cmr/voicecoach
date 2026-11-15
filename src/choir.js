@@ -1,5 +1,5 @@
 /* ================= Choir training (v3.9) ================= */
-Object.assign(T.en,{nav_choir:"Choir",
+Object.assign(T.en,{sess_stop:"Stop", sess_resume:"Continue", sess_stopped:"Stopped – nothing was scored.", nav_choir:"Choir",
  ch_intro:"Singing practice for choir: find your voice type, warm up, hit notes accurately, sing your part in four-part harmony and hold your line in a round. Pitch accuracy is measured in cents (1 semitone = 100 cents); within ± 30 cents counts as in tune.",
  ch_hp:"🎧 Use headphones for part singing and the round – otherwise the microphone hears the accompaniment instead of you.",
  vt_title:"1 · Voice type", vt_desc:"Glide on “ah” from a comfortable middle note down to your lowest comfortable note (part 1), then up to your highest comfortable note (part 2). Never force – stop where it gets strained. The app classifies your voice type and transposes all exercises into your range.",
@@ -14,7 +14,7 @@ Object.assign(T.en,{nav_choir:"Choir",
  pt_title:"4 · Sing your part (four-part harmony)", pt_desc:"A short four-part chorale (soprano, alto, tenor, bass). The app plays the other three parts; you sing yours on “loo”. Green bars = your notes, orange = your pitch. Count-in: 4 clicks.", pt_part:"My part", pt_go:"▶ Sing my part", pt_res:"{c} of {n} chords in tune with your part.", pt_slow:"Tempo",
  cn_title:"5 · Round (“Are you sleeping”)", cn_desc:"The app sings voice 1. After 2 bars it is your turn: sing the whole melody as voice 2 and hold your line against the other voice. Lyrics and notes are shown; orange = your pitch.", cn_go:"▶ Start round", cn_res:"{c} of {n} notes in tune.", cn_errs:"Passages to practise:", cn_bar:"bar {b}: “{s}” {d}", cn_practise:"Practise these notes slowly",
  cnt_low:"too low", cnt_high:"too high"});
-Object.assign(T.de,{nav_choir:"Chor",
+Object.assign(T.de,{sess_stop:"Stopp", sess_resume:"Weiter", sess_stopped:"Gestoppt – es wurde nichts bewertet.", nav_choir:"Chor",
  ch_intro:"Gesangstraining für den Chor: Stimmlage finden, einsingen, Töne genau treffen, die eigene Stimme im vierstimmigen Satz singen und im Kanon die Linie halten. Die Tontreue wird in Cent gemessen (1 Halbton = 100 Cent); innerhalb von ± 30 Cent gilt ein Ton als sauber.",
  ch_hp:"🎧 Für mehrstimmiges Singen und den Kanon Kopfhörer benutzen – sonst hört das Mikrofon die Begleitung statt dich.",
  vt_title:"1 · Stimmlage", vt_desc:"Auf „ah“ von einem bequemen mittleren Ton nach unten zum tiefsten bequemen Ton gleiten (Teil 1), dann nach oben zum höchsten bequemen Ton (Teil 2). Nie forcieren – dort aufhören, wo es anstrengend wird. Die App bestimmt deine Stimmlage und transponiert alle Übungen in deinen Bereich.",
@@ -29,7 +29,7 @@ Object.assign(T.de,{nav_choir:"Chor",
  pt_title:"4 · Die eigene Stimme singen (vierstimmig)", pt_desc:"Ein kurzer vierstimmiger Choralsatz (Sopran, Alt, Tenor, Bass). Die App spielt die drei anderen Stimmen, du singst deine auf „lu“. Grüne Balken = deine Töne, orange = deine Tonhöhe. Einzählen: 4 Klicks.", pt_part:"Meine Stimme", pt_go:"▶ Meine Stimme singen", pt_res:"{c} von {n} Akkorden mit deiner Stimme sauber.", pt_slow:"Tempo",
  cn_title:"5 · Kanon („Bruder Jakob“)", cn_desc:"Die App singt die 1. Stimme. Nach 2 Takten bist du dran: Sing die ganze Melodie als 2. Stimme und halte deine Linie gegen die andere Stimme. Text und Töne werden angezeigt; orange = deine Tonhöhe.", cn_go:"▶ Kanon starten", cn_res:"{c} von {n} Tönen sauber.", cn_errs:"Stellen zum Üben:", cn_bar:"Takt {b}: „{s}“ {d}", cn_practise:"Diese Töne langsam üben",
  cnt_low:"zu tief", cnt_high:"zu hoch"});
-Object.assign(T.fr,{nav_choir:"Chorale",
+Object.assign(T.fr,{sess_stop:"Arrêter", sess_resume:"Reprendre", sess_stopped:"Arrêté – rien n'a été évalué.", nav_choir:"Chorale",
  ch_intro:"Entraînement vocal pour la chorale : trouver sa tessiture, s'échauffer, chanter juste, chanter sa voix dans un choral à quatre voix et tenir sa ligne dans un canon. La justesse est mesurée en cents (1 demi-ton = 100 cents) ; à ± 30 cents, une note est juste.",
  ch_hp:"🎧 Utilisez des écouteurs pour le chant à plusieurs voix et le canon – sinon le micro entend l'accompagnement au lieu de vous.",
  vt_title:"1 · Tessiture", vt_desc:"Sur « a », glissez d'une note moyenne confortable vers votre note grave la plus basse confortable (partie 1), puis vers votre note aiguë la plus haute confortable (partie 2). Ne forcez jamais – arrêtez-vous là où cela devient difficile. L'appli détermine votre tessiture et transpose tous les exercices dans votre zone.",
@@ -57,24 +57,41 @@ function vRange(){ const r=SET.vrange; if(r) return r; const v=VTYPES[voiceType(
 function synthNote(c,midi,t0,dur,vol,organ){
   const f=midiToHz(midi), g=c.createGain(), o1=c.createOscillator(), o2=c.createOscillator(), g2=c.createGain();
   o1.type="triangle"; o2.type="sine"; o1.frequency.value=f; o2.frequency.value=f*2; g2.gain.value=organ?0.35:0.2;
-  o1.connect(g); o2.connect(g2).connect(g); g.connect(c.destination);
+  o1.connect(g); o2.connect(g2).connect(g); g.connect(outOf(c));
   g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(vol,t0+0.02);
   if(!organ) g.gain.exponentialRampToValueAtTime(vol*0.45,t0+Math.min(0.4,dur*0.6)); g.gain.setValueAtTime(organ?vol:vol*0.45,t0+Math.max(0.05,dur-0.08)); g.gain.linearRampToValueAtTime(0.0001,t0+dur);
   o1.start(t0); o2.start(t0); o1.stop(t0+dur+0.05); o2.stop(t0+dur+0.05);
 }
-function click(c,t0,hi){ const o=c.createOscillator(), g=c.createGain(); o.frequency.value=hi?1600:1100; g.gain.setValueAtTime(0.2,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.06); o.connect(g).connect(c.destination); o.start(t0); o.stop(t0+0.08); }
+function click(c,t0,hi){ const o=c.createOscillator(), g=c.createGain(); o.frequency.value=hi?1600:1100; g.gain.setValueAtTime(0.2,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.06); o.connect(g).connect(outOf(c)); o.start(t0); o.stop(t0+0.08); }
 
 /* ---- generic singing session: plays accompaniment, records pitch, evaluates target notes ----
    acc: [{m,t,d,v,organ}] ; targets: [{m,t,d,label}] (seconds after start); countIn beats; onLive(f,tRel) */
-async function singSession({acc,targets,countIn=0,beat=0.6,total,onLive,onPhase,onStart}){
-  const c=ac(), pts=[]; let take, pStart=null; try{ take=await startTake({onPitch:(f,sec,db)=>{ if(pStart===null) return; const rel=(performance.now()-pStart)/1000; pts.push({t:rel,f:db>-58?f:0,db}); onLive&&onLive(f,rel,db); }}); }catch(e){ micError(e); toast(t("mic_fail")); return null; }
-  const lead=0.35+countIn*beat, cNow=c.currentTime, start=cNow+lead; pStart=performance.now()+lead*1000;
+/* audio output of the running session/preview: everything goes through one gain node, so Stop silences it at once */
+let AOUT=null; function outOf(c){ return AOUT&&AOUT.context===c?AOUT:c.destination; }
+const SESS={on:false,paused:false,stopped:false};
+function sessBar(show){ let b=document.getElementById("sessBar");
+  if(!show){ if(b) b.remove(); return; }
+  if(!b){ b=el("div",{id:"sessBar",style:"position:fixed;left:8px;right:8px;bottom:calc(64px + env(safe-area-inset-bottom));z-index:9;display:flex;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px;box-shadow:0 4px 16px rgba(0,0,0,.18)"});
+    b.innerHTML=`<button class="b grow" data-p>⏸ ${t("pause")}</button><button class="b warm grow" data-s>■ ${t("sess_stop")}</button>`; document.body.append(b);
+    b.querySelector("[data-p]").onclick=()=>sessPause(!SESS.paused); b.querySelector("[data-s]").onclick=()=>sessStop(); }
+  b.querySelector("[data-p]").innerHTML=SESS.paused?"▶ "+t("sess_resume"):"⏸ "+t("pause"); }
+function sessPause(on){ if(!SESS.on) return; const c=ac(); SESS.paused=on; if(on){ c.suspend(); try{ GUIDE&&GUIDE.el&&GUIDE.el.pause(); }catch(e){} } else { c.resume(); try{ GUIDE&&GUIDE.el&&GUIDE.el.currentTime>0&&GUIDE.el.play(); }catch(e){} } sessBar(true); }
+function sessStop(){ if(!SESS.on) return; SESS.stopped=true; if(SESS.paused){ SESS.paused=false; ac().resume(); } try{ AOUT&&AOUT.disconnect(); }catch(e){} try{ typeof stopGuide==="function"&&stopGuide(); }catch(e){} }
+/* ---- generic singing session on the audio clock (pausable): plays accompaniment, records pitch, evaluates target notes ----
+   acc: [{m,t,d,v,organ|voice|vib|buf}] ; targets: [{m,t,d,label}] (s after start); cues: [{t,fn}] ; countIn beats; onLive(f,tRel) */
+async function singSession({acc,targets,countIn=0,beat=0.6,total,onLive,onPhase,onStart,cues=[]}){
+  if(SESS.on) sessStop(), await new Promise(r=>setTimeout(r,120));
+  const c=ac(), pts=[]; let take, start=null;
+  try{ take=await startTake({onPitch:(f,sec,db)=>{ if(start===null||SESS.paused) return; const rel=c.currentTime-start; pts.push({t:rel,f:db>-58?f:0,db}); onLive&&onLive(f,rel,db); }}); }catch(e){ micError(e); toast(t("mic_fail")); return null; }
+  AOUT=c.createGain(); AOUT.connect(c.destination); SESS.on=true; SESS.paused=false; SESS.stopped=false; sessBar(true);
+  const lead=0.35+countIn*beat, cNow=c.currentTime; start=cNow+lead;
   for(let k=0;k<countIn;k++) click(c,cNow+0.35+k*beat,k===0);
-  acc.forEach(n=>n.buf?(()=>{ const src=c.createBufferSource(), g=c.createGain(); src.buffer=n.buf; g.gain.value=n.v||0.8; src.connect(g).connect(c.destination); src.start(start+n.t,n.off||0,n.d); })():n.vib!=null&&typeof synthVib==="function"?synthVib(c,n.m,start+n.t,n.d,n.v||0.12,n.vib):synthNote(c,n.m,start+n.t,n.d,n.v||0.12,n.organ)); onStart&&onStart(lead);
-  if(onPhase) targets.forEach((n,i)=>setTimeout(()=>onPhase(i,n),Math.max(0,(lead+n.t)*1000)));
+  acc.forEach(n=>n.buf?(()=>{ const src=c.createBufferSource(), g=c.createGain(); src.buffer=n.buf; g.gain.value=n.v||0.8; src.connect(g).connect(outOf(c)); src.start(start+n.t,n.off||0,n.d); })():n.voice&&typeof synthVoice==="function"?synthVoice(c,n.m,start+n.t,n.d,n.v||0.08):n.vib!=null&&typeof synthVib==="function"?synthVib(c,n.m,start+n.t,n.d,n.v||0.12,n.vib):synthNote(c,n.m,start+n.t,n.d,n.v||0.12,n.organ)); onStart&&onStart(lead);
+  const Q=cues.slice(); if(onPhase) targets.forEach((n,i)=>Q.push({t:n.t,fn:()=>onPhase(i,n)})); Q.sort((a,b)=>a.t-b.t);
   keepAwake(true);
-  await new Promise(r=>setTimeout(r,(lead+total+0.4)*1000));
-  const r=await take.stop(); keepAwake(false);
+  await new Promise(r=>{ const tick=()=>{ if(SESS.stopped) return r(); const rel=c.currentTime-start; while(Q.length&&Q[0].t<=rel){ try{ Q.shift().fn(); }catch(e){} } if(rel>=total+0.4) return r(); setTimeout(tick,30); }; tick(); });
+  const r=await take.stop(); keepAwake(false); const stopped=SESS.stopped; SESS.on=false; SESS.paused=false; sessBar(false); setTimeout(()=>{ try{ AOUT&&AOUT.disconnect(); }catch(e){} AOUT=null; },Math.max(0,(acc.reduce((a,n)=>Math.max(a,n.t+n.d),0)-(c.currentTime-start))*1000)+300);
+  if(stopped){ toast(t("sess_stopped")); return null; }
   const res=targets.map(n=>{ const a=n.t+Math.min(0.25,n.d*0.25), b=n.t+n.d*0.88, v=pts.filter(p=>p.t>=a&&p.t<=b&&p.f>0).map(p=>p.f);
     if(v.length<3) return Object.assign({},n,{ok:false,miss:true});
     const fm=pctl(v,0.5); let cents=1200*Math.log2(fm/midiToHz(n.m)), oct=false; if(Math.abs(cents)>900&&Math.abs(Math.abs(cents)-1200)<150){ cents-=Math.sign(cents)*1200; oct=true; }
@@ -130,8 +147,8 @@ async function runNotes(box){
   const acc=[], targets=[]; seq.forEach((m,i)=>{ acc.push({m,t:i*step,d:play,v:0.16}); targets.push({m,t:i*step+play+gap,d:sing,label:nName(m)}); });
   const go=box.querySelector("[data-go]"), dot=box.querySelector("[data-dot]"); go.disabled=true;
   const lane=laneView(box.querySelector("[data-lane]"),targets,root);
-  seq.forEach((m,i)=>{ setTimeout(()=>{ dot.classList.remove("on"); dot.textContent=t("nt_listen"); },(0.35+i*step)*1000); });
-  const out=await singSession({acc,targets,total:seq.length*step,onLive:(f,rel)=>{ if(targets.some(n=>rel>=n.t&&rel<=n.t+n.d)) lane.pushAt(f,rel); },
+  const cues=seq.map((m,i)=>({t:i*step,fn:()=>{ dot.classList.remove("on"); dot.textContent=t("nt_listen"); }}));
+  const out=await singSession({acc,targets,cues,total:seq.length*step,onLive:(f,rel)=>{ if(targets.some(n=>rel>=n.t&&rel<=n.t+n.d)) lane.pushAt(f,rel); },
     onPhase:(i,n)=>{ dot.classList.add("on"); dot.textContent=t("nt_sing",{n:n.label}); }});
   go.disabled=false; dot.classList.remove("on"); dot.textContent="–"; if(!out) return;
   const ok=out.res.filter(n=>n.ok).length, all=ok===out.res.length; NT.round=all?NT.round+1:0;

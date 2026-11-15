@@ -21,7 +21,7 @@ function logSession(name,min){ store.sessions.push({d:today(),t:Date.now(),name,
 
 /* ---------- audio ---------- */
 let actx=null;
-function ac(){ if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } } if(actx.state==="suspended") actx.resume(); return actx; }
+function ac(){ if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } } if(actx.state==="suspended"&&!(typeof SESS!=="undefined"&&SESS.paused)) actx.resume(); return actx; }
 function beep(f=880,d=.12,v=.15){ try{ const c=ac(); if(!c) return; const o=c.createOscillator(),g=c.createGain(); o.frequency.value=f; g.gain.setValueAtTime(v,c.currentTime); g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+d); o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime+d+.02);}catch(e){} }
 function tone(f,d=2){ try{ const c=ac(); if(!c) return; const o=c.createOscillator(),g=c.createGain(); o.type="triangle"; o.frequency.value=f; g.gain.setValueAtTime(0,c.currentTime); g.gain.linearRampToValueAtTime(.25,c.currentTime+.05); g.gain.setValueAtTime(.25,c.currentTime+d-.2); g.gain.linearRampToValueAtTime(0,c.currentTime+d); o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime+d+.05);}catch(e){} }
 let wakeLock=null;

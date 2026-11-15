@@ -108,6 +108,7 @@ function renderSongs(){
    <div class="card flat" data-lyr ${tlAttr(l)} style="line-height:1.9;font-size:1.02rem"></div>
    ${SG.phrase!=null?`<div class="warnbox">${t("sg_phrase_mode",{n:SG.phrase+1,a:SG.phStreak})}</div>`:""}
    <div data-lane></div>
+   ${s.my?`<div class="row"><button class="b alt sm grow" data-syn>${t("my_hear_notes")}</button>${s.audio?`<button class="b alt sm grow" data-fix>${t("my_fix")}</button>`:""}</div>`:""}
    <div class="row"><button class="b alt grow" data-lis>${t("sg_listen")}</button><button class="b warm grow" data-go>${SG.phrase!=null?t("sg_phrase_go",{n:SG.phrase+1}):t("sg_go")}</button></div>
    ${SG.phrase!=null?`<button class="b alt sm" data-back style="margin-top:6px">${t("sg_back")}</button>`:""}<div data-out></div>${s.my?`<button class="b alt sm" data-del style="margin-top:8px">🗑 ${t("my_del")}</button>`:""}`;
   if(s.my) box.querySelector("[data-del]").onclick=()=>{ SongAudio.del(s.id); store.mySongs=(store.mySongs||[]).filter(x=>x.id!==s.id); save(); SG.id=null; SG.last=null; renderSongs(); };
@@ -118,7 +119,7 @@ function renderSongs(){
   const gms=s.my&&s.audio?[["orig",t("my_orig")],["synth",t("my_synth")],["off",t("sg_off")]]:[["synth",t("sg_on")],["off",t("sg_off")]];
   if(!SG.gm||!gms.find(g=>g[0]===SG.gm)) SG.gm=s.my&&s.audio?"orig":(SG.guide?"synth":"off");
   chipSet(box.querySelector("[data-g]"),gms,SG.gm,v=>{ SG.gm=v; SG.guide=v!=="off"; renderSongs(); });
-  const useOrig=SG.gm==="orig"&&bpm===s.bpm;
+  const useOrig=SG.gm==="orig", rate=bpm/s.bpm;
   const beat=60/bpm, {targets,dur}=songTargets(s,shift,beat,SG.phrase);
   // lyrics with one span per syllable
   const ly=box.querySelector("[data-lyr]"); let lines={}; targets.forEach((n,i)=>{ (lines[n.ph]=lines[n.ph]||[]).push(`<span data-i="${i}" style="padding:1px 2px;border-radius:4px">${esc(n.label)}</span>`); });
@@ -127,16 +128,21 @@ function renderSongs(){
   const hl=i=>{ ly.querySelectorAll("span[data-i]").forEach(e=>{ const k=+e.dataset.i; e.style.background=k===i?"var(--accent2)":""; e.style.color=k===i?"#fff":(k<i?"var(--muted)":""); }); };
   if(SG.last&&SG.last.id===s.id&&SG.last.phrase===SG.phrase) showSongResult(box,s,SG.last.res,SG.last.m);
   const origOff=()=>s.phT?s.phT[SG.phrase==null?0:SG.phrase]:0;
-  box.querySelector("[data-lis]").onclick=async()=>{ const c=ac(), t0=c.currentTime+0.25, buf=useOrig?await SongAudio.get(s.id):null;
-    if(buf){ const src=c.createBufferSource(); src.buffer=buf; src.connect(c.destination); src.start(t0,origOff(),dur+0.3); } else targets.forEach(n=>synthNote(c,n.m,t0+n.t,n.d*0.92,0.14));
-    targets.forEach((n,i)=>setTimeout(()=>hl(i),(0.25+n.t)*1000)); setTimeout(()=>hl(-1),(0.4+dur)*1000); };
+  const hasOrig=s.my&&s.audio;
+  const prevStart=(btn,len)=>{ const c=ac(); stopGuide(); GUIDE.out=c.createGain(); GUIDE.out.connect(c.destination); AOUT=GUIDE.out; btn.dataset.lbl=btn.innerHTML; btn.innerHTML="■ "+t("sess_stop"); GUIDE.timers.push(setTimeout(stopGuide,(len+0.8)*1000)); };
+  box.querySelector("[data-lis]").onclick=async e=>{ const btn=e.currentTarget; if(btn.dataset.lbl){ stopGuide(); return; } prevStart(btn,dur); const c=ac(), t0=c.currentTime+0.25;
+    if(hasOrig){ await playOrig(s,origOff(),dur+0.3,rate,0.25); } else targets.forEach(n=>synthVoice(c,n.m,t0+n.t,n.d*0.95,0.16));
+    targets.forEach((n,i)=>GUIDE.timers.push(setTimeout(()=>hl(i),(0.25+n.t)*1000))); GUIDE.timers.push(setTimeout(()=>hl(-1),(0.4+dur)*1000)); };
+  if(box.querySelector("[data-syn]")) box.querySelector("[data-syn]").onclick=e=>{ const btn=e.currentTarget; if(btn.dataset.lbl){ stopGuide(); return; } prevStart(btn,dur); const c=ac(), t0=c.currentTime+0.25; targets.forEach((n,i)=>{ synthVoice(c,n.m,t0+n.t,n.d*0.95,0.16); GUIDE.timers.push(setTimeout(()=>hl(i),(0.25+n.t)*1000)); }); GUIDE.timers.push(setTimeout(()=>hl(-1),(0.4+dur)*1000)); };
+  if(box.querySelector("[data-fix]")) box.querySelector("[data-fix]").onclick=()=>singAlongFix(box,s);
   if(box.querySelector("[data-back]")) box.querySelector("[data-back]").onclick=()=>{ SG.phrase=null; SG.phStreak=0; SG.last=null; renderSongs(); };
   box.querySelector("[data-go]").onclick=async()=>{ const go=box.querySelector("[data-go]"); go.disabled=true; lane.reset();
-    const buf=useOrig?await SongAudio.get(s.id):null;
-    const acc=buf?[{buf,t:0,off:origOff(),d:dur+0.2,v:0.8}]:(SG.gm!=="off"?targets.map(n=>({m:n.m,t:n.t,d:n.d*0.92,v:0.07})):[]);
+    stopGuide(); const orig=useOrig&&hasOrig, buf=orig&&rate===1?await SongAudio.get(s.id):null;
+    const acc=buf?[{buf,t:0,off:origOff(),d:dur+0.2,v:0.8}]:(!orig&&SG.gm!=="off"?targets.map(n=>({m:n.m,t:n.t,d:n.d*0.95,v:0.08,voice:1})):[]);
+    const cues=orig&&!buf?[{t:-0.05,fn:()=>playOrig(s,origOff(),dur+0.2,rate,0)}]:[];
     // light chord support on the key note at each phrase start, also without the guide melody
     if(!s.my) [...new Set(targets.map(n=>n.ph))].forEach(p=>{ const f=targets.find(n=>n.ph===p); acc.push({m:60+shift-12,t:f.t,d:Math.min(2,beat*2),v:0.05,organ:true}); });
-    const out=await singSession({acc,targets,countIn:4,beat,total:dur,onLive:(f,rel)=>{ if(rel>=-0.2) lane.pushAt(f,rel); },onPhase:i=>hl(i)});
+    const out=await singSession({acc,targets,countIn:4,beat,total:dur,cues,onLive:(f,rel)=>{ if(rel>=-0.2) lane.pushAt(f,rel); },onPhase:i=>hl(i)});
     go.disabled=false; hl(-1); if(!out) return;
     const m=songMetrics(out.res); st.runs++; if(SG.phrase==null) st.best=Math.max(st.best,m.pitch);
     const L=LV[SG.lv], met=["pitch","stab","time","sus","dyn"].filter(k=>metOk(k,m[k],L));
@@ -193,15 +199,18 @@ SONGS.push(
   lyr:{de:"Al- le mei- ne Ent- chen / schwim- men auf dem See, / schwim- men auf dem See. / Köpf- chen in das Was- ser, / Schwänz- chen in die Höh'."}});
 
 /* ---------- own song from a recording (e.g. the part recording your choir director sends) ---------- */
-Object.assign(T.en,{my_old:"This song was imported with an older version whose melody detection broke up the notes. Delete it and import the file again for a much cleaner result.", my_orig:"original recording", my_synth:"melody (synth)", my_prog:"Analysing the recording … {p} %", my_mix:"Note: only {v} % of the recording contains a clear melody line. With full accompaniment some notes may be wrong – the result is best with a vocal-only or a cappella recording. Check it with “Listen first”.", my_octnote:"With the original recording as guide, sing in your own octave – octave differences are not counted as errors.", my_title:"＋ Own song from a recording", my_desc:"Import a recording of a single melody line – e.g. the rehearsal recording of your part, a solo singer or one instrument (no full band: chords confuse the pitch detection) – or record it yourself. The app turns it into notes and phrases (max. 90 s) and then trains it with the same five parameters. Only use recordings you are allowed to use.", my_name:"Name of the song", my_file:"Import audio file", my_rec:"● Record the melody", my_none:"No clear melody found – use a recording of a single voice or instrument.", my_ok:"Imported: {n} notes in {p} phrases.", my_del:"Delete this song", my_tag:"own", my_pct:"% speed"});
-Object.assign(T.de,{my_old:"Dieses Lied wurde mit einer älteren Version importiert, deren Tonerkennung die Töne zerstückelt hat. Lösche es und importiere die Datei erneut – das Ergebnis ist deutlich sauberer.", my_orig:"Originalaufnahme", my_synth:"Melodie (Synth)", my_prog:"Aufnahme wird analysiert … {p} %", my_mix:"Hinweis: Nur {v} % der Aufnahme enthalten eine klare Melodielinie. Mit voller Begleitung können einzelne Töne falsch sein – am besten geht es mit einer reinen Gesangs- oder A-cappella-Aufnahme. Prüfe es mit „Erst anhören“.", my_octnote:"Mit der Originalaufnahme als Begleitung singst du in deiner eigenen Oktave – Oktavunterschiede zählen nicht als Fehler.", my_title:"＋ Eigenes Lied aus einer Aufnahme", my_desc:"Importiere die Aufnahme einer einzelnen Melodiestimme – z. B. die Übe-Aufnahme deiner Stimme von der Chorleitung, eine Solostimme oder ein Instrument (keine ganze Band: Akkorde stören die Tonerkennung) – oder nimm sie selbst auf. Die App macht daraus Töne und Phrasen (max. 90 s) und trainiert sie mit denselben fünf Parametern. Nutze nur Aufnahmen, die du verwenden darfst.", my_name:"Name des Lieds", my_file:"Audiodatei importieren", my_rec:"● Melodie aufnehmen", my_none:"Keine klare Melodie gefunden – nimm eine Aufnahme mit einer einzelnen Stimme oder einem Instrument.", my_ok:"Importiert: {n} Töne in {p} Phrasen.", my_del:"Dieses Lied löschen", my_tag:"eigenes", my_pct:"% Tempo"});
-Object.assign(T.fr,{my_old:"Cette chanson a été importée avec une version plus ancienne dont la détection découpait les notes. Supprimez-la et importez à nouveau le fichier pour un résultat bien plus propre.", my_orig:"enregistrement original", my_synth:"mélodie (synthé)", my_prog:"Analyse de l'enregistrement … {p} %", my_mix:"Remarque : seulement {v} % de l'enregistrement contient une ligne mélodique claire. Avec un accompagnement complet, certaines notes peuvent être fausses – le résultat est meilleur avec un enregistrement voix seule ou a cappella. Vérifiez avec « Écouter d'abord ».", my_octnote:"Avec l'enregistrement original comme guide, chantez dans votre propre octave – les différences d'octave ne comptent pas comme erreurs.", my_title:"＋ Chanson personnelle depuis un enregistrement", my_desc:"Importez l'enregistrement d'une seule ligne mélodique – p. ex. l'enregistrement de travail de votre voix envoyé par le chef de chœur, un chanteur seul ou un instrument (pas un groupe entier : les accords perturbent la détection) – ou enregistrez-la vous-même. L'appli la transforme en notes et phrases (90 s max.) puis l'entraîne avec les mêmes cinq paramètres. N'utilisez que des enregistrements que vous avez le droit d'utiliser.", my_name:"Nom de la chanson", my_file:"Importer un fichier audio", my_rec:"● Enregistrer la mélodie", my_none:"Aucune mélodie claire trouvée – utilisez l'enregistrement d'une seule voix ou d'un instrument.", my_ok:"Importé : {n} notes en {p} phrases.", my_del:"Supprimer cette chanson", my_tag:"perso", my_pct:"% de vitesse"});
+Object.assign(T.en,{my_hear_notes:"🎹 Check detected melody", my_fix:"🎤 Improve melody: sing along", my_fix_info:"For full band recordings the automatic detection is often inaccurate. Put on headphones, press start and sing (or hum) the melody along with the original – up to {s} s, you can stop earlier. The app then takes the notes from your clean voice; the original recording stays as the guide.", my_fix_go:"▶ Start: play original & record me", my_old:"This song was imported with an older version whose melody detection broke up the notes. Delete it and import the file again for a much cleaner result.", my_orig:"original recording", my_synth:"melody (synth)", my_prog:"Analysing the recording … {p} %", my_mix:"Note: only {v} % of the recording contains a clear melody line. With full accompaniment some notes may be wrong – the result is best with a vocal-only or a cappella recording. Check it with “Listen first”.", my_octnote:"With the original recording as guide, sing in your own octave – octave differences are not counted as errors.", my_title:"＋ Own song from a recording", my_desc:"Import a recording of a single melody line – e.g. the rehearsal recording of your part, a solo singer or one instrument (no full band: chords confuse the pitch detection) – or record it yourself. The app turns it into notes and phrases (max. 90 s) and then trains it with the same five parameters. Only use recordings you are allowed to use.", my_name:"Name of the song", my_file:"Import audio file", my_rec:"● Record the melody", my_none:"No clear melody found – use a recording of a single voice or instrument.", my_ok:"Imported: {n} notes in {p} phrases.", my_del:"Delete this song", my_tag:"own", my_pct:"% speed"});
+Object.assign(T.de,{my_hear_notes:"🎹 Erkannte Melodie prüfen", my_fix:"🎤 Melodie verbessern: mitsingen", my_fix_info:"Bei Aufnahmen mit ganzer Band ist die automatische Erkennung oft ungenau. Setz Kopfhörer auf, drück Start und sing (oder summ) die Melodie zum Original mit – bis zu {s} s, du kannst früher stoppen. Die App übernimmt dann die Töne aus deiner klaren Stimme; die Originalaufnahme bleibt die Begleitung.", my_fix_go:"▶ Start: Original abspielen & mich aufnehmen", my_old:"Dieses Lied wurde mit einer älteren Version importiert, deren Tonerkennung die Töne zerstückelt hat. Lösche es und importiere die Datei erneut – das Ergebnis ist deutlich sauberer.", my_orig:"Originalaufnahme", my_synth:"Melodie (Synth)", my_prog:"Aufnahme wird analysiert … {p} %", my_mix:"Hinweis: Nur {v} % der Aufnahme enthalten eine klare Melodielinie. Mit voller Begleitung können einzelne Töne falsch sein – am besten geht es mit einer reinen Gesangs- oder A-cappella-Aufnahme. Prüfe es mit „Erst anhören“.", my_octnote:"Mit der Originalaufnahme als Begleitung singst du in deiner eigenen Oktave – Oktavunterschiede zählen nicht als Fehler.", my_title:"＋ Eigenes Lied aus einer Aufnahme", my_desc:"Importiere die Aufnahme einer einzelnen Melodiestimme – z. B. die Übe-Aufnahme deiner Stimme von der Chorleitung, eine Solostimme oder ein Instrument (keine ganze Band: Akkorde stören die Tonerkennung) – oder nimm sie selbst auf. Die App macht daraus Töne und Phrasen (max. 90 s) und trainiert sie mit denselben fünf Parametern. Nutze nur Aufnahmen, die du verwenden darfst.", my_name:"Name des Lieds", my_file:"Audiodatei importieren", my_rec:"● Melodie aufnehmen", my_none:"Keine klare Melodie gefunden – nimm eine Aufnahme mit einer einzelnen Stimme oder einem Instrument.", my_ok:"Importiert: {n} Töne in {p} Phrasen.", my_del:"Dieses Lied löschen", my_tag:"eigenes", my_pct:"% Tempo"});
+Object.assign(T.fr,{my_hear_notes:"🎹 Vérifier la mélodie détectée", my_fix:"🎤 Améliorer la mélodie : chanter avec", my_fix_info:"Avec un groupe complet, la détection automatique est souvent imprécise. Mettez des écouteurs, appuyez sur Démarrer et chantez (ou fredonnez) la mélodie avec l'original – jusqu'à {s} s, vous pouvez arrêter avant. L'appli reprend alors les notes de votre voix claire ; l'enregistrement original reste le guide.", my_fix_go:"▶ Démarrer : jouer l'original & m'enregistrer", my_old:"Cette chanson a été importée avec une version plus ancienne dont la détection découpait les notes. Supprimez-la et importez à nouveau le fichier pour un résultat bien plus propre.", my_orig:"enregistrement original", my_synth:"mélodie (synthé)", my_prog:"Analyse de l'enregistrement … {p} %", my_mix:"Remarque : seulement {v} % de l'enregistrement contient une ligne mélodique claire. Avec un accompagnement complet, certaines notes peuvent être fausses – le résultat est meilleur avec un enregistrement voix seule ou a cappella. Vérifiez avec « Écouter d'abord ».", my_octnote:"Avec l'enregistrement original comme guide, chantez dans votre propre octave – les différences d'octave ne comptent pas comme erreurs.", my_title:"＋ Chanson personnelle depuis un enregistrement", my_desc:"Importez l'enregistrement d'une seule ligne mélodique – p. ex. l'enregistrement de travail de votre voix envoyé par le chef de chœur, un chanteur seul ou un instrument (pas un groupe entier : les accords perturbent la détection) – ou enregistrez-la vous-même. L'appli la transforme en notes et phrases (90 s max.) puis l'entraîne avec les mêmes cinq paramètres. N'utilisez que des enregistrements que vous avez le droit d'utiliser.", my_name:"Nom de la chanson", my_file:"Importer un fichier audio", my_rec:"● Enregistrer la mélodie", my_none:"Aucune mélodie claire trouvée – utilisez l'enregistrement d'une seule voix ou d'un instrument.", my_ok:"Importé : {n} notes en {p} phrases.", my_del:"Supprimer cette chanson", my_tag:"perso", my_pct:"% de vitesse"});
 /* melody extraction for music recordings: proper resampling + band-pass (voice band), YIN pitch tracker 70–1100 Hz,
    octave correction, note hysteresis, bridging of consonant/breath gaps, phrase splitting */
-async function songPcm(ab,filtered){
-  const dur=Math.min(ab.duration,90), oc=new OfflineAudioContext(1,Math.ceil(dur*16000),16000), src=oc.createBufferSource(); src.buffer=ab; let node=src;
+async function songPcm(ab,filtered,stereo){
+  const nc=stereo&&ab.numberOfChannels>=2?2:1, dur=Math.min(ab.duration,90), oc=new OfflineAudioContext(nc,Math.ceil(dur*16000),16000), src=oc.createBufferSource(); src.buffer=ab; let node=src;
   if(filtered){ const hp=oc.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=150; hp.Q.value=0.7; const hp2=oc.createBiquadFilter(); hp2.type="highpass"; hp2.frequency.value=150; hp2.Q.value=0.7; const lp=oc.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=2200; node.connect(hp); hp.connect(hp2); hp2.connect(lp); node=lp; }
-  node.connect(oc.destination); src.start(0,0,dur); return (await oc.startRendering()).getChannelData(0);
+  node.connect(oc.destination); src.start(0,0,dur); const out=await oc.startRendering();
+  if(!stereo) return out.getChannelData(0);
+  if(nc<2){ const m=out.getChannelData(0); return {mono:m}; }
+  const l=out.getChannelData(0), r=out.getChannelData(1), m=new Float32Array(l.length); for(let i=0;i<l.length;i++) m[i]=(l[i]+r[i])/2; return {mono:m,l,r};
 }
 async function yinTrack(x16,onProg){
   const N8=Math.floor(x16.length/2), x=new Float32Array(N8); for(let i=0;i<N8;i++) x[i]=(x16[2*i]+x16[2*i+1])/2;
@@ -215,7 +224,7 @@ async function yinTrack(x16,onProg){
     if(k%150===0){ onProg&&onProg(k/F); await new Promise(r=>setTimeout(r,0)); } }
   return {f0,conf,rms,hop:0.02,off:W/2/sr};
 }
-function notesFromTrack(tr){
+function notesFromTrack(tr,mix){
   const F=tr.f0.length, top=pctl(Array.from(tr.rms).filter(v=>v>0),0.9)||1e-6, m=new Array(F).fill(null);
   for(let k=0;k<F;k++) if(tr.f0[k]>0&&tr.conf[k]>=0.6&&tr.rms[k]>=top*0.08) m[k]=hzToMidi(tr.f0[k]);
   const sm=m.map((v,k)=>{ if(v==null) return null; const w=[]; for(let q=k-3;q<=k+3;q++) if(m[q]!=null) w.push(m[q]); return w.length>=3?pctl(w,0.5):null; });
@@ -223,7 +232,9 @@ function notesFromTrack(tr){
   const voiced=Math.round(100*sm.filter(v=>v!=null).length/Math.max(1,F));
   // note hysteresis + gap bridging
   const segs=[]; let cur=null, gap=0, dev=[];
-  const close=()=>{ if(cur&&cur.e-cur.s>=0.1) segs.push({s:cur.s,e:cur.e,m:Math.round(pctl(cur.v,0.5))}); cur=null; };
+  const close=()=>{ if(cur&&cur.e-cur.s>=0.1){ const mu=cur.v.reduce((a,b)=>a+b,0)/cur.v.length, sd=100*Math.sqrt(cur.v.reduce((a,b)=>a+(b-mu)*(b-mu),0)/cur.v.length);
+      // in mixes, perfectly flat short tones are instruments (piano/keys), the voice always fluctuates slightly
+      if(!(mix&&sd<1.5&&cur.e-cur.s<1.2)) segs.push({s:cur.s,e:cur.e,m:Math.round(pctl(cur.v,0.5))}); } cur=null; };
   for(let k=0;k<F;k++){ const v=sm[k], tt=k*tr.hop+tr.off;
     if(v==null){ gap++; if(cur&&gap*tr.hop>0.16) close(); dev=[]; continue; }
     if(cur&&Math.abs(v-cur.p)<=0.75){ cur.v.push(v); cur.e=tt+tr.hop; gap=0; dev=[]; continue; }
@@ -249,12 +260,15 @@ function notesFromTrack(tr){
 function fftMag(re,im){ const n=re.length; for(let i=1,j=0;i<n;i++){ let b=n>>1; for(;j&b;b>>=1) j^=b; j^=b; if(i<j){ let t=re[i]; re[i]=re[j]; re[j]=t; t=im[i]; im[i]=im[j]; im[j]=t; } }
   for(let len=2;len<=n;len<<=1){ const a=-2*Math.PI/len, wr=Math.cos(a), wi=Math.sin(a); for(let i=0;i<n;i+=len){ let cr=1,ci=0; for(let k=0;k<len/2;k++){ const ur=re[i+k],ui=im[i+k], vr=re[i+k+len/2]*cr-im[i+k+len/2]*ci, vi=re[i+k+len/2]*ci+im[i+k+len/2]*cr; re[i+k]=ur+vr; im[i+k]=ui+vi; re[i+k+len/2]=ur-vr; im[i+k+len/2]=ui-vi; const nr=cr*wr-ci*wi; ci=cr*wi+ci*wr; cr=nr; } } }
   const m=new Float32Array(n/2); for(let i=0;i<n/2;i++) m[i]=Math.hypot(re[i],im[i]); return m; }
-async function salienceTrack(x,onProg){
+async function salienceTrack(x,onProg,xl,xr){
   const sr=16000, N=2048, hop=320, F=Math.max(0,Math.floor((x.length-N)/hop)), win=new Float32Array(N); for(let i=0;i<N;i++) win[i]=0.5-0.5*Math.cos(2*Math.PI*i/(N-1));
-  const cands=[]; for(let c=hzToMidi(100);c<=hzToMidi(1100);c+=0.1) cands.push(midiToHz(c));
+  const cands=[]; for(let c=hzToMidi(100);c<=hzToMidi(1100);c+=0.05) cands.push(midiToHz(c));
   const f0=new Float32Array(F), conf=new Float32Array(F), rms=new Float32Array(F), sal=new Float32Array(F); let prev=0;
   for(let k=0;k<F;k++){ const o=k*hop, re=new Float32Array(N), im=new Float32Array(N); let e=0; for(let i=0;i<N;i++){ re[i]=x[o+i]*win[i]; } for(let i=N/2-160;i<N/2+160;i++) e+=x[o+i]*x[o+i]; rms[k]=Math.sqrt(e/320);
-    const raw=fftMag(re,im), L=raw.length, lg=new Float32Array(L), mg=new Float32Array(L); for(let i=0;i<L;i++) lg[i]=Math.log(1+60*raw[i]);
+    let raw=fftMag(re,im); const L=raw.length, lg=new Float32Array(L), mg=new Float32Array(L);
+    if(xl&&xr){ const lr=new Float32Array(N), li=new Float32Array(N), rr=new Float32Array(N), ri=new Float32Array(N); for(let i=0;i<N;i++){ lr[i]=xl[o+i]*win[i]; rr[i]=xr[o+i]*win[i]; } fftMag(lr,li); fftMag(rr,ri);
+      for(let i=0;i<L;i++){ const pl=lr[i]*lr[i]+li[i]*li[i], pr=rr[i]*rr[i]+ri[i]*ri[i], cr=lr[i]*rr[i]+li[i]*ri[i], coh=(pl+pr)>0?Math.max(0,2*cr/(pl+pr)):0; raw[i]*=coh*coh; } }
+    for(let i=0;i<L;i++) lg[i]=Math.log(1+60*raw[i]);
     // spectral whitening: remove the local floor (broadband drums/noise), keep only peaks
     let acc=0; const R=15; for(let i=0;i<Math.min(L,R);i++) acc+=lg[i]; for(let i=0;i<L;i++){ if(i+R<L) acc+=lg[i+R]; if(i-R-1>=0) acc-=lg[i-R-1]; const cnt=Math.min(L,i+R+1)-Math.max(0,i-R); mg[i]=Math.max(0,lg[i]-1.15*acc/cnt); }
     const sc=cands.map(f=>{ let s=0, nh=0; for(let h=1;h<=8;h++){ const b=h*f*N/sr; if(b>=L-2) break; const i=Math.round(b), v=Math.max(mg[i-1],mg[i],mg[i+1]); if(v>0.05) nh++; s+=Math.pow(0.84,h-1)*v; } return nh>=3?s:s*0.3; });
@@ -265,23 +279,32 @@ async function salienceTrack(x,onProg){
   const top=pctl(Array.from(sal),0.9)||1; for(let k=0;k<F;k++){ conf[k]=Math.min(1,sal[k]/top); if(conf[k]<0.55) prev=0; }
   return {f0,conf,rms,hop:0.02,off:N/2/sr};
 }
-async function bestTrack(filt,onProg){
+async function bestTrack(filt,onProg,xl,xr){
   const y=await yinTrack(filt,p=>onProg&&onProg(p*0.3)), loud=pctl(Array.from(y.rms),0.6), cs=Array.from(y.conf).filter((c,k)=>y.rms[k]>=loud);
-  const solo=cs.length&&pctl(cs,0.5)>=0.8; if(solo) return {tr:y,solo:true};
-  return {tr:await salienceTrack(filt,p=>onProg&&onProg(0.3+p*0.7)),solo:false};
+  const yinSolo=cs.length&&pctl(cs,0.5)>=0.8;
+  // stereo files with clearly different channels contain panned instruments → never "solo"
+  let side=0; if(xl&&xr){ let es=0,em=0; for(let i=0;i<xl.length;i+=4){ const m=xl[i]+xr[i], d=xl[i]-xr[i]; em+=m*m; es+=d*d; } side=es/Math.max(1e-9,em); }
+  const sal=await salienceTrack(filt,p=>onProg&&onProg(0.3+p*0.7),xl,xr);
+  if(yinSolo&&side<0.02){ // solo only if both trackers agree on the melody
+    let n=0,ag=0; const F=Math.min(y.f0.length,sal.f0.length); for(let k=0;k<F;k++){ if(y.f0[k]>0&&y.conf[k]>=0.6&&sal.conf[k]>=0.55){ n++; const d=Math.abs(hzToMidi(y.f0[k])-hzToMidi(sal.f0[k])); if(d<1||Math.abs(d-12)<1) ag++; } }
+    if(n&&ag/n>=0.7) return {tr:y,solo:true}; }
+  return {tr:sal,solo:false};
 }
 async function importSongAudio(file,onProg){
   const c=ac(), ab=await c.decodeAudioData(await file.arrayBuffer());
-  const raw=await songPcm(ab,false), filt=await songPcm(ab,true);
-  const b=await bestTrack(filt,onProg), r=notesFromTrack(b.tr); return {notes:r.phrases,phT:r.phT,t0:r.t0,voiced:r.voiced,pcm:raw,solo:b.solo};
+  const st=await songPcm(ab,true,true), filt=st.mono;
+  const b=await bestTrack(filt,onProg,st.l,st.r), r=notesFromTrack(b.tr,!b.solo); return {notes:r.phrases,phT:r.phT,t0:r.t0,voiced:r.voiced,blob:file,solo:b.solo,dur:Math.min(ab.duration,90)};
 }
-async function importSongPcm(pcm,onProg){ const b=await bestTrack(pcm,onProg), r=notesFromTrack(b.tr); return {notes:r.phrases,phT:r.phT,t0:r.t0,voiced:r.voiced,pcm}; }
+async function importSongPcm(pcm,onProg){ const b=await bestTrack(pcm,onProg), r=notesFromTrack(b.tr,!b.solo); return {notes:r.phrases,phT:r.phT,t0:r.t0,voiced:r.voiced,pcm}; }
 function extractSong(pcm){ return null; } // legacy (replaced by importSongPcm)
 /* original audio of own songs, kept on the phone (IndexedDB) for the "original" guide */
 const SongAudio={ db:null, open(){ if(this.db) return Promise.resolve(this.db); return new Promise((res,rej)=>{ try{ const r=indexedDB.open("voicecoach-songs",1); r.onupgradeneeded=()=>r.result.createObjectStore("audio"); r.onsuccess=()=>{ this.db=r.result; res(r.result); }; r.onerror=()=>rej(r.error); }catch(e){ rej(e); } }); },
   async put(id,pcm){ const db=await this.open(), i16=new Int16Array(pcm.length); for(let k=0;k<pcm.length;k++) i16[k]=Math.max(-32767,Math.min(32767,pcm[k]*32767)); return new Promise(r=>{ const tx=db.transaction("audio","readwrite"); tx.objectStore("audio").put(i16.buffer,id); tx.oncomplete=()=>r(true); tx.onerror=()=>r(false); }); },
-  async get(id){ if(SongAudio.cache[id]) return SongAudio.cache[id]; try{ const db=await this.open(); const ab=await new Promise(r=>{ const q=db.transaction("audio").objectStore("audio").get(id); q.onsuccess=()=>r(q.result); q.onerror=()=>r(null); }); if(!ab) return null;
+  async get(id){ if(SongAudio.cache[id]) return SongAudio.cache[id]; try{ const ab=await this.raw(id); if(!ab) return null;
+    if(ab instanceof Blob){ const buf=await ac().decodeAudioData(await ab.arrayBuffer()); return SongAudio.cache[id]=buf; }
     const i16=new Int16Array(ab), c=ac(), buf=c.createBuffer(1,i16.length,16000), ch=buf.getChannelData(0); for(let k=0;k<i16.length;k++) ch[k]=i16[k]/32767; return SongAudio.cache[id]=buf; }catch(e){ return null; } },
+  async putBlob(id,blob){ const db=await this.open(); return new Promise(r=>{ const tx=db.transaction("audio","readwrite"); tx.objectStore("audio").put(blob,id); tx.oncomplete=()=>r(true); tx.onerror=()=>r(false); }); },
+  async raw(id){ try{ const db=await this.open(); return await new Promise(r=>{ const q=db.transaction("audio").objectStore("audio").get(id); q.onsuccess=()=>r(q.result); q.onerror=()=>r(null); }); }catch(e){ return null; } },
   async del(id){ try{ const db=await this.open(); db.transaction("audio","readwrite").objectStore("audio").delete(id); }catch(e){} delete SongAudio.cache[id]; }, cache:{} };
 function renderMySong(box){
   const d=el("details",{style:"margin-top:10px"}); d.innerHTML=`<summary><b>${t("my_title")}</b></summary><p class="muted" style="font-size:.85rem">${t("my_desc")}</p>
@@ -289,11 +312,46 @@ function renderMySong(box){
   box.append(d); const msg=d.querySelector("[data-msg]");
   const add=async r=>{ if(!r||!r.notes){ msg.innerHTML=`<span class="warnbox" style="display:block">${t("my_none")}</span>`; return; }
     const s={id:"my"+Date.now(),my:true,name:d.querySelector("[data-nm]").value.trim()||t("my_tag")+" "+((store.mySongs||[]).length+1),bpm:60,notes:r.notes,phT:r.phT,t0:r.t0,lyr:{},audio:false};
-    if(r.pcm) s.audio=await SongAudio.put(s.id,r.pcm);
+    if(r.blob) s.audio=await SongAudio.putBlob(s.id,r.blob); else if(r.pcm) s.audio=await SongAudio.put(s.id,r.pcm); if(r.dur) s.dur=r.dur;
     store.mySongs=(store.mySongs||[]).concat([s]); save(); SG.id=s.id; SG.bpm=null; SG.phrase=null; SG.last=null; SG.guideMode=s.audio?"orig":"synth"; renderSongs();
     const n=r.notes.flat().filter(x=>x[0]!=null).length; toast(t("my_ok",{n,p:r.notes.length}));
     if(r.voiced<35) setTimeout(()=>{ const w=$("#sgBody [data-out]"); if(w) w.innerHTML=`<div class="warnbox" style="margin-top:8px">${t("my_mix",{v:r.voiced})}</div>`; },50); };
   const prog=p=>{ msg.textContent=t("my_prog",{p:Math.round(p*100)}); };
   d.querySelector("[data-f]").onchange=async e=>{ const f=e.target.files[0]; if(!f) return; msg.textContent=t("analysing"); try{ await add(await importSongAudio(f,prog)); }catch(err){ msg.innerHTML=`<span class="warnbox" style="display:block">${t("my_none")}</span>`; } e.target.value=""; };
   recControls(d.querySelector("[data-r]"),{maxSec:90,label:t("my_rec"),onDone:async r=>{ msg.textContent=t("analysing"); add(await importSongPcm(r.pcm,prog)); }});
+}
+
+/* ---- guide playback helpers ---- */
+const GUIDE={el:null,src:null,timers:[],out:null};
+function stopGuide(){ try{ if(GUIDE.out){ GUIDE.out.disconnect(); if(AOUT===GUIDE.out) AOUT=null; GUIDE.out=null; } }catch(e){} document.querySelectorAll("[data-lis],[data-syn]").forEach(b=>{ if(b.dataset.lbl){ b.innerHTML=b.dataset.lbl; delete b.dataset.lbl; } }); try{ GUIDE.el&&GUIDE.el.pause(); }catch(e){} try{ GUIDE.src&&GUIDE.src.stop(); }catch(e){} GUIDE.timers.forEach(clearTimeout); GUIDE.timers=[]; GUIDE.el=null; GUIDE.src=null; }
+async function playOrig(s,off,dur,rate,lead){
+  if(rate===1){ const buf=await SongAudio.get(s.id); if(!buf) return; const c=ac(), src=c.createBufferSource(); src.buffer=buf; src.connect(outOf(c)); src.start(c.currentTime+lead,off,dur); GUIDE.src=src; return; }
+  const raw=await SongAudio.raw(s.id); if(!raw) return; const blob=raw instanceof Blob?raw:null; if(!blob){ const buf=await SongAudio.get(s.id); if(!buf) return; const c=ac(), src=c.createBufferSource(); src.buffer=buf; src.playbackRate.value=rate; src.connect(outOf(c)); src.start(c.currentTime+lead,off,dur/rate); GUIDE.src=src; return; }
+  const a=new Audio(URL.createObjectURL(blob)); a.preservesPitch=true; a.mozPreservesPitch=true; a.webkitPreservesPitch=true; GUIDE.el=a;
+  await new Promise(r=>{ a.addEventListener("loadedmetadata",r,{once:true}); setTimeout(r,1500); }); a.currentTime=off; a.playbackRate=rate;
+  GUIDE.timers.push(setTimeout(()=>{ a.play().catch(()=>{}); },lead*1000)); GUIDE.timers.push(setTimeout(()=>{ try{ a.pause(); }catch(e){} },(lead+dur)*1000));
+}
+/* warmer, voice-like synth ("oo") with soft attack, legato and late vibrato – replaces the beep sound for melodies */
+function synthVoice(c,midi,t0,dur,vol){
+  const f=midiToHz(midi), o=c.createOscillator(), o2=c.createOscillator(), lp=c.createBiquadFilter(), g=c.createGain(), lfo=c.createOscillator(), lg=c.createGain();
+  o.type="sawtooth"; o2.type="triangle"; o.frequency.value=f; o2.frequency.value=f; lp.type="lowpass"; lp.frequency.value=Math.min(1600,f*4); lp.Q.value=0.8;
+  lfo.frequency.value=5.2; lg.gain.setValueAtTime(0,t0); lg.gain.linearRampToValueAtTime(0,t0+Math.min(0.35,dur*0.5)); lg.gain.linearRampToValueAtTime(f*0.006,t0+Math.min(0.7,dur)); lfo.connect(lg); lg.connect(o.frequency); lg.connect(o2.frequency);
+  const og=c.createGain(); og.gain.value=0.35; o.connect(og).connect(lp); o2.connect(lp); lp.connect(g); g.connect(outOf(c));
+  g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(vol,t0+0.07); g.gain.setValueAtTime(vol,t0+Math.max(0.08,dur-0.09)); g.gain.linearRampToValueAtTime(0.0001,t0+dur);
+  [o,o2,lfo].forEach(x=>{ x.start(t0); x.stop(t0+dur+0.05); });
+}
+/* ---- improve the melody: the user hums/sings along with the original once (headphones); notes come from the clean voice ---- */
+async function singAlongFix(box,s){
+  const o=box.querySelector("[data-out]"), buf=await SongAudio.get(s.id); if(!buf){ toast(t("my_none")); return; }
+  const len=Math.min(s.dur||buf.duration,90,buf.duration);
+  o.innerHTML=`<div class="warnbox" style="margin-top:8px">${t("my_fix_info",{s:Math.round(len)})}</div><button class="b warm" style="width:100%;margin-top:6px" data-fgo>${t("my_fix_go")}</button><button class="b alt sm hidden" data-fstop style="margin-top:6px">■ ${t("rec_stop")}</button><p data-fmsg class="muted"></p>`;
+  o.querySelector("[data-fgo]").onclick=async()=>{ const c=ac(); let take; try{ take=await startTake({}); }catch(e){ micError(e); toast(t("mic_fail")); return; }
+    const lead=0.5, latency=(c.outputLatency||c.baseLatency||0), src=c.createBufferSource(); src.buffer=buf; src.connect(c.destination); src.start(c.currentTime+lead,0,len); keepAwake(true);
+    o.querySelector("[data-fgo]").disabled=true; const stopB=o.querySelector("[data-fstop]"); stopB.classList.remove("hidden"); const msg=o.querySelector("[data-fmsg]");
+    let done=false; const finish=async()=>{ if(done) return; done=true; try{ src.stop(); }catch(e){} const r=await take.stop(); keepAwake(false); msg.textContent=t("analysing");
+      const res=await importSongPcm(r.pcm,p=>{ msg.textContent=t("my_prog",{p:Math.round(p*100)}); });
+      if(!res.notes){ msg.textContent=t("my_none"); return; }
+      const sh=lead+latency; s.notes=res.notes; s.phT=res.phT.map(x=>Math.max(0,x-sh)); s.t0=Math.max(0,res.t0-sh); s.fixed=true; save(); SG.last=null; SG.phrase=null; renderSongs();
+      toast(t("my_ok",{n:res.notes.flat().filter(x=>x[0]!=null).length,p:res.notes.length})); };
+    stopB.onclick=finish; setTimeout(finish,(lead+len+0.5)*1000); };
 }

@@ -49,7 +49,7 @@ function synthVib(c,midi,t0,dur,vol,vibAt){ synthNote(c,midi,t0,dur,vol); if(vib
   const o=c.createOscillator(), g=c.createGain(), lfo=c.createOscillator(), lg=c.createGain(), f=midiToHz(midi);
   o.type="sine"; o.frequency.value=f; lfo.frequency.value=5.5; lg.gain.value=f*(Math.pow(2,35/1200)-1); lfo.connect(lg).connect(o.frequency);
   g.gain.setValueAtTime(0,t0); g.gain.setValueAtTime(0,t0+vibAt); g.gain.linearRampToValueAtTime(vol*0.9,t0+vibAt+0.3); g.gain.linearRampToValueAtTime(0.0001,t0+dur);
-  o.connect(g).connect(c.destination); o.start(t0); lfo.start(t0); o.stop(t0+dur+0.05); lfo.stop(t0+dur+0.05); }
+  o.connect(g).connect(outOf(c)); o.start(t0); lfo.start(t0); o.stop(t0+dur+0.05); lfo.stop(t0+dur+0.05); }
 const centsTo=(f,m)=>1200*Math.log2(f/midiToHz(m));
 function vibratoOf(pts,m,a,b){ const v=pts.filter(p=>p.t>=a&&p.t<=b&&p.f>0).map(p=>({t:p.t,c:centsTo(p.f,m)})); if(v.length<15) return null;
   const sm=v.map((p,i)=>{ const w=v.filter(q=>Math.abs(q.t-p.t)<=0.15); return p.c-w.reduce((x,y)=>x+y.c,0)/w.length; });
@@ -102,8 +102,8 @@ function renderStyles(){
   box.querySelector("[data-go]").onclick=async()=>{ const go=box.querySelector("[data-go]"); go.disabled=true; lane.reset();
     // listen / sing indicator per phrase
     const firsts=ex.sing.filter((n,i)=>i===0||n.t-(ex.sing[i-1].t+ex.sing[i-1].d)>0.2), plays=ex.play.filter((n,i)=>i===0||n.t-(ex.play[i-1].t+ex.play[i-1].d)>0.2);
-    const sched=ld=>{ plays.forEach(n=>setTimeout(()=>{ dot.classList.remove("on"); dot.textContent=t("nt_listen"); },(ld+n.t)*1000)); firsts.forEach(n=>setTimeout(()=>{ dot.classList.add("on"); dot.textContent="🎤 "+(n.label||""); },(ld+n.t)*1000)); };
-    const out=await singSession({acc:ex.play.map(n=>Object.assign({v:0.15},n)),targets:ex.sing,total:ex.total,countIn:0,onStart:sched,onLive:(f,rel)=>{ if(rel>=off-0.2) lane.pushAt(f,rel-off); }});
+    const cues=plays.map(n=>({t:n.t,fn:()=>{ dot.classList.remove("on"); dot.textContent=t("nt_listen"); }})).concat(firsts.map(n=>({t:n.t,fn:()=>{ dot.classList.add("on"); dot.textContent="🎤 "+(n.label||""); }})));
+    const out=await singSession({acc:ex.play.map(n=>Object.assign({v:0.15},n)),targets:ex.sing,total:ex.total,countIn:0,cues,onLive:(f,rel)=>{ if(rel>=off-0.2) lane.pushAt(f,rel-off); }});
     go.disabled=false; dot.classList.remove("on"); dot.textContent="–"; if(!out) return;
     out.sing=out.res; const ms=def.measure(out), ok=ms.filter(x=>x.ok).length, all=ok===ms.length; st.runs++; st.streak=all?st.streak+1:0; if(st.streak>=2) st.mastered=today(); save();
     logSession(t("ex_"+SW.ex),Math.max(0.5,ex.total/60));
