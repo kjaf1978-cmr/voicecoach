@@ -83,7 +83,7 @@ function serWord(){
     <div class="row"><button class="b grow" id="serGo">${t("ser_next")}</button></div>`;
   $("#serStop").onclick=()=>{ if(S.take) S.take.stop().catch(()=>{}); S.running=false; keepAwake(false); SER=null; renderSerSetup(); };
   const go=()=>{ $("#serState").textContent=t("ser_listen"); beep(880,.07,.08); recordWord(w); };
-  if(S.model){ $("#serState").textContent="🔊"; speak(w,S.lang,()=>{ if(SER===S&&S.running) setTimeout(go,250); }, 0.85); } else go();
+  if(S.model){ $("#serState").textContent="🔊"; speak(w,S.lang,()=>{ if(SER===S&&S.running) setTimeout(go,250); }, 0.85, "model"); } else go();
   $("#serGo").onclick=()=>{ if(S.take) S.stopNow&&S.stopNow(); };
 }
 async function recordWord(w){
@@ -131,8 +131,8 @@ function renderSerSummary(){
       <div class="row"></div>`;
     const row=c.querySelector(".row:last-child");
     if(r.url){ const a=new Audio(r.url); const pb=el("button",{class:"b sm alt"},t("ser_your")); pb.onclick=()=>{ a.currentTime=0; a.play().catch(()=>{}); }; row.append(pb); }
-    const m1=el("button",{class:"b sm alt"},t("ser_model_btn")); m1.onclick=()=>speak(r.word,S.lang,null,0.9);
-    const m2=el("button",{class:"b sm alt"},t("ser_slow")); m2.onclick=()=>speak(r.word,S.lang,null,0.55); row.append(m1,m2);
+    const m1=el("button",{class:"b sm alt"},t("ser_model_btn")); m1.onclick=()=>speak(r.word,S.lang,null,0.9,"model");
+    const m2=el("button",{class:"b sm alt"},t("ser_slow")); m2.onclick=()=>speak(r.word,S.lang,null,0.55,"model"); row.append(m1,m2);
     if(r.ok===null){ const y=el("button",{class:"b sm",style:"background:var(--ok)"},"✓"), n=el("button",{class:"b sm",style:"background:var(--warn)"},"✗");
       y.onclick=()=>{ r.ok=true; artRecord(S.lang,S.snd,true); renderSerSummary(); showArtMastery(); }; n.onclick=()=>{ r.ok=false; artRecord(S.lang,S.snd,false); renderSerSummary(); showArtMastery(); };
       row.append(el("span",{class:"muted"},t("ser_self")),y,n); }
@@ -156,5 +156,5 @@ function practiceOne(idx,card){
     try{ tk=await startTake({lang:S.auto?S.lang:null,onLevel:(db,sec)=>{ if(sec<0.3){ fl.push(db); return; } if(floor===null) floor=Math.min(-50,fl.reduce((a,b)=>a+b,0)/Math.max(1,fl.length));
         if(!started&&db>floor+14) started=true; if(started){ if(db<floor+7){ if(qs===null) qs=sec; else if(sec-qs>0.8) fin(); } else qs=null; } if(sec>5) fin(); }}); }
     catch(e){ micError(e); st.textContent="✗"; }
-  },0.8);
+  },0.8,"model");
 }

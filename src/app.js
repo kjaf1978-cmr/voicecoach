@@ -28,14 +28,15 @@ let wakeLock=null;
 async function keepAwake(on){ try{ if(on&&"wakeLock" in navigator&&!wakeLock){ wakeLock=await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release",()=>wakeLock=null);} if(!on&&wakeLock){ wakeLock.release(); wakeLock=null; } }catch(e){} }
 
 /* ---------- text-to-speech (partner voice) ---------- */
-function speak(text, lang, onend, rate){
+function speak(text, lang, onend, rate, role){
   let done=false; const fin=()=>{ if(!done){ done=true; onend&&onend(); } };
   try{
     if(!("speechSynthesis" in window)) return fin();
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(text); u.lang=LOCALE[lang]; u.rate=rate||+SET.rate||1;
-    const vs=speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.replace("_","-").toLowerCase().startsWith(lang));
-    const pref=vs.find(v=>v.lang.replace("_","-")===LOCALE[lang])||vs[0]; if(pref) u.voice=pref;
+    if(role==="model"&&typeof modelVoice==="function"){ const m=modelVoice(lang); if(m.voice) try{ u.voice=m.voice; }catch(e){} u.pitch=Math.max(0.1,Math.min(2,m.pitch)); u.rate=u.rate*m.rate; }
+    else { const vs=speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.replace("_","-").toLowerCase().startsWith(lang));
+      const pref=vs.find(v=>v.lang.replace("_","-")===LOCALE[lang])||vs[0]; if(pref) try{ u.voice=pref; }catch(e){} }
     u.onend=fin; u.onerror=fin; speechSynthesis.speak(u);
     setTimeout(fin, 1500+text.length*90/(rate||+SET.rate||1));
   }catch(e){ fin(); }
@@ -113,6 +114,7 @@ function renderSettings(){
   chipSet($("#setCtx"),CTXS.map(c=>[c,t("ctx_"+c)]),SET.ctx,v=>setCtx(v));
   chipSet($("#setMode"),[["auto",t("mode_auto")],["rec",t("mode_rec")],["text",t("mode_text")]],SET.mode,v=>{ SET.mode=v; if(v==="auto") store.flags.conc=undefined; save(); renderSettings(); });
   if(typeof renderProfileForm==="function") renderProfileForm($("#setProf"),()=>{ renderTone(); renderRoutines(); renderSettings(); });
+  if(typeof renderVoicePick==="function") renderVoicePick();
   $("#setRate").value=SET.rate; $("#rateVal").textContent="×"+(+SET.rate).toFixed(2);
 }
 function setTl(v){ SET.tl=v; save(); SP.snd=Object.keys(ART[v])[0]; SP.idx=0; renderSettings(); renderTalkChips(); renderSpeech(); renderPassages(); renderTwisters(); nextPair(); renderScenes(); renderToday(); $("#topicBox").textContent=t("imp_tap"); delete $("#topicBox").dataset.set; renderV3(); }

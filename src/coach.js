@@ -108,7 +108,7 @@ function renderCoach(res){
     <div id="coachRec" style="margin-top:8px"></div><div id="coachRes"></div>`;
   $("#coachClose").onclick=closeCoach;
   $("#coachOther").onclick=()=>{ R.i++; renderCoach(); };
-  if($("#coachModel")) $("#coachModel").onclick=()=>speak(plainText(text),R.lang,null,def.kind==="prompt"?null:0.9);
+  if($("#coachModel")) $("#coachModel").onclick=()=>speak(plainText(text),R.lang,null,def.kind==="prompt"?null:0.9,def.kind==="prompt"?null:"model");
   if($("#coachGuide")) $("#coachGuide").onclick=()=>guideText(def.guide);
   const recBox=$("#coachRec");
   const ctl=recControls(recBox,{lang:srLang()?R.lang:null,maxSec:def.maxSec||60,onDone:r=>coachDone(r,text)});
