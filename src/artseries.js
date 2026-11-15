@@ -77,7 +77,7 @@ function serWord(){
   const w=S.words[S.i];
   box.innerHTML=`<div class="row"><b class="grow">${t("ser_word",{i:S.i+1,n:S.words.length})}</b><button class="b sm alt" id="serStop">${t("cancel")}</button></div>
     <div class="step">${S.words.map((_,k)=>`<i class="${k<S.i?'d':''}" style="${k<S.i?(S.results[k].ok?'':'background:var(--warn)'):''}"></i>`).join("")}</div>
-    <div class="huge" style="font-size:${w.length>18?'1.4rem':'2.4rem'}">${esc(w)}</div>
+    <div class="huge" ${tlAttr(SET.tl)} style="font-size:${w.length>18?'1.4rem':'2.4rem'}">${esc(w)}</div>
     <div class="meter"><i id="serLv"></i></div><p class="muted" id="serState" style="text-align:center;min-height:1.3em"></p>
     <div class="bubble me hidden" id="serHeard"></div>
     <div class="row"><button class="b grow" id="serGo">${t("ser_next")}</button></div>`;
@@ -97,7 +97,7 @@ async function recordWord(w){
         if(!started&&db>floor+14) started=true;
         if(started){ if(db<floor+7){ if(quietSince===null) quietSince=sec; else if(sec-quietSince>0.8) stopNow(); } else quietSince=null; }
         if(sec*1000>maxMs) stopNow(); }});
-  }catch(e){ micError(e); toast(t("mic_title")+" ✗"); S.running=false; keepAwake(false); SER=null; renderSerSetup(); }
+  }catch(e){ micError(e); toast(t("mic_fail")); S.running=false; keepAwake(false); SER=null; renderSerSetup(); }
 }
 function evalWord(w,r){
   const S=SER; if(!S) return;
@@ -124,10 +124,10 @@ function renderSerSummary(){
   const L=$("#serList");
   S.results.forEach((r,idx)=>{
     const c=el("div",{class:"card",style:"padding:10px;margin:8px 0;border-left:5px solid "+(r.ok===true?"var(--ok)":r.ok===false?"var(--warn)":"var(--line)")});
-    c.innerHTML=`<div class="row"><b class="grow" style="font-size:1.2rem">${r.ok===true?"✓":r.ok===false?"✗":"?"} ${esc(r.word)}</b></div>
+    c.innerHTML=`<div class="row"><b class="grow" style="font-size:1.2rem">${r.ok===true?"✓":r.ok===false?"✗":"?"} <span ${tlAttr(S.lang)}>${esc(r.word)}</span></b></div>
       ${r.heard||r.ok===false?`<p class="muted">${t("ser_heard",{w:esc(r.heard||t("ser_none"))})}</p>`:""}
       ${r.hints.length?`<ul class="list">${r.hints.map(h=>`<li>${esc(hintText(h))}</li>`).join("")}</ul>`:""}
-      ${r.ok===false?`<p class="muted"><b>${t("how_sound")}</b> ${esc(ART[S.lang][S.snd].tip)}</p>`:""}
+      ${r.ok===false?`<p class="muted"><b>${t("how_sound")}</b> ${esc(artTip(S.lang,S.snd))}</p>`:""}
       <div class="row"></div>`;
     const row=c.querySelector(".row:last-child");
     if(r.url){ const a=new Audio(r.url); const pb=el("button",{class:"b sm alt"},t("ser_your")); pb.onclick=()=>{ a.currentTime=0; a.play().catch(()=>{}); }; row.append(pb); }

@@ -25,7 +25,7 @@ function renderSupport(){
     b.innerHTML=`<p class="muted">${t("sup_flow_how")}</p><div class="huge" style="font-size:2rem">ssssssss…</div><div id="supRec"></div>`;
     recControls($("#supRec"),{maxSec:45,onDone:r=>flowDone(r)});
   } else {
-    b.innerHTML=`<p class="muted">${t("sup_ab_how")}</p><div class="card flat" style="font-size:1.1rem">${esc(SUP_SENT[SET.tl])}</div><div id="supAB"></div>`;
+    b.innerHTML=`<p class="muted">${t("sup_ab_how")}</p><div class="card flat" style="font-size:1.1rem" ${tlAttr(SET.tl)}>${esc(SUP_SENT[SET.tl])}</div><div id="supAB"></div>`;
     abStep(1);
   }
   if(last) b.append(el("p",{class:"muted"},t("sup_last",{d:last.d,s:last.score})));

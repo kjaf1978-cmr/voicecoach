@@ -271,7 +271,7 @@ function recControls(box,{video=false, lang=null, maxSec=120, onDone, onStart=nu
         onText:txt=>{ tx.classList.remove("hidden"); tx.textContent=txt; }});
       if(video){ const v=el("video",{playsinline:"",muted:"",autoplay:"",style:"width:100%;border-radius:12px;margin-top:6px;transform:scaleX(-1);max-height:40vh;background:#000"}); v.muted=true; v.srcObject=take.stream; pv.append(v); }
       btn.textContent=t("rec_stop"); keepAwake(true); timer=setTimeout(()=>{ if(take) btn.onclick(); },maxSec*1000);
-    }catch(e){ micError(e); toast(t("mic_title")+" ✗"); take=null; }
+    }catch(e){ micError(e); toast(t("mic_fail")); take=null; }
   };
   return {isRecording:()=>!!take};
 }

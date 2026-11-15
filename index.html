@@ -95,7 +95,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
 </head>
 <body>
 <header>
-  <h1>VoiceCoach <span class="ver">v3.3</span></h1>
+  <h1>VoiceCoach <span class="ver">v3.4</span></h1>
   <span class="badge" id="streakBadge"></span>
   <button class="pill hidden" id="installBtn" data-t="install"></button>
   <button class="pill" id="setBtn">⚙ <span id="setSummary"></span></button>
@@ -190,7 +190,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
     <div class="chips" id="posChips"></div>
     <p class="muted" id="soundTip"></p>
     <div class="card flat">
-      <div class="huge" id="drillWord">–</div>
+      <div class="huge tl" id="drillWord">–</div>
       <p class="muted" id="drillHeard" style="text-align:center;min-height:1.2em"></p>
       <div class="row">
         <button class="b alt" id="drillPrev">◀</button>
@@ -207,14 +207,14 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
   </div>
   <div class="card">
     <h2 data-t="pairs_title"></h2><p class="muted" data-t="pairs_desc"></p>
-    <div class="huge" id="pairBox">–</div>
+    <div class="huge tl" id="pairBox">–</div>
     <div class="row"><button class="b grow" id="pairNext" data-t="pairs_new"></button><button class="b alt grow" id="pairPick" data-t="pairs_pick"></button></div>
     <p class="muted" id="pairPicked"></p>
   </div>
   <div class="card" id="twCard">
     <h2 data-t="tw_title"></h2><p class="muted" data-t="tw_desc"></p>
-    <select id="twSelect" style="width:100%"></select>
-    <div class="reader card" id="twReader" style="margin-top:10px"></div>
+    <select class="tl" id="twSelect" style="width:100%"></select>
+    <div class="reader card tl" id="twReader" style="margin-top:10px"></div>
     <label class="muted"><span data-t="speed"></span>: <span id="twWpmVal">60</span> WPM</label>
     <input type="range" id="twWpm" min="30" max="200" step="5" value="60">
     <div class="row"><label class="muted grow"><input type="checkbox" id="twClick"> <span data-t="metronome"></span></label><button class="b" id="twStart" data-t="startb"></button></div>
@@ -222,8 +222,8 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
   </div>
   <div class="card" id="paceCard">
     <h2 data-t="read_title"></h2><p class="muted" data-t="read_desc"></p>
-    <select id="paceSelect" style="width:100%"></select>
-    <div class="reader card" id="paceReader" style="margin-top:10px"></div>
+    <select class="tl" id="paceSelect" style="width:100%"></select>
+    <div class="reader card tl" id="paceReader" style="margin-top:10px"></div>
     <label class="muted"><span data-t="speed"></span>: <span id="paceWpmVal">130</span> WPM</label>
     <input type="range" id="paceWpm" min="60" max="200" step="5" value="130">
     <div class="row"><span class="grow"></span><button class="b" id="paceStart" data-t="startb"></button></div>
@@ -233,7 +233,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
 <!-- VOICE -->
 <section class="view" id="v-voice">
   <div class="card" id="testCard"><h2 data-t="test_title"></h2><p class="muted" data-t="test_desc"></p><div id="testBody"></div>
-    <details><summary>ⓘ</summary><div class="muted" data-t="dims_help"></div></details></div>
+    <details><summary data-t="dims_info"></summary><div class="muted" data-t="dims_help"></div></details></div>
   <div class="card" id="studioCard"><h2 data-t="studio_title"></h2><p class="muted" data-t="studio_desc"></p>
     <label class="muted" data-t="studio_prompt"></label><select id="studioPrompt" style="width:100%"></select>
     <div class="card flat hidden" id="studioTask" style="margin-top:8px"></div>
@@ -242,10 +242,10 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
     <label class="b sm alt" style="display:inline-flex;align-items:center;margin-top:8px">📂 <span data-t="studio_import"></span><input type="file" id="studioFile" accept="audio/*,video/*" class="hidden"></label>
     <div id="studioOut"></div></div>
   <div class="card" id="intoCard"><h2 data-t="into_title"></h2><p class="muted" data-t="into_desc"></p>
-    <div class="huge" id="intoSent" style="font-size:1.5rem;font-weight:500"></div><button class="b sm alt" id="intoNew" data-t="into_new"></button>
+    <div class="huge tl" id="intoSent" style="font-size:1.5rem;font-weight:500"></div><button class="b sm alt" id="intoNew" data-t="into_new"></button>
     <div id="intoRec" style="margin-top:8px"></div><div id="intoOut"></div></div>
   <div class="card" id="projCard"><h2 data-t="proj_title"></h2><p class="muted" data-t="proj_desc"></p>
-    <div class="huge" id="projText" style="font-size:1.2rem;font-weight:500"></div><div id="projRec"></div><div id="projOut"></div></div>
+    <div class="huge tl" id="projText" style="font-size:1.2rem;font-weight:500"></div><div id="projRec"></div><div id="projOut"></div></div>
   <div class="card"><h2 data-t="mic_title"></h2><p class="muted" data-t="mic_desc"></p>
     <button class="b" style="width:100%" id="micBtn" data-t="mic_on"></button>
     <div class="warnbox hidden" id="micErr" style="margin-top:8px"></div></div>
@@ -306,7 +306,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
 <nav id="nav"></nav>
 <div class="toast" id="toast"></div>
 <script>
-/* VoiceCoach v3.3 */
+/* VoiceCoach v3.4 */
 /* UI strings – en / de / fr */
 const T = {
 en:{
@@ -780,10 +780,10 @@ const SCENES = [
   ["Tell me about a difficult situation at work and how you handled it.","Describe a challenge: situation – your action – the result.","Last year a key supplier delivered late, which put our deadline at risk. I organised a meeting with the supplier, re-planned the schedule and moved two tasks forward. As a result, we delivered only two days late and the client was satisfied.","problem|challenge|difficult|late|risk|situation; organi|decided|talked|spoke|planned|solved|handled; result|in the end|finally|outcome|satisfied"],
   ["Do you have any questions for us?","Ask one thoughtful question and thank the interviewer.","Yes, thank you. Could you tell me how success is measured in this role during the first six months? And thank you very much for your time today.","could you|can you|what|how|would; thank"]],
  de:[
-  ["Guten Morgen, schön, dass Sie da sind. Stellen Sie sich bitte kurz vor.","Stellen Sie sich vor: Name, aktuelle Position, Jahre Berufserfahrung.","Guten Morgen, vielen Dank für die Einladung. Mein Name ist Alex Meyer. Ich arbeite als Projektingenieur und habe etwa acht Jahre Erfahrung in der Planung und Leitung technischer Projekte.","mein name|ich bin|heiße; arbeite|ingenieur|position|stelle|leiter; jahre|erfahrung"],
-  ["Warum interessieren Sie sich für diese Stelle?","Nennen Sie zwei klare Gründe.","Mich interessiert die Stelle aus zwei Gründen. Erstens arbeitet Ihr Unternehmen an nachhaltiger Infrastruktur, das passt zu meinen Werten. Zweitens könnte ich größere Teams leiten und mich beruflich weiterentwickeln.","gründe|grund|weil|denn; erstens|zuerst|zum einen; zweitens|außerdem|zum anderen; unternehmen|firma|team|stelle"],
-  ["Erzählen Sie von einer schwierigen Situation bei der Arbeit und wie Sie sie gelöst haben.","Situation – Ihre Handlung – Ergebnis.","Letztes Jahr hat ein wichtiger Lieferant zu spät geliefert, und unser Termin war in Gefahr. Ich habe ein Treffen mit dem Lieferanten organisiert, den Zeitplan neu geplant und zwei Aufgaben vorgezogen. Im Ergebnis waren wir nur zwei Tage später fertig, und der Kunde war zufrieden.","problem|schwierig|spät|gefahr|situation; organisiert|geplant|gesprochen|entschieden|gelöst; ergebnis|am ende|schließlich|zufrieden"],
-  ["Haben Sie noch Fragen an uns?","Stellen Sie eine durchdachte Frage und bedanken Sie sich.","Ja, danke. Wie wird Erfolg in dieser Position in den ersten sechs Monaten gemessen? Und vielen Dank für Ihre Zeit heute.","wie |was |können sie|könnten sie|welche; dank"]],
+  ["Guten Morgen, schön, dass Sie da sind. Stellen Sie sich bitte kurz vor.","Stell dich vor: Name, aktuelle Position, Jahre an Berufserfahrung.","Guten Morgen, vielen Dank für die Einladung. Mein Name ist Alex Meyer. Ich arbeite als Projektingenieur und habe etwa acht Jahre Erfahrung in der Planung und Leitung technischer Projekte.","mein name|ich bin|heiße; arbeite|ingenieur|position|stelle|leiter; jahre|erfahrung"],
+  ["Warum interessieren Sie sich für diese Stelle?","Nenne zwei klare Gründe, warum du diese Stelle willst.","Mich interessiert die Stelle aus zwei Gründen. Erstens arbeitet Ihr Unternehmen an nachhaltiger Infrastruktur, das passt zu meinen Werten. Zweitens könnte ich größere Teams leiten und mich beruflich weiterentwickeln.","gründe|grund|weil|denn; erstens|zuerst|zum einen; zweitens|außerdem|zum anderen; unternehmen|firma|team|stelle"],
+  ["Erzählen Sie von einer schwierigen Situation bei der Arbeit und wie Sie sie gelöst haben.","Beschreibe eine Herausforderung: Situation – dein Handeln – Ergebnis.","Letztes Jahr hat ein wichtiger Lieferant zu spät geliefert, und unser Termin war in Gefahr. Ich habe ein Treffen mit dem Lieferanten organisiert, den Zeitplan neu geplant und zwei Aufgaben vorgezogen. Im Ergebnis waren wir nur zwei Tage später fertig, und der Kunde war zufrieden.","problem|schwierig|spät|gefahr|situation; organisiert|geplant|gesprochen|entschieden|gelöst; ergebnis|am ende|schließlich|zufrieden"],
+  ["Haben Sie noch Fragen an uns?","Stell eine durchdachte Frage und bedanke dich.","Ja, danke. Wie wird Erfolg in dieser Position in den ersten sechs Monaten gemessen? Und vielen Dank für Ihre Zeit heute.","wie |was |können sie|könnten sie|welche; dank"]],
  fr:[
   ["Bonjour, merci d'être venu. Pouvez-vous vous présenter brièvement ?","Présentez-vous : nom, poste actuel, années d'expérience.","Bonjour, merci pour l'invitation. Je m'appelle Alex Meyer. Je travaille comme ingénieur de projet et j'ai environ huit ans d'expérience dans la planification et la gestion de projets techniques.","je m appelle|je suis|nom; travaille|ingénieur|poste|responsable; ans |expérience"],
   ["Pourquoi ce poste vous intéresse-t-il ?","Donnez deux raisons claires.","Ce poste m'intéresse pour deux raisons. D'abord, votre entreprise travaille sur des infrastructures durables, ce qui correspond à mes valeurs. Ensuite, ce rôle me permettrait de diriger des équipes plus grandes et d'évoluer professionnellement.","raisons|parce qu|car ; d abord|premièrement|premier; ensuite|deuxièmement|aussi; entreprise|société|équipe|poste"],
@@ -797,10 +797,10 @@ const SCENES = [
   ["What do you need from the team?","Make a clear, polite request.","I would like to ask for support from one colleague for the testing next week. Could someone from the quality team help us for two days?","would like|could|can |need|ask; help|support; week|days"],
   ["Good. Can you summarise the next steps?","Summarise the next steps with who and when.","Sure. First, I will finish the remaining tests by Friday. Second, the quality team supports us next week. Finally, I will send the report to everyone on the twentieth.","first|next|then; will |going to; friday|monday|week|by ; report|send|email"]],
  de:[
-  ["Fangen wir mit Ihrem Update an. Wie ist der Stand bei Ihrem Projektteil?","Kurzer Stand: was ist erledigt, was läuft gerade.","Danke. Die Entwurfsphase ist abgeschlossen, und wir testen gerade den ersten Prototyp. Etwa siebzig Prozent der Tests sind erledigt.","abgeschlossen|fertig|erledigt; gerade|aktuell|momentan|zurzeit|testen; prozent|hälfte|meisten"],
-  ["Gibt es Risiken oder Probleme, die wir kennen sollten?","Nennen Sie ein Risiko und seine mögliche Folge.","Ja, es gibt ein Risiko. Ein Bauteil verspätet sich um zwei Wochen. Wenn es nicht rechtzeitig kommt, könnte sich der Abschlusstest auf nächsten Monat verschieben.","risiko|problem|verspät|verzöger; wenn|könnte|falls; woche|monat|tage"],
-  ["Was brauchen Sie vom Team?","Formulieren Sie eine klare, höfliche Bitte.","Ich möchte um Unterstützung durch eine Kollegin oder einen Kollegen für die Tests nächste Woche bitten. Könnte uns jemand aus dem Qualitätsteam zwei Tage helfen?","möchte|könnte|bitte|brauche; unterstütz|helfen|hilfe; woche|tage"],
-  ["Gut. Können Sie die nächsten Schritte zusammenfassen?","Fassen Sie die nächsten Schritte zusammen: wer und wann.","Gerne. Erstens schließe ich die restlichen Tests bis Freitag ab. Zweitens unterstützt uns das Qualitätsteam nächste Woche. Zum Schluss schicke ich allen am Zwanzigsten den Bericht.","erstens|zuerst|dann; freitag|montag|woche|bis ; bericht|schicke|sende|mail"]],
+  ["Fangen wir mit Ihrem Update an. Wie ist der Stand bei Ihrem Projektteil?","Gib einen kurzen Stand: Was ist erledigt, was läuft gerade?","Danke. Die Entwurfsphase ist abgeschlossen, und wir testen gerade den ersten Prototyp. Etwa siebzig Prozent der Tests sind erledigt.","abgeschlossen|fertig|erledigt; gerade|aktuell|momentan|zurzeit|testen; prozent|hälfte|meisten"],
+  ["Gibt es Risiken oder Probleme, die wir kennen sollten?","Nenne ein Risiko und seine mögliche Folge.","Ja, es gibt ein Risiko. Ein Bauteil verspätet sich um zwei Wochen. Wenn es nicht rechtzeitig kommt, könnte sich der Abschlusstest auf nächsten Monat verschieben.","risiko|problem|verspät|verzöger; wenn|könnte|falls; woche|monat|tage"],
+  ["Was brauchen Sie vom Team?","Formuliere eine klare, höfliche Bitte.","Ich möchte um Unterstützung durch eine Kollegin oder einen Kollegen für die Tests nächste Woche bitten. Könnte uns jemand aus dem Qualitätsteam zwei Tage helfen?","möchte|könnte|bitte|brauche; unterstütz|helfen|hilfe; woche|tage"],
+  ["Gut. Können Sie die nächsten Schritte zusammenfassen?","Fasse die nächsten Schritte zusammen: wer macht was bis wann.","Gerne. Erstens schließe ich die restlichen Tests bis Freitag ab. Zweitens unterstützt uns das Qualitätsteam nächste Woche. Zum Schluss schicke ich allen am Zwanzigsten den Bericht.","erstens|zuerst|dann; freitag|montag|woche|bis ; bericht|schicke|sende|mail"]],
  fr:[
   ["Commençons par votre point. Où en est votre partie du projet ?","Bref état : ce qui est fait, ce qui est en cours.","Merci. La phase de conception est terminée et nous testons actuellement le premier prototype. Environ soixante-dix pour cent des tests sont faits.","terminé|fini|fait |achevé; actuellement|en ce moment|maintenant|en cours|testons; pour cent|moitié|plupart"],
   ["Y a-t-il des risques ou des problèmes à connaître ?","Citez un risque et son impact possible.","Oui, il y a un risque. Un composant a deux semaines de retard. S'il n'arrive pas à temps, le test final pourrait être repoussé au mois prochain.","risque|problème|retard; si |s il|pourrait; semaine|mois|jours"],
@@ -815,10 +815,10 @@ const SCENES = [
   ["Oh nice. Do you have any plans for the weekend?","Talk about your plans and ask a question back.","We still have many boxes to unpack, but on Sunday we want to explore the park. What would you recommend around here?","weekend|saturday|sunday|plan|want; what |where|do you|would you|any "],
   ["The bakery on the corner is great. Well, I have to go now.","Thank them and close the conversation politely.","Thanks for the tip, I'll try it tomorrow. It was really nice to meet you. See you soon!","thank; nice|great|pleasure; see you|bye|soon|later"]],
  de:[
-  ["Hallo! Ich glaube, Sie sind gerade nebenan eingezogen. Ich bin Sam.","Begrüßen, sich vorstellen, etwas Freundliches sagen.","Hallo Sam, freut mich! Ich bin Alex. Ja, wir sind letzte Woche eingezogen. Eine sehr schöne Straße.","hallo|guten tag|freut mich; ich bin|heiße|mein name; eingezogen|woche|neu "],
-  ["Willkommen! Wo haben Sie vorher gewohnt?","Sagen Sie, wo Sie gewohnt haben, mit einem Detail.","Danke! Vorher haben wir fünf Jahre in Köln gewohnt. Das war schön, aber hier haben wir mehr Platz und einen Garten.","vorher|gewohnt|früher; jahre|stadt|köln; aber |und |weil"],
-  ["Schön. Haben Sie schon Pläne fürs Wochenende?","Erzählen Sie von Ihren Plänen und stellen Sie eine Gegenfrage.","Wir haben noch viele Kisten auszupacken, aber am Sonntag möchten wir den Park erkunden. Was würden Sie hier in der Nähe empfehlen?","wochenende|samstag|sonntag|pläne|möchten|wollen; was |wo |haben sie|würden sie|können sie|empfehlen"],
-  ["Die Bäckerei an der Ecke ist super. So, ich muss jetzt leider los.","Bedanken Sie sich und beenden Sie das Gespräch höflich.","Danke für den Tipp, das probiere ich morgen aus. Schön, Sie kennenzulernen. Bis bald!","dank; schön|freut|nett; bis bald|tschüss|wiedersehen|bis dann"]],
+  ["Hallo! Ich glaube, Sie sind gerade nebenan eingezogen. Ich bin Sam.","Begrüße die Person, stell dich vor und sag etwas Freundliches.","Hallo Sam, freut mich! Ich bin Alex. Ja, wir sind letzte Woche eingezogen. Eine sehr schöne Straße.","hallo|guten tag|freut mich; ich bin|heiße|mein name; eingezogen|woche|neu "],
+  ["Willkommen! Wo haben Sie vorher gewohnt?","Sag, wo du vorher gewohnt hast, und nenne ein Detail.","Danke! Vorher haben wir fünf Jahre in Köln gewohnt. Das war schön, aber hier haben wir mehr Platz und einen Garten.","vorher|gewohnt|früher; jahre|stadt|köln; aber |und |weil"],
+  ["Schön. Haben Sie schon Pläne fürs Wochenende?","Erzähl von deinen Plänen und stell eine Gegenfrage.","Wir haben noch viele Kisten auszupacken, aber am Sonntag möchten wir den Park erkunden. Was würden Sie hier in der Nähe empfehlen?","wochenende|samstag|sonntag|pläne|möchten|wollen; was |wo |haben sie|würden sie|können sie|empfehlen"],
+  ["Die Bäckerei an der Ecke ist super. So, ich muss jetzt leider los.","Bedanke dich und beende das Gespräch höflich.","Danke für den Tipp, das probiere ich morgen aus. Schön, Sie kennenzulernen. Bis bald!","dank; schön|freut|nett; bis bald|tschüss|wiedersehen|bis dann"]],
  fr:[
   ["Bonjour ! Je crois que vous venez d'emménager à côté. Moi, c'est Sam.","Saluez, présentez-vous, dites quelque chose d'aimable.","Bonjour Sam, enchanté ! Moi, c'est Alex. Oui, nous avons emménagé la semaine dernière. C'est une très jolie rue.","bonjour|salut|enchanté; moi c est|je m appelle|je suis; emménagé|semaine|nouveau"],
   ["Bienvenue ! Où habitiez-vous avant ?","Dites où vous habitiez, avec un détail.","Merci ! Avant, nous avons habité cinq ans à Lyon. C'était bien, mais ici nous avons plus d'espace et un jardin.","avant|habité|habitions; ans |ville|lyon; mais |et |parce qu"],
@@ -832,10 +832,10 @@ const SCENES = [
   ["Sorry, we've run out of oat milk. We have soy or almond milk.","React calmly to the problem and choose an alternative.","No problem. Then I'll take almond milk, thank you.","no problem|that s fine|okay|ok |never mind; almond|soy |then; thank"],
   ["That's eight euros fifty. Card or cash?","Pay and say something friendly.","By card, please. Here you go. Thank you, have a nice day!","card|cash; here you go|here you are; nice day|thank|good day"]],
  de:[
-  ["Hallo, was darf es sein?","Bestellen Sie höflich ein Getränk und etwas zu essen.","Hallo! Ich hätte gern einen großen Cappuccino und ein Stück Apfelkuchen, bitte.","hätte gern|möchte|nehme|hätte gerne; bitte; kaffee|cappuccino|tee |kuchen|wasser|saft|brötchen"],
-  ["Zum Hiertrinken oder zum Mitnehmen?","Antworten Sie und stellen Sie eine Frage zur Karte.","Zum Hiertrinken, bitte. Haben Sie auch Hafermilch?","hier|mitnehmen; haben sie|gibt es"],
-  ["Tut mir leid, die Hafermilch ist aus. Wir haben Soja- oder Mandelmilch.","Reagieren Sie gelassen und wählen Sie eine Alternative.","Kein Problem. Dann nehme ich Mandelmilch, danke.","kein problem|macht nichts|in ordnung|okay; mandel|soja|dann ; dank"],
-  ["Das macht acht Euro fünfzig. Mit Karte oder bar?","Bezahlen Sie und sagen Sie etwas Freundliches.","Mit Karte, bitte. Bitte schön. Danke und einen schönen Tag noch!","karte|bar ; bitte schön|bitte sehr|hier ; schönen tag|danke"]],
+  ["Hallo, was darf es sein?","Bestelle höflich ein Getränk und etwas zu essen.","Hallo! Ich hätte gern einen großen Cappuccino und ein Stück Apfelkuchen, bitte.","hätte gern|möchte|nehme|hätte gerne; bitte; kaffee|cappuccino|tee |kuchen|wasser|saft|brötchen"],
+  ["Zum Hiertrinken oder zum Mitnehmen?","Antworte und stell eine Frage zur Karte.","Zum Hiertrinken, bitte. Haben Sie auch Hafermilch?","hier|mitnehmen; haben sie|gibt es"],
+  ["Tut mir leid, die Hafermilch ist aus. Wir haben Soja- oder Mandelmilch.","Reagiere gelassen auf das Problem und wähle eine Alternative.","Kein Problem. Dann nehme ich Mandelmilch, danke.","kein problem|macht nichts|in ordnung|okay; mandel|soja|dann ; dank"],
+  ["Das macht acht Euro fünfzig. Mit Karte oder bar?","Bezahle und sag etwas Freundliches.","Mit Karte, bitte. Bitte schön. Danke und einen schönen Tag noch!","karte|bar ; bitte schön|bitte sehr|hier ; schönen tag|danke"]],
  fr:[
   ["Bonjour, qu'est-ce que je vous sers ?","Commandez poliment une boisson et quelque chose à manger.","Bonjour ! Je voudrais un grand cappuccino et une part de tarte aux pommes, s'il vous plaît.","je voudrais|je vais prendre|j aimerais|je prends; s il vous plaît|s il te plaît; café|cappuccino|thé |tarte|gâteau|eau |jus |croissant"],
   ["Sur place ou à emporter ?","Répondez et posez une question sur la carte.","Sur place, s'il vous plaît. Vous avez aussi du lait d'avoine ?","sur place|emporter; vous avez|avez vous|est ce que"],
@@ -850,10 +850,10 @@ const SCENES = [
   ["Isn't your sample too small to generalise?","Acknowledge the limitation, then defend your result calmly.","That is a fair point. The sample is limited, so we cannot generalise to all regions. However, the results were consistent across all three sites, and we plan a larger study next year.","fair point|good point|you are right|agree|limitation|limited; however|but |nevertheless; plan|future|next |further"],
   ["What would you recommend for practice?","Give a recommendation with a reason.","I would recommend that schools combine gravel filters with regular maintenance, because performance drops quickly when filters are not cleaned.","recommend|suggest|should|advise; because|since|as ; maintenance|clean|regular|train"]],
  de:[
-  ["Vielen Dank für Ihren Vortrag. Können Sie Ihr Hauptergebnis in ein, zwei Sätzen zusammenfassen?","Nennen Sie Ihr Hauptergebnis klar und knapp.","Gerne. Unser Hauptergebnis ist, dass Kiesfilter etwa achtzig Prozent der Schwebstoffe kostengünstig entfernen. Damit eignen sie sich gut für Schulen auf dem Land.","ergebnis|gezeigt|zeigt; prozent|deutlich|signifikant|meisten; damit|deshalb|daher|eignen"],
-  ["Wie haben Sie Ihre Daten erhoben?","Beschreiben Sie die Methode: was, wie viele, wie lange.","Wir haben sechs Monate lang zweimal pro Woche Wasserproben an drei Standorten genommen. Insgesamt haben wir hundertzwanzig Proben im Labor analysiert.","proben|daten|gemessen|umfrage|interview; woche|monat|jahr; insgesamt|analysiert|erhoben"],
-  ["Ist Ihre Stichprobe nicht zu klein, um zu verallgemeinern?","Erkennen Sie die Grenze an und verteidigen Sie Ihr Ergebnis sachlich.","Das ist ein berechtigter Einwand. Die Stichprobe ist begrenzt, deshalb können wir nicht auf alle Regionen schließen. Allerdings waren die Ergebnisse an allen drei Standorten einheitlich, und wir planen nächstes Jahr eine größere Studie.","berechtigt|guter punkt|recht |stimmt|begrenzt; allerdings|aber |trotzdem|jedoch; planen|zukunft|nächst|weitere"],
-  ["Was würden Sie für die Praxis empfehlen?","Geben Sie eine Empfehlung mit Begründung.","Ich würde empfehlen, Kiesfilter mit regelmäßiger Wartung zu kombinieren, weil die Leistung schnell sinkt, wenn die Filter nicht gereinigt werden.","empfehle|empfehlen|sollte|rate ; weil|da |denn; wartung|reinig|regelmäßig"]],
+  ["Vielen Dank für Ihren Vortrag. Können Sie Ihr Hauptergebnis in ein, zwei Sätzen zusammenfassen?","Nenne dein Hauptergebnis klar und knapp.","Gerne. Unser Hauptergebnis ist, dass Kiesfilter etwa achtzig Prozent der Schwebstoffe kostengünstig entfernen. Damit eignen sie sich gut für Schulen auf dem Land.","ergebnis|gezeigt|zeigt; prozent|deutlich|signifikant|meisten; damit|deshalb|daher|eignen"],
+  ["Wie haben Sie Ihre Daten erhoben?","Beschreibe deine Methode: was, wie viele, wie lange.","Wir haben sechs Monate lang zweimal pro Woche Wasserproben an drei Standorten genommen. Insgesamt haben wir hundertzwanzig Proben im Labor analysiert.","proben|daten|gemessen|umfrage|interview; woche|monat|jahr; insgesamt|analysiert|erhoben"],
+  ["Ist Ihre Stichprobe nicht zu klein, um zu verallgemeinern?","Erkenne die Grenze an und verteidige dann dein Ergebnis sachlich.","Das ist ein berechtigter Einwand. Die Stichprobe ist begrenzt, deshalb können wir nicht auf alle Regionen schließen. Allerdings waren die Ergebnisse an allen drei Standorten einheitlich, und wir planen nächstes Jahr eine größere Studie.","berechtigt|guter punkt|recht |stimmt|begrenzt; allerdings|aber |trotzdem|jedoch; planen|zukunft|nächst|weitere"],
+  ["Was würden Sie für die Praxis empfehlen?","Gib eine Empfehlung mit Begründung.","Ich würde empfehlen, Kiesfilter mit regelmäßiger Wartung zu kombinieren, weil die Leistung schnell sinkt, wenn die Filter nicht gereinigt werden.","empfehle|empfehlen|sollte|rate ; weil|da |denn; wartung|reinig|regelmäßig"]],
  fr:[
   ["Merci pour votre présentation. Pourriez-vous résumer votre résultat principal en une ou deux phrases ?","Énoncez votre résultat principal clairement et brièvement.","Bien sûr. Notre résultat principal est que les filtres à gravier éliminent environ quatre-vingts pour cent des matières en suspension à faible coût. Ils conviennent donc aux écoles rurales.","résultat|montré|montre; pour cent|significati|plupart; donc|ainsi|par conséquent|conviennent"],
   ["Comment avez-vous collecté vos données ?","Décrivez la méthode : quoi, combien, combien de temps.","Nous avons prélevé des échantillons d'eau deux fois par semaine pendant six mois sur trois sites. Au total, nous avons analysé cent vingt échantillons en laboratoire.","échantillon|données|mesure|enquête|entretien; semaine|mois|an ; au total|analysé|collecté"],
@@ -867,10 +867,10 @@ const SCENES = [
   ["Can you give an example?","Give a concrete example from your experience or reading.","For example, in my engineering course we designed a water filter in teams. The final report and prototype showed our skills much better than a written test.","for example|for instance|such as; course|class|study|research|project; better|more |showed|show"],
   ["Let's try to find a compromise. What would you propose?","Propose a compromise and summarise.","I would propose a combination: a short exam for basic knowledge and a project for application. That way we keep objectivity and still measure practical skills.","propose|suggest|combination|combine|both; exam; project; that way|so |therefore|in this way"]],
  de:[
-  ["Heutige Frage: Sollten Hochschulen Prüfungen durch Projektarbeit ersetzen? Was meinen Sie?","Sagen Sie klar Ihre Meinung mit einer Begründung.","Meiner Meinung nach sollten Hochschulen mehr Projektarbeit einsetzen, weil sie zeigt, wie Studierende Wissen auf echte Probleme anwenden.","meiner meinung|ich finde|ich denke|ich glaube|aus meiner sicht; weil|da |denn; projekt|prüfung|studier"],
-  ["Aber Projekte sind schwerer fair zu bewerten. Prüfungen sind objektiver.","Widersprechen Sie höflich mit einem Gegenargument.","Ich verstehe Ihren Punkt, bin aber nicht ganz überzeugt. Mit klaren Kriterien kann man Projekte fair bewerten, und auch Prüfungen haben Nachteile, zum Beispiel Stress und Auswendiglernen.","ich verstehe|das stimmt|guter punkt|verständlich; aber |allerdings|jedoch; kriterien|zum beispiel|beispielsweise"],
-  ["Können Sie ein Beispiel nennen?","Geben Sie ein konkretes Beispiel aus Erfahrung oder Lektüre.","Zum Beispiel haben wir in meinem Ingenieurkurs im Team einen Wasserfilter entwickelt. Bericht und Prototyp haben unsere Fähigkeiten viel besser gezeigt als eine schriftliche Prüfung.","zum beispiel|beispielsweise; kurs|studium|seminar|projekt|forschung|im team; besser|mehr |gezeigt|zeigt"],
-  ["Versuchen wir einen Kompromiss. Was schlagen Sie vor?","Schlagen Sie einen Kompromiss vor und fassen Sie zusammen.","Ich würde eine Kombination vorschlagen: eine kurze Prüfung für Grundwissen und ein Projekt für die Anwendung. So bleibt es objektiv, und wir messen trotzdem praktische Fähigkeiten.","vorschlag|schlage|kombination|kombinieren|beides; prüfung; projekt; so |dadurch|damit|deshalb"]],
+  ["Heutige Frage: Sollten Hochschulen Prüfungen durch Projektarbeit ersetzen? Was meinen Sie?","Sag klar deine Meinung und begründe sie.","Meiner Meinung nach sollten Hochschulen mehr Projektarbeit einsetzen, weil sie zeigt, wie Studierende Wissen auf echte Probleme anwenden.","meiner meinung|ich finde|ich denke|ich glaube|aus meiner sicht; weil|da |denn; projekt|prüfung|studier"],
+  ["Aber Projekte sind schwerer fair zu bewerten. Prüfungen sind objektiver.","Widersprich höflich und nenne ein Gegenargument.","Ich verstehe Ihren Punkt, bin aber nicht ganz überzeugt. Mit klaren Kriterien kann man Projekte fair bewerten, und auch Prüfungen haben Nachteile, zum Beispiel Stress und Auswendiglernen.","ich verstehe|das stimmt|guter punkt|verständlich; aber |allerdings|jedoch; kriterien|zum beispiel|beispielsweise"],
+  ["Können Sie ein Beispiel nennen?","Gib ein konkretes Beispiel aus deiner Erfahrung oder Lektüre.","Zum Beispiel haben wir in meinem Ingenieurkurs im Team einen Wasserfilter entwickelt. Bericht und Prototyp haben unsere Fähigkeiten viel besser gezeigt als eine schriftliche Prüfung.","zum beispiel|beispielsweise; kurs|studium|seminar|projekt|forschung|im team; besser|mehr |gezeigt|zeigt"],
+  ["Versuchen wir einen Kompromiss. Was schlagen Sie vor?","Schlag einen Kompromiss vor und fasse zusammen.","Ich würde eine Kombination vorschlagen: eine kurze Prüfung für Grundwissen und ein Projekt für die Anwendung. So bleibt es objektiv, und wir messen trotzdem praktische Fähigkeiten.","vorschlag|schlage|kombination|kombinieren|beides; prüfung; projekt; so |dadurch|damit|deshalb"]],
  fr:[
   ["Question du jour : les universités devraient-elles remplacer les examens par des projets ? Quel est votre avis ?","Donnez clairement votre avis avec une raison.","À mon avis, les universités devraient utiliser davantage les projets, parce qu'ils montrent comment les étudiants appliquent leurs connaissances à des problèmes réels.","à mon avis|je pense|je crois|selon moi|de mon point de vue; parce qu|car |puisque; projet|examen|étudiant"],
   ["Mais les projets sont plus difficiles à noter équitablement. Les examens sont plus objectifs.","Exprimez poliment votre désaccord avec un contre-argument.","Je comprends votre point de vue, mais je ne suis pas entièrement convaincu. Avec des critères clairs, on peut noter les projets équitablement, et les examens ont aussi des défauts, par exemple le stress et l'apprentissage par cœur.","je comprends|c est vrai|certes|vous avez raison; mais |cependant|pourtant|toutefois; critères|par exemple|comme "],
@@ -1077,9 +1077,9 @@ SCENES.push(
  en:[["Thanks for your great work this year. You asked to talk about your salary?","State your request clearly, with a number and a reason.","Yes, thank you. Based on my results this year and the market rate for my role, I would like to ask for a salary increase to sixty-two thousand euros.","based on|because|results|market; increase|raise; thousand|euros|percent"],
   ["Hmm, that's quite a lot. Our budget is tight this year.","Acknowledge the constraint, then support your request with evidence.","I understand the budget is tight. At the same time, I led the new client project, which brought in about two hundred thousand euros, and I trained two new colleagues.","i understand|i see|understand; led|delivered|brought|achieved|project; client|colleagues|team|thousand"],
   ["I can't promise that amount now. What else could work for you?","Propose an alternative and agree on a next step.","Could we agree on a smaller increase now and a review in six months with clear goals? Alternatively, a training budget would also help me. Can we fix a date to decide?","could we|would you|alternatively|what about|propose; months|review|goals|training; date|decide|next step|follow up"]],
- de:[["Danke für Ihre tolle Arbeit dieses Jahr. Sie wollten über Ihr Gehalt sprechen?","Formulieren Sie Ihre Forderung klar, mit Zahl und Begründung.","Ja, danke. Auf Grundlage meiner Ergebnisse in diesem Jahr und des Marktwerts meiner Position möchte ich um eine Gehaltserhöhung auf zweiundsechzigtausend Euro bitten.","grundlage|ergebnis|markt|weil; erhöhung|mehr gehalt|anheben; tausend|euro|prozent"],
-  ["Hm, das ist ziemlich viel. Unser Budget ist dieses Jahr knapp.","Erkennen Sie die Einschränkung an und belegen Sie dann Ihre Forderung.","Ich verstehe, dass das Budget knapp ist. Gleichzeitig habe ich das neue Kundenprojekt geleitet, das etwa zweihunderttausend Euro eingebracht hat, und zwei neue Kolleginnen eingearbeitet.","verstehe|nachvollziehen|klar; geleitet|erreicht|eingebracht|projekt; kunde|kolleg|team|tausend"],
-  ["Diesen Betrag kann ich jetzt nicht zusagen. Was wäre sonst für Sie denkbar?","Schlagen Sie eine Alternative vor und vereinbaren Sie den nächsten Schritt.","Könnten wir jetzt eine kleinere Erhöhung und ein Gespräch in sechs Monaten mit klaren Zielen vereinbaren? Alternativ würde mir auch ein Weiterbildungsbudget helfen. Können wir einen Termin für die Entscheidung festlegen?","könnten wir|vorschlag|alternativ|wie wäre|würde; monat|ziele|weiterbildung|gespräch; termin|entscheid|festlegen|nächste"]],
+ de:[["Danke für Ihre tolle Arbeit dieses Jahr. Sie wollten über Ihr Gehalt sprechen?","Formuliere deine Forderung klar, mit Zahl und Begründung.","Ja, danke. Auf Grundlage meiner Ergebnisse in diesem Jahr und des Marktwerts meiner Position möchte ich um eine Gehaltserhöhung auf zweiundsechzigtausend Euro bitten.","grundlage|ergebnis|markt|weil; erhöhung|mehr gehalt|anheben; tausend|euro|prozent"],
+  ["Hm, das ist ziemlich viel. Unser Budget ist dieses Jahr knapp.","Erkenne die Einschränkung an und belege dann deine Forderung mit Fakten.","Ich verstehe, dass das Budget knapp ist. Gleichzeitig habe ich das neue Kundenprojekt geleitet, das etwa zweihunderttausend Euro eingebracht hat, und zwei neue Kolleginnen eingearbeitet.","verstehe|nachvollziehen|klar; geleitet|erreicht|eingebracht|projekt; kunde|kolleg|team|tausend"],
+  ["Diesen Betrag kann ich jetzt nicht zusagen. Was wäre sonst für Sie denkbar?","Schlag eine Alternative vor und vereinbare den nächsten Schritt.","Könnten wir jetzt eine kleinere Erhöhung und ein Gespräch in sechs Monaten mit klaren Zielen vereinbaren? Alternativ würde mir auch ein Weiterbildungsbudget helfen. Können wir einen Termin für die Entscheidung festlegen?","könnten wir|vorschlag|alternativ|wie wäre|würde; monat|ziele|weiterbildung|gespräch; termin|entscheid|festlegen|nächste"]],
  fr:[["Merci pour votre excellent travail cette année. Vous vouliez parler de votre salaire ?","Formulez clairement votre demande, avec un chiffre et une raison.","Oui, merci. Au vu de mes résultats cette année et du marché pour mon poste, je souhaiterais une augmentation à soixante-deux mille euros.","au vu|résultat|marché|parce qu; augmentation|hausse; mille|euros|pour cent"],
   ["Hum, c'est beaucoup. Notre budget est serré cette année.","Reconnaissez la contrainte, puis appuyez votre demande par des faits.","Je comprends que le budget soit serré. En même temps, j'ai dirigé le nouveau projet client, qui a rapporté environ deux cent mille euros, et j'ai formé deux nouveaux collègues.","comprends|entends; dirigé|réalisé|rapporté|projet; client|collègue|équipe|mille"],
   ["Je ne peux pas promettre ce montant maintenant. Qu'est-ce qui pourrait vous convenir ?","Proposez une alternative et fixez une prochaine étape.","Pourrions-nous convenir d'une augmentation plus petite maintenant et d'un nouveau point dans six mois avec des objectifs clairs ? Sinon, un budget de formation m'aiderait aussi. Pouvons-nous fixer une date pour décider ?","pourrions|proposer|sinon|que diriez|alternative; mois|objectif|formation|point; date|décider|fixer|prochaine"]]
@@ -1088,9 +1088,9 @@ SCENES.push(
  en:[["You wanted to talk to me? Is something wrong?","Open calmly and name the topic without blaming.","Thanks for taking the time. Nothing dramatic, but I'd like to talk about the last two team reports, because I noticed something I want to share with you.","thank; talk about|discuss|share; report|meeting|deadline|work"],
   ["Okay… what about them?","Describe the specific behaviour and its impact – not the person.","Both reports arrived one day after the deadline. As a result, I had to present to the client without the latest figures, which was uncomfortable for the whole team.","deadline|late|after; as a result|so |because|impact|which; client|team|figures"],
   ["I've just had too much on my plate recently.","Show understanding and agree on a solution together.","I understand, and thanks for telling me. Let's look at your priorities together. Could you tell me early when a deadline is at risk, so we can adjust in time?","understand|thanks for telling|i see; together|let s|we can; could you|early|in time|adjust|priorit"]],
- de:[["Du wolltest mit mir sprechen? Ist etwas nicht in Ordnung?","Eröffnen Sie ruhig und nennen Sie das Thema ohne Vorwurf.","Danke, dass du dir Zeit nimmst. Nichts Dramatisches, aber ich möchte über die letzten beiden Teamberichte sprechen, weil mir etwas aufgefallen ist.","dank; sprechen|reden|besprechen; bericht|termin|abgabe|arbeit"],
-  ["Okay … was ist damit?","Beschreiben Sie das konkrete Verhalten und seine Folge – nicht die Person.","Beide Berichte kamen einen Tag nach der Frist. Dadurch musste ich dem Kunden ohne die aktuellen Zahlen präsentieren, und das war für das ganze Team unangenehm.","frist|spät|nach dem termin|verspät; dadurch|deshalb|weil|folge; kunde|team|zahlen"],
-  ["Ich hatte in letzter Zeit einfach zu viel auf dem Tisch.","Zeigen Sie Verständnis und vereinbaren Sie gemeinsam eine Lösung.","Das verstehe ich, danke, dass du es sagst. Lass uns gemeinsam auf deine Prioritäten schauen. Kannst du mir früh Bescheid geben, wenn eine Frist wackelt, damit wir rechtzeitig umplanen können?","verstehe|danke|nachvollziehen; gemeinsam|zusammen|lass uns; früh|bescheid|rechtzeitig|prioritäten"]],
+ de:[["Du wolltest mit mir sprechen? Ist etwas nicht in Ordnung?","Eröffne ruhig und nenne das Thema ohne Vorwurf.","Danke, dass du dir Zeit nimmst. Nichts Dramatisches, aber ich möchte über die letzten beiden Teamberichte sprechen, weil mir etwas aufgefallen ist.","dank; sprechen|reden|besprechen; bericht|termin|abgabe|arbeit"],
+  ["Okay … was ist damit?","Beschreibe das konkrete Verhalten und seine Folge – nicht die Person.","Beide Berichte kamen einen Tag nach der Frist. Dadurch musste ich dem Kunden ohne die aktuellen Zahlen präsentieren, und das war für das ganze Team unangenehm.","frist|spät|nach dem termin|verspät; dadurch|deshalb|weil|folge; kunde|team|zahlen"],
+  ["Ich hatte in letzter Zeit einfach zu viel auf dem Tisch.","Zeig Verständnis und vereinbart gemeinsam eine Lösung.","Das verstehe ich, danke, dass du es sagst. Lass uns gemeinsam auf deine Prioritäten schauen. Kannst du mir früh Bescheid geben, wenn eine Frist wackelt, damit wir rechtzeitig umplanen können?","verstehe|danke|nachvollziehen; gemeinsam|zusammen|lass uns; früh|bescheid|rechtzeitig|prioritäten"]],
  fr:[["Tu voulais me parler ? Il y a un problème ?","Ouvrez calmement et nommez le sujet sans reproche.","Merci de prendre le temps. Rien de grave, mais j'aimerais parler des deux derniers rapports d'équipe, parce que j'ai remarqué quelque chose.","merci; parler|discuter|aborder; rapport|délai|réunion|travail"],
   ["D'accord… qu'est-ce qu'ils ont ?","Décrivez le comportement précis et son impact – pas la personne.","Les deux rapports sont arrivés un jour après la date limite. Du coup, j'ai dû présenter au client sans les derniers chiffres, ce qui a été gênant pour toute l'équipe.","date limite|retard|après|délai; du coup|donc|par conséquent|ce qui; client|équipe|chiffres"],
   ["J'ai juste eu trop de travail ces derniers temps.","Montrez de la compréhension et trouvez ensemble une solution.","Je comprends, merci de me le dire. Regardons ensemble tes priorités. Est-ce que tu pourrais me prévenir tôt quand un délai est en danger, pour qu'on puisse s'adapter à temps ?","comprends|merci de; ensemble|regardons|on peut; prévenir|tôt|à temps|priorit"]]
@@ -1099,9 +1099,9 @@ SCENES.push(
  en:[["Can you look after the kids again this whole weekend? It would really help me.","Say no kindly but clearly, without long excuses.","I can see you need help, and I love the kids. But this weekend I can't, because I really need some rest after a hard week.","i can see|i understand|i know|love; can t|cannot|no |not this; because|need|rest"],
   ["Come on, it's only two days. You always say you're tired.","Hold your boundary calmly, without getting defensive.","I understand it's frustrating. My answer is still no for this weekend. It's not about you, it's about my energy.","understand|i hear|frustrat; still|my answer|no ; not about|energy|need"],
   ["Fine. So what can you do, then?","Offer an alternative that works for you.","I could take them next Saturday afternoon, from two to six. Would that help you?","could|can |offer|how about; saturday|sunday|next|afternoon|morning; would that|does that|help|work"]],
- de:[["Kannst du wieder das ganze Wochenende auf die Kinder aufpassen? Das würde mir echt helfen.","Sagen Sie freundlich, aber klar Nein – ohne lange Ausreden.","Ich sehe, dass du Hilfe brauchst, und ich mag die Kinder sehr. Aber dieses Wochenende geht es nicht, weil ich nach einer harten Woche wirklich Ruhe brauche.","ich sehe|verstehe|ich weiß|mag ; nicht|nein; weil|brauche|ruhe"],
-  ["Komm schon, es sind nur zwei Tage. Du bist doch immer müde.","Bleiben Sie ruhig bei Ihrer Grenze, ohne sich zu rechtfertigen.","Ich verstehe, dass das frustrierend ist. Meine Antwort bleibt Nein für dieses Wochenende. Es geht nicht um dich, sondern um meine Energie.","verstehe|frustrier; bleibt|meine antwort|nein; nicht um dich|energie|brauche"],
-  ["Na gut. Was kannst du denn dann machen?","Bieten Sie eine Alternative an, die für Sie passt.","Ich könnte sie nächsten Samstagnachmittag nehmen, von zwei bis sechs. Würde dir das helfen?","könnte|kann |biete|wie wäre; samstag|sonntag|nächst|nachmittag|vormittag; würde dir|hilft|passt|helfen"]],
+ de:[["Kannst du wieder das ganze Wochenende auf die Kinder aufpassen? Das würde mir echt helfen.","Sag freundlich, aber klar Nein – ohne lange Ausreden.","Ich sehe, dass du Hilfe brauchst, und ich mag die Kinder sehr. Aber dieses Wochenende geht es nicht, weil ich nach einer harten Woche wirklich Ruhe brauche.","ich sehe|verstehe|ich weiß|mag ; nicht|nein; weil|brauche|ruhe"],
+  ["Komm schon, es sind nur zwei Tage. Du bist doch immer müde.","Bleib ruhig bei deiner Grenze, ohne dich zu rechtfertigen.","Ich verstehe, dass das frustrierend ist. Meine Antwort bleibt Nein für dieses Wochenende. Es geht nicht um dich, sondern um meine Energie.","verstehe|frustrier; bleibt|meine antwort|nein; nicht um dich|energie|brauche"],
+  ["Na gut. Was kannst du denn dann machen?","Biete eine Alternative an, die für dich passt.","Ich könnte sie nächsten Samstagnachmittag nehmen, von zwei bis sechs. Würde dir das helfen?","könnte|kann |biete|wie wäre; samstag|sonntag|nächst|nachmittag|vormittag; würde dir|hilft|passt|helfen"]],
  fr:[["Tu peux encore garder les enfants tout le week-end ? Ça m'aiderait vraiment.","Dites non gentiment mais clairement, sans longues excuses.","Je vois que tu as besoin d'aide, et j'adore les enfants. Mais ce week-end, je ne peux pas, parce que j'ai vraiment besoin de repos après une semaine difficile.","je vois|je comprends|je sais|adore; ne peux pas|non |pas ce; parce qu|besoin|repos"],
   ["Allez, c'est seulement deux jours. Tu dis toujours que tu es fatigué.","Maintenez calmement votre limite, sans vous justifier.","Je comprends que ce soit frustrant. Ma réponse reste non pour ce week-end. Ce n'est pas contre toi, c'est une question d'énergie.","comprends|frustrant; reste|ma réponse|non ; pas contre toi|énergie|besoin"],
   ["Bon. Alors qu'est-ce que tu peux faire ?","Proposez une alternative qui vous convient.","Je pourrais les prendre samedi prochain l'après-midi, de deux heures à six heures. Est-ce que ça t'aiderait ?","pourrais|peux |propose; samedi|dimanche|prochain|après midi|matin; aiderait|ça te va|convient"]]
@@ -1110,9 +1110,9 @@ SCENES.push(
  en:[["Why do I have to stop playing now? I'm not done!","Stay calm, show you understand, and state the rule.","I get it, it's annoying to stop in the middle of a game. But our rule is homework first, then games, and it's already six o'clock.","i get it|i understand|i know|annoying; rule|agreed|homework first; then|o clock|time"],
   ["But the homework is boring and I don't understand it anyway.","Acknowledge the feeling and offer concrete help.","It sounds frustrating when you don't understand it. Let's look at the first exercise together for ten minutes, and then you try the next one alone.","sounds|frustrat|understand; together|let s|help; minutes|first|then"],
   ["Okay… but can I play afterwards?","Agree on a clear deal with a time limit.","Yes. When your homework is finished, you can play for forty-five minutes, until eight o'clock. Deal?","yes|okay|sure; when|after|finished|done; minutes|until|o clock|deal"]],
- de:[["Warum muss ich jetzt aufhören zu spielen? Ich bin noch nicht fertig!","Bleiben Sie ruhig, zeigen Sie Verständnis und nennen Sie die Regel.","Ich verstehe, es nervt, mitten im Spiel aufzuhören. Aber unsere Regel ist: erst Hausaufgaben, dann Spiele, und es ist schon sechs Uhr.","verstehe|ich weiß|nervt; regel|abgemacht|erst ; dann|uhr|zeit"],
-  ["Aber die Hausaufgaben sind langweilig, und ich verstehe sie sowieso nicht.","Erkennen Sie das Gefühl an und bieten Sie konkrete Hilfe an.","Das klingt frustrierend, wenn man etwas nicht versteht. Lass uns die erste Aufgabe zehn Minuten zusammen anschauen, und die nächste probierst du dann allein.","klingt|frustrier|verstehe; zusammen|gemeinsam|lass uns|helfe; minuten|erste|dann"],
-  ["Okay … aber darf ich danach spielen?","Vereinbaren Sie eine klare Abmachung mit Zeitgrenze.","Ja. Wenn die Hausaufgaben fertig sind, darfst du fünfundvierzig Minuten spielen, bis acht Uhr. Abgemacht?","ja |okay|klar; wenn|danach|fertig; minuten|bis |uhr|abgemacht"]],
+ de:[["Warum muss ich jetzt aufhören zu spielen? Ich bin noch nicht fertig!","Bleib ruhig, zeig Verständnis und nenne die Regel.","Ich verstehe, es nervt, mitten im Spiel aufzuhören. Aber unsere Regel ist: erst Hausaufgaben, dann Spiele, und es ist schon sechs Uhr.","verstehe|ich weiß|nervt; regel|abgemacht|erst ; dann|uhr|zeit"],
+  ["Aber die Hausaufgaben sind langweilig, und ich verstehe sie sowieso nicht.","Erkenne das Gefühl an und biete konkrete Hilfe an.","Das klingt frustrierend, wenn man etwas nicht versteht. Lass uns die erste Aufgabe zehn Minuten zusammen anschauen, und die nächste probierst du dann allein.","klingt|frustrier|verstehe; zusammen|gemeinsam|lass uns|helfe; minuten|erste|dann"],
+  ["Okay … aber darf ich danach spielen?","Triff eine klare Abmachung mit Zeitgrenze.","Ja. Wenn die Hausaufgaben fertig sind, darfst du fünfundvierzig Minuten spielen, bis acht Uhr. Abgemacht?","ja |okay|klar; wenn|danach|fertig; minuten|bis |uhr|abgemacht"]],
  fr:[["Pourquoi je dois arrêter de jouer maintenant ? J'ai pas fini !","Restez calme, montrez que vous comprenez et rappelez la règle.","Je comprends, c'est énervant d'arrêter au milieu d'une partie. Mais notre règle, c'est d'abord les devoirs, ensuite les jeux, et il est déjà six heures.","comprends|je sais|énervant; règle|convenu|d abord; ensuite|heures|l heure"],
   ["Mais les devoirs sont ennuyeux et de toute façon je ne comprends rien.","Reconnaissez le ressenti et proposez une aide concrète.","C'est frustrant quand on ne comprend pas. Regardons ensemble le premier exercice pendant dix minutes, et ensuite tu essaies le suivant seul.","frustrant|comprends|difficile; ensemble|regardons|aide; minutes|premier|ensuite"],
   ["D'accord… mais je pourrai jouer après ?","Mettez-vous d'accord sur un marché clair avec une limite de temps.","Oui. Quand tes devoirs sont finis, tu peux jouer quarante-cinq minutes, jusqu'à huit heures. Marché conclu ?","oui|d accord|bien sûr; quand|après|fini; minutes|jusqu|heures|marché"]]
@@ -1121,9 +1121,9 @@ SCENES.push(
  en:[["Our next speaker is ready. The floor is yours.","Open with a hook: a question or a surprising fact.","Thank you. Did you know that one in four schools in the world has no safe drinking water? Today I want to show you a simple way to change that.","thank; did you know|imagine|question|one in|percent; today|want to show|i will"],
   ["(You feel nervous; the audience is waiting.) Please continue with your outline.","Give a clear outline of your talk in three parts.","My talk has three parts. First, the problem and its causes. Second, the gravel filter we tested. And finally, what schools can do with very little money.","three parts|three points|outline; first|firstly; second|then|next; finally|lastly|third"],
   ["Sorry, could you speak up a bit? We can't hear you at the back.","React calmly, project your voice and continue.","Of course, thank you for telling me. Is this better at the back? Good. So, let's start with the problem.","of course|sure|thank; better|hear|at the back; so |let s|start|continue"]],
- de:[["Unser nächster Redner ist bereit. Sie haben das Wort.","Beginnen Sie mit einem Aufhänger: Frage oder überraschende Zahl.","Vielen Dank. Wussten Sie, dass jede vierte Schule der Welt kein sicheres Trinkwasser hat? Heute möchte ich Ihnen zeigen, wie man das einfach ändern kann.","dank; wussten sie|stellen sie sich vor|frage|jede vierte|prozent; heute|möchte ich|zeigen"],
-  ["(Sie sind nervös; das Publikum wartet.) Bitte fahren Sie mit Ihrer Gliederung fort.","Geben Sie eine klare Gliederung in drei Teilen.","Mein Vortrag hat drei Teile. Erstens das Problem und seine Ursachen. Zweitens der Kiesfilter, den wir getestet haben. Und schließlich, was Schulen mit sehr wenig Geld tun können.","drei teile|drei punkte|gliederung; erstens|zuerst; zweitens|dann|danach; schließlich|zum schluss|drittens"],
-  ["Entschuldigung, könnten Sie etwas lauter sprechen? Hinten hört man Sie nicht.","Reagieren Sie ruhig, sprechen Sie tragfähiger und machen Sie weiter.","Natürlich, danke für den Hinweis. Ist es hinten jetzt besser? Gut. Dann beginnen wir mit dem Problem.","natürlich|gerne|danke; besser|hören|hinten; dann|beginnen|weiter|also"]],
+ de:[["Unser nächster Redner ist bereit. Sie haben das Wort.","Beginne mit einem Aufhänger: einer Frage oder einer überraschenden Zahl.","Vielen Dank. Wussten Sie, dass jede vierte Schule der Welt kein sicheres Trinkwasser hat? Heute möchte ich Ihnen zeigen, wie man das einfach ändern kann.","dank; wussten sie|stellen sie sich vor|frage|jede vierte|prozent; heute|möchte ich|zeigen"],
+  ["(Sie sind nervös; das Publikum wartet.) Bitte fahren Sie mit Ihrer Gliederung fort.","Gib eine klare Gliederung in drei Teilen.","Mein Vortrag hat drei Teile. Erstens das Problem und seine Ursachen. Zweitens der Kiesfilter, den wir getestet haben. Und schließlich, was Schulen mit sehr wenig Geld tun können.","drei teile|drei punkte|gliederung; erstens|zuerst; zweitens|dann|danach; schließlich|zum schluss|drittens"],
+  ["Entschuldigung, könnten Sie etwas lauter sprechen? Hinten hört man Sie nicht.","Reagiere ruhig, sprich tragfähiger und mach weiter.","Natürlich, danke für den Hinweis. Ist es hinten jetzt besser? Gut. Dann beginnen wir mit dem Problem.","natürlich|gerne|danke; besser|hören|hinten; dann|beginnen|weiter|also"]],
  fr:[["Notre prochain intervenant est prêt. Vous avez la parole.","Commencez par une accroche : une question ou un chiffre surprenant.","Merci. Saviez-vous qu'une école sur quatre dans le monde n'a pas d'eau potable sûre ? Aujourd'hui, je veux vous montrer un moyen simple de changer cela.","merci; saviez vous|imaginez|question|une sur|pour cent; aujourd hui|je veux|montrer|je vais"],
   ["(Vous êtes nerveux ; le public attend.) Veuillez continuer avec votre plan.","Annoncez un plan clair en trois parties.","Mon exposé comporte trois parties. D'abord, le problème et ses causes. Ensuite, le filtre à gravier que nous avons testé. Enfin, ce que les écoles peuvent faire avec très peu d'argent.","trois parties|trois points|plan; d abord|premièrement; ensuite|deuxièmement|puis; enfin|pour finir|troisièmement"],
   ["Pardon, vous pourriez parler un peu plus fort ? On ne vous entend pas au fond.","Réagissez calmement, portez la voix et continuez.","Bien sûr, merci de me le dire. C'est mieux au fond ? Très bien. Alors, commençons par le problème.","bien sûr|volontiers|merci; mieux|entend|au fond; alors|commençons|continuons|donc"]]
@@ -1132,9 +1132,9 @@ SCENES.push(
  en:[["Come in. What can I do for you?","Greet, introduce yourself and state your request briefly.","Good afternoon, Professor Klein. I'm Alex Meyer from your Tuesday seminar. I'd like to ask whether I could get a one-week extension for my term paper.","good afternoon|good morning|hello; i m|i am|my name|from your; extension|more time|deadline"],
   ["Why do you need more time? The deadline was announced months ago.","Give an honest reason and show what you have already done.","That's true. I was ill for ten days last month, and I have a medical certificate. I have already finished the literature review and half of the analysis.","true|you re right|i know; ill |sick|because|certificate|reason; already|finished|done|half"],
   ["Alright. What would the new deadline be?","Propose a concrete date and thank the professor.","Would Friday the twelfth be possible? I would also send you the outline by Monday. Thank you very much for your understanding.","would|could|possible|propose; friday|monday|twelfth|date|week; thank"]],
- de:[["Herein. Was kann ich für Sie tun?","Begrüßen Sie, stellen Sie sich vor und nennen Sie kurz Ihr Anliegen.","Guten Tag, Frau Professorin Klein. Ich bin Alex Meyer aus Ihrem Dienstagsseminar. Ich möchte fragen, ob ich eine Woche Verlängerung für meine Hausarbeit bekommen könnte.","guten tag|guten morgen|hallo; ich bin|mein name|aus ihrem; verlängerung|mehr zeit|frist|abgabe"],
-  ["Warum brauchen Sie mehr Zeit? Die Frist ist seit Monaten bekannt.","Nennen Sie einen ehrlichen Grund und zeigen Sie, was schon erledigt ist.","Das stimmt. Ich war letzten Monat zehn Tage krank und habe ein ärztliches Attest. Die Literaturrecherche ist schon fertig und die Analyse zur Hälfte.","stimmt|richtig|ich weiß; krank|weil|attest|grund; schon|fertig|erledigt|hälfte"],
-  ["In Ordnung. Was wäre der neue Termin?","Schlagen Sie ein konkretes Datum vor und bedanken Sie sich.","Wäre Freitag, der Zwölfte, möglich? Die Gliederung würde ich Ihnen schon bis Montag schicken. Vielen Dank für Ihr Verständnis.","wäre|könnte|möglich|vorschlag; freitag|montag|zwölft|datum|woche; dank"]],
+ de:[["Herein. Was kann ich für Sie tun?","Begrüße, stell dich vor und nenne kurz dein Anliegen.","Guten Tag, Frau Professorin Klein. Ich bin Alex Meyer aus Ihrem Dienstagsseminar. Ich möchte fragen, ob ich eine Woche Verlängerung für meine Hausarbeit bekommen könnte.","guten tag|guten morgen|hallo; ich bin|mein name|aus ihrem; verlängerung|mehr zeit|frist|abgabe"],
+  ["Warum brauchen Sie mehr Zeit? Die Frist ist seit Monaten bekannt.","Nenne einen ehrlichen Grund und zeig, was schon erledigt ist.","Das stimmt. Ich war letzten Monat zehn Tage krank und habe ein ärztliches Attest. Die Literaturrecherche ist schon fertig und die Analyse zur Hälfte.","stimmt|richtig|ich weiß; krank|weil|attest|grund; schon|fertig|erledigt|hälfte"],
+  ["In Ordnung. Was wäre der neue Termin?","Schlag ein konkretes Datum vor und bedanke dich.","Wäre Freitag, der Zwölfte, möglich? Die Gliederung würde ich Ihnen schon bis Montag schicken. Vielen Dank für Ihr Verständnis.","wäre|könnte|möglich|vorschlag; freitag|montag|zwölft|datum|woche; dank"]],
  fr:[["Entrez. Que puis-je faire pour vous ?","Saluez, présentez-vous et formulez brièvement votre demande.","Bonjour Madame Klein. Je suis Alex Meyer, de votre séminaire du mardi. Je voudrais vous demander s'il serait possible d'avoir une semaine de délai supplémentaire pour mon mémoire.","bonjour|bonsoir; je suis|je m appelle|de votre; délai|plus de temps|date limite|prolongation"],
   ["Pourquoi avez-vous besoin de plus de temps ? La date est connue depuis des mois.","Donnez une raison honnête et montrez ce qui est déjà fait.","C'est vrai. J'ai été malade dix jours le mois dernier, et j'ai un certificat médical. J'ai déjà terminé la revue de littérature et la moitié de l'analyse.","c est vrai|vous avez raison|je sais; malade|parce qu|certificat|raison; déjà|terminé|fini|moitié"],
   ["D'accord. Quelle serait la nouvelle date ?","Proposez une date précise et remerciez.","Est-ce que le vendredi douze serait possible ? Je vous enverrais aussi le plan d'ici lundi. Merci beaucoup pour votre compréhension.","est ce que|serait|possible|propose|pourrais; vendredi|lundi|douze|date|semaine; merci"]]
@@ -1296,6 +1296,70 @@ ROUTINES.push({name:{en:"Voice from the belly",de:"Stimme aus dem Bauch",fr:"Voi
  [60,{de:["Satz mit Bauchstütze","„Heute spreche ich ruhig, klar und kraftvoll.“ – dreimal: leise, normal, tragfähig in den Raum. Die Lautstärke kommt aus dem Bauch, nicht aus mehr Druck im Hals. Danach im Atem-Tab den Vorher/Nachher-Vergleich machen.","Festigt das neue Gefühl im Sprechen."],en:["Sentence with support","“Today I speak calmly, clearly and with energy.” – three times: quiet, normal, carrying into the room. Volume comes from the belly, not from more pressure in the throat. Then do the before/after comparison in the Breath tab.","Anchors the new feeling in speech."],fr:["Phrase avec soutien","« Aujourd'hui, je parle calmement, clairement et avec énergie. » – trois fois : doucement, normalement, en portant la voix dans la pièce. Le volume vient du ventre, pas d'une pression accrue dans la gorge. Ensuite, faites la comparaison avant/après dans l'onglet Souffle.","Ancre la nouvelle sensation dans la parole."]}]
 ]});
 FOCUS_DRILL.projection="support";
+
+/* v3.4 – articulation explanations in the APP language for every training language.
+   ART_TIPS[trainingLang][sound][appLang]; the training language's own tip stays in ART[...].tip */
+const ART_TIPS={
+ en:{
+  S:{de:"Englisches S: Zungenspitze hinter den Schneidezähnen, Zähne fast geschlossen, die Luft strömt durch eine schmale Rinne in der Zungenmitte. Keine Luft an den Seiten.",
+     fr:"S anglais : pointe de la langue derrière les incisives, dents presque serrées, l'air passe par une rigole étroite au milieu de la langue. Pas d'air sur les côtés."},
+  SH:{de:"Englisches SH (wie deutsches „sch“): Lippen gerundet und vorgeschoben, Zunge etwas zurück, breiter Luftstrom – wie „pssst“.",
+      fr:"SH anglais (comme le « ch » français) : lèvres arrondies et avancées, langue un peu en arrière, large souffle – comme « chut »."},
+  R:{de:"Englisches R: Zungenspitze leicht nach hinten gebogen oder zusammengezogen, sie berührt den Gaumen NICHT; Lippen leicht gerundet. Nicht rollen und nicht gurgeln. Vom langen „örrr“ aus beginnen.",
+     fr:"R anglais : pointe de la langue légèrement recourbée vers l'arrière, elle ne touche PAS le palais ; lèvres un peu arrondies. Ni roulé ni raclé. Partez d'un long « eurrr »."},
+  L:{de:"Zungenspitze drückt an den Zahndamm hinter den oberen Schneidezähnen; die Luft fließt seitlich an der Zunge vorbei. Am Wortende („ball“) klingt das englische L dunkler: Zungenrücken leicht anheben.",
+     fr:"Pointe de la langue contre la crête derrière les incisives du haut ; l'air passe sur les côtés. En fin de mot (« ball »), le L anglais est plus sombre : levez légèrement le dos de la langue."},
+  "K/G":{de:"Hinterzunge berührt den weichen Gaumen (hinterer Teil des Gaumens) und löst sich; Zungenspitze bleibt unten. K stimmlos mit Hauch, G stimmhaft.",
+         fr:"L'arrière de la langue touche le palais mou (fond du palais) puis se relâche ; pointe de la langue en bas. K sourd avec un petit souffle, G sonore."},
+  TH:{de:"Zungenspitze leicht zwischen die Zähne legen und Luft darüber blasen. „th“ in „think“ ist stimmlos, in „this“ stimmhaft (summend). Nicht durch s, f oder d ersetzen.",
+      fr:"Pointe de la langue légèrement entre les dents, soufflez dessus. Le « th » de « think » est sourd, celui de « this » sonore (vibrant). Ne pas le remplacer par s, f ou d."},
+  "F/V":{de:"Obere Schneidezähne leicht auf die Unterlippe legen und Luft durchblasen. F stimmlos, V stimmhaft (summend) – das englische V klingt wie das deutsche W.",
+         fr:"Dents du haut légèrement posées sur la lèvre inférieure, soufflez. F sourd, V sonore (vibrant)."}
+ },
+ de:{
+  S:{en:"German S: tongue tip behind the lower front teeth, teeth almost closed, air flows over the middle of the tongue. No air at the sides (that would be a lisp). Before a vowel at the start of a word (Sonne) the German S is voiced, like English z.",
+     fr:"S allemand : pointe de la langue derrière les incisives du bas, dents presque serrées, l'air passe au milieu de la langue. Pas d'air sur les côtés (sinon zézaiement). Devant une voyelle en début de mot (Sonne), le S allemand est sonore, comme un z."},
+  SCH:{en:"German SCH (like English “sh”): lips rounded and pushed forward, tongue slightly back, wide airflow – like “shh, quiet!”.",
+       fr:"SCH allemand (comme le « ch » français) : lèvres arrondies et avancées, langue un peu en arrière, large souffle – comme « chut ! »."},
+  R:{en:"The German R is usually made at the back: the back of the tongue rises towards the soft palate, like light gargling (similar to the French R). A rolled tongue-tip R is also accepted. At the end of a word it often sounds like a short “a” (Tür ≈ “Tüa”).",
+     fr:"Le R allemand se forme généralement à l'arrière, comme en français : l'arrière de la langue monte vers le voile du palais. Un R roulé est aussi accepté. En fin de mot, il sonne souvent comme un « a » bref (Tür ≈ « Tüa »)."},
+  L:{en:"Tongue tip on the ridge behind the upper front teeth, air flows around the sides of the tongue. The German L is always light – never dark like the English L in “ball”.",
+     fr:"Pointe de la langue sur la crête derrière les incisives du haut, l'air passe sur les côtés. Le L allemand est toujours clair."},
+  "K/G":{en:"The back of the tongue presses against the back of the palate and releases with a small pop. The tongue tip stays down. K voiceless with a puff of air, G voiced.",
+         fr:"L'arrière de la langue appuie contre le fond du palais et se relâche avec un petit éclat. Pointe de la langue en bas. K sourd avec un souffle, G sonore."},
+  "T/D":{en:"The tongue tip taps the ridge behind the upper front teeth. T voiceless with a puff of air, D voiced. At the end of a word D is pronounced like T (Hund ≈ “Hunt”).",
+         fr:"La pointe de la langue tape la crête derrière les incisives du haut. T sourd avec un souffle, D sonore. En fin de mot, D se prononce comme T (Hund ≈ « Hount »)."},
+  CH:{en:"Two German sounds. The “ich” sound (after e, i, ä, ö, ü, ei, eu, l, n, r): middle of the tongue raised towards the hard palate, the air rubs there – like a soft cat's hiss, no lip rounding (not “sh”). The “ach” sound (after a, o, u, au): further back in the throat, like Scottish “loch”.",
+      fr:"Deux sons allemands. Le son « ich » (après e, i, ä, ö, ü, ei, eu, l, n, r) : le milieu de la langue monte vers le palais dur, l'air y frotte – comme un chat qui souffle doucement, sans arrondir les lèvres (pas le « ch » français). Le son « ach » (après a, o, u, au) : plus en arrière dans la gorge, comme la jota espagnole."}
+ },
+ fr:{
+  S:{en:"French S: tongue tip behind the lower front teeth, teeth almost closed, air through the middle of the tongue. No air at the sides. A single s between two vowels sounds like z (poison); a double ss stays s (poisson).",
+     de:"Französisches S: Zungenspitze hinter den unteren Schneidezähnen, Zähne fast geschlossen, Luft strömt mittig über die Zunge. Keine Luft seitlich. Ein einzelnes s zwischen zwei Vokalen klingt wie ein summendes z (poison), ss bleibt scharf (poisson)."},
+  CH:{en:"French CH = English “sh”: lips rounded and pushed forward, tongue slightly back, wide airflow – like “shh!”.",
+      de:"Französisches CH = deutsches „sch“: Lippen rund nach vorne, Zunge etwas zurück, breiter Luftstrom – wie „pssst!“."},
+  J:{en:"French J (as in “jardin”) is the voiced partner of “sh” – like the “s” in English “measure”: same mouth position as sh, but the vocal folds vibrate (feel the buzz at your throat).",
+     de:"Französisches J (wie in „jardin“) ist das stimmhafte „sch“ – wie in „Garage“ oder „Journal“: gleiche Mundstellung wie „sch“, aber die Stimme summt (am Hals fühlbar)."},
+  R:{en:"French R is made at the back: the back of the tongue rises towards the uvula, like a light gargle. The tongue tip stays down behind the lower teeth. Not rolled and not like the English R.",
+     de:"Französisches R entsteht hinten: der Zungenrücken hebt sich zum Zäpfchen, wie leises Gurgeln. Die Zungenspitze bleibt unten hinter den unteren Zähnen. Ähnlich dem deutschen Zäpfchen-R, aber weicher."},
+  L:{en:"Tongue tip against the ridge behind the upper front teeth; air flows around the sides. The French L is always light and clear, even at the end of a word (bol).",
+     de:"Zungenspitze am Zahndamm hinter den oberen Schneidezähnen; die Luft fließt seitlich vorbei. Das französische L ist immer hell und klar, auch am Wortende (bol)."},
+  "K/G":{en:"The back of the tongue touches the soft palate, then releases. Tongue tip down. In French, K is NOT aspirated (no puff of air, unlike English); G is voiced.",
+         de:"Hinterzunge berührt den weichen Gaumen und löst sich. Zungenspitze unten. Im Französischen wird K OHNE Hauch gesprochen (anders als im Deutschen); G ist stimmhaft."}
+ }
+};
+function artTip(tl,snd){ const x=ART_TIPS[tl]&&ART_TIPS[tl][snd]; return (x&&x[SET.ui])||ART[tl][snd].tip; }
+/* material shown in the training language: mark with class "tl" + lang so screen readers / hyphenation use the right language */
+const tlAttr=l=>`class="tl" lang="${l}"`;
+Object.assign(T.en,{in_lang:"in {l}", your_topic:"Topic", say_in:"Speak in {l}:"});
+Object.assign(T.de,{in_lang:"auf {l}", your_topic:"Thema", say_in:"Sprich auf {l}:"});
+Object.assign(T.fr,{in_lang:"en {l}", your_topic:"Sujet", say_in:"Parlez en {l} :"});
+const LANG_IN={en:{en:"English",de:"German",fr:"French"},de:{en:"Englisch",de:"Deutsch",fr:"Französisch"},fr:{en:"anglais",de:"allemand",fr:"français"}};
+const langIn=l=>LANG_IN[SET.ui][l];
+
+/* v3.4 label review */
+Object.assign(T.en,{"lvl2": "Key points", "level": "Input level", "pos_i": "Start of word", "pos_m": "Middle", "pos_f": "End of word", "metronome": "Metronome click on each word", "toast_logged": "Added to history: {n}", "sup_crisp": "Short & crisp", "dims_info": "ⓘ How the measures are calculated", "mic_fail": "Microphone not available – see the note in the Voice tab.", "finish": "See result ▶", "start_timer": "Start timer"});
+Object.assign(T.de,{"level": "Eingangspegel", "pos_i": "Wortanfang", "pos_m": "Wortmitte", "pos_f": "Wortende", "metronome": "Metronom-Klick bei jedem Wort", "toast_logged": "Im Verlauf eingetragen: {n}", "c_delivery": "Sprechweise", "finish": "Zum Ergebnis ▶", "retry_turn": "Nochmal versuchen", "best": "Bestwert", "save_best": "Bestwert speichern", "pairs_pick": "Eins heimlich auswählen", "dims_info": "ⓘ So werden die Werte berechnet", "mic_fail": "Mikrofon nicht verfügbar – siehe Hinweis im Reiter „Stimme“.", "test_score": "Stimmwert"});
+Object.assign(T.fr,{"level": "Niveau d'entrée", "pos_i": "Début du mot", "pos_m": "Milieu", "pos_f": "Fin du mot", "metronome": "Clic de métronome à chaque mot", "toast_logged": "Ajouté à l'historique : {n}", "go": "Lancer", "best": "Meilleur score", "start_timer": "Démarrer le chrono", "studio_prompt": "Consigne", "sup_A": "A habituel", "match_title": "Justesse de la note", "dims_info": "ⓘ Comment les mesures sont calculées", "mic_fail": "Micro indisponible – voir la remarque dans l'onglet Voix.", "finish": "Voir le résultat ▶", "c_complete": "Longueur"});
 
 "use strict";
 /* ============================================================
@@ -1570,7 +1634,7 @@ function recControls(box,{video=false, lang=null, maxSec=120, onDone, onStart=nu
         onText:txt=>{ tx.classList.remove("hidden"); tx.textContent=txt; }});
       if(video){ const v=el("video",{playsinline:"",muted:"",autoplay:"",style:"width:100%;border-radius:12px;margin-top:6px;transform:scaleX(-1);max-height:40vh;background:#000"}); v.muted=true; v.srcObject=take.stream; pv.append(v); }
       btn.textContent=t("rec_stop"); keepAwake(true); timer=setTimeout(()=>{ if(take) btn.onclick(); },maxSec*1000);
-    }catch(e){ micError(e); toast(t("mic_title")+" ✗"); take=null; }
+    }catch(e){ micError(e); toast(t("mic_fail")); take=null; }
   };
   return {isRecording:()=>!!take};
 }
@@ -1681,7 +1745,7 @@ function applyI18n(){
   $("#fillTap").textContent=`${t("filler_btn")} (${FL.n})`; $("#ballLbl").textContent=t("br_ready"); showSZ(); showMptTries();
   if(!$("#topicBox").dataset.set) $("#topicBox").textContent=t("imp_tap");
   $("#micBtn").textContent=MIC.stream?t("mic_off"):t("mic_on");
-  refreshStats(); renderToday(); renderScenes(); renderV3(); if(curView==="progress") renderProgress();
+  refreshStats(); renderToday(); renderScenes(); renderV3(); renderProgress();
 }
 function renderSettings(){
   $("#setSummary").textContent=SET.tl.toUpperCase()+" · "+t("ctx_"+SET.ctx);
@@ -1717,7 +1781,7 @@ function renderScenes(){
     const s=getConv(sc.id,SET.tl), due=s.mastered&&s.due<=Date.now();
     const status = s.mastered ? (due?`<span class="tag due">${t("due_now")}</span>`:`<span class="tag ok">${t("mastered")} ✓</span>`) : `<span class="tag">${t("lvl")} ${s.lvl}</span>`;
     const bestTxt=[1,2,3].map(l=>s.best[l]!=null?`${t("lvl")} ${l}: ${s.best[l]}`:null).filter(Boolean).join(" · ");
-    const c=el("div",{class:"card"},`<div class="row"><b class="grow">${esc(sc.title[SET.tl])}</b>${status}</div>
+    const c=el("div",{class:"card"},`<div class="row"><b class="grow">${esc(sc.title[SET.ui])}</b>${status}</div>
       <div class="bar"><i style="width:${stepsPassed(s)/3*100}%"></i></div>
       <p class="muted">${bestTxt?t("best")+" – "+bestTxt:"&nbsp;"}${s.mastered&&!due?` · ${t("next_rev")}: ${new Date(s.due).toLocaleDateString()}`:""}</p>
       <div class="row lv"></div>`);
@@ -1733,10 +1797,10 @@ function renderScenes(){
 function renderToday(){
   const dl=dueList(), box=$("#dueList"); box.innerHTML="";
   if(!dl.length) box.innerHTML=`<p class="muted">${t("due_none")}</p>`;
-  dl.forEach(({sc,l})=>{ const b=el("button",{class:"b warm full"},`↻ ${esc(sc.title[l])} <span style="opacity:.8">(${l.toUpperCase()} · ${t("ctx_"+sc.ctx)})</span>`); b.onclick=()=>startAttempt(sc,l,3,"review"); box.append(b); });
+  dl.forEach(({sc,l})=>{ const b=el("button",{class:"b warm full"},`↻ ${esc(sc.title[SET.ui])} <span style="opacity:.8">(${l.toUpperCase()} · ${t("ctx_"+sc.ctx)})</span>`); b.onclick=()=>startAttempt(sc,l,3,"review"); box.append(b); });
   const nb=$("#nextBox"); nb.innerHTML="";
   const nx=SCENES.filter(s=>s.ctx===SET.ctx).map(sc=>({sc,s:getConv(sc.id,SET.tl)})).find(x=>!x.s.mastered);
-  if(nx){ const b=el("button",{class:"b full"},`▶ ${esc(nx.sc.title[SET.tl])} – ${t("lvl")} ${nx.s.lvl} · ${t("lvl"+nx.s.lvl)} <span style="opacity:.8">(${SET.tl.toUpperCase()} · ${t("ctx_"+SET.ctx)})</span>`); b.onclick=()=>startAttempt(nx.sc,SET.tl,nx.s.lvl,"level"); nb.append(b); }
+  if(nx){ const b=el("button",{class:"b full"},`▶ ${esc(nx.sc.title[SET.ui])} – ${t("lvl")} ${nx.s.lvl} · ${t("lvl"+nx.s.lvl)} <span style="opacity:.8">(${SET.tl.toUpperCase()} · ${t("ctx_"+SET.ctx)})</span>`); b.onclick=()=>startAttempt(nx.sc,SET.tl,nx.s.lvl,"level"); nb.append(b); }
   else nb.innerHTML=`<p class="muted">${t("next_none")}</p>`;
   $("#stDue").textContent=dl.length;
 }
@@ -1850,7 +1914,7 @@ function renderSpeech(){
   if(!ART[SET.tl][SP.snd]) SP.snd=Object.keys(ART[SET.tl])[0];
   chipSet($("#soundChips"),Object.keys(ART[SET.tl]).map(k=>[k,k+(artStats(SET.tl,k).mastered?" ✓":"")]),SP.snd,v=>{ SP.snd=v; SP.idx=0; renderSpeech(); });
   chipSet($("#posChips"),[["i",t("pos_i")],["m",t("pos_m")],["f",t("pos_f")],["s",t("pos_s")]],SP.pos,v=>{ SP.pos=v; SP.idx=0; renderSpeech(); });
-  $("#soundTip").innerHTML="<b>"+t("how_sound")+"</b> "+esc(ART[SET.tl][SP.snd].tip);
+  $("#soundTip").innerHTML="<b>"+t("how_sound")+"</b> "+esc(artTip(SET.tl,SP.snd));
   showWord(); showArtMastery(); if(typeof renderSerSetup==="function") renderSerSetup();
 }
 function curList(){ return ART[SET.tl][SP.snd][SP.pos]; }
@@ -1901,7 +1965,8 @@ $("#paceSelect").onchange=()=>pace.load();
 /* ---------- impromptu & fillers ---------- */
 let TP={dur:60,h:null,left:60};
 function drawDur(){ chipSet($("#topicDur"),[[30,"30 s"],[60,"1 min"],[120,"2 min"],[180,"3 min"]],TP.dur,v=>{ TP.dur=+v; TP.left=+v; $("#topicTime").textContent=fmt(+v); drawDur(); }); } drawDur();
-$("#topicNew").onclick=()=>{ $("#topicBox").textContent=rnd(TOPICS[SET.tl][SET.ctx]); $("#topicBox").dataset.set="1"; };
+function topicHtml(i){ const a=TOPICS[SET.tl][SET.ctx][i], b=TOPICS[SET.ui][SET.ctx][i]; return `<div ${tlAttr(SET.tl)}>${esc(a)}</div>`+(SET.tl!==SET.ui?`<div class="muted" style="font-size:.85rem;font-weight:400">${esc(b)}</div>`:""); }
+$("#topicNew").onclick=()=>{ const i=Math.floor(Math.random()*TOPICS[SET.tl][SET.ctx].length); $("#topicBox").innerHTML=`<div>${topicHtml(i)}</div>`; $("#topicBox").dataset.set="1"; $("#topicBox").dataset.i=i; };
 $("#topicStart").onclick=()=>{
   if(TP.h){ clearInterval(TP.h); TP.h=null; $("#topicStart").textContent=t("startb"); keepAwake(false); return; }
   if(!$("#topicBox").dataset.set) $("#topicNew").onclick();
@@ -1924,7 +1989,7 @@ function refreshStats(){
 }
 function prepCanvas(c,h){ const dpr=window.devicePixelRatio||1, W=c.clientWidth*dpr, H=h*dpr; c.width=W; c.height=H; const g=c.getContext("2d"); g.font=(10*dpr)+"px system-ui"; return {g,W,H,dpr}; }
 function renderProgress(){
-  $("#prMastTitle").textContent=t("pr_mastery",{l:LANG_NAMES[SET.tl]});
+  $("#prMastTitle").textContent=t("pr_mastery",{l:langIn(SET.tl)});
   const pm=$("#prMastery"); pm.innerHTML="";
   CTXS.forEach(c=>{ const sc=SCENES.filter(s=>s.ctx===c), st=sc.map(s=>getConv(s.id,SET.tl)), p=st.reduce((a,s)=>a+stepsPassed(s),0)/(3*sc.length);
     pm.append(el("div",{style:"margin:8px 0"},`<div class="row"><b class="grow">${t("ctx_"+c)}</b><span>${Math.round(p*100)} %</span></div><div class="bar"><i style="width:${p*100}%"></i></div>
@@ -1940,7 +2005,7 @@ function renderProgress(){
     g.strokeStyle=cssv("--accent"); g.lineWidth=1.5*dpr; g.beginPath(); hs.forEach((h,i)=>i?g.lineTo(X(i),Y(h.score)):g.moveTo(X(i),Y(h.score))); g.stroke();
     hs.forEach((h,i)=>{ g.fillStyle=h.pass?cssv("--ok"):cssv("--warn"); g.beginPath(); g.arc(X(i),Y(h.score),(h.mode==="review"?4.5:3.2)*dpr,0,7); g.fill(); }); }
   // articulation
-  $("#prArtTitle").textContent=t("pr_art",{l:LANG_NAMES[SET.tl]});
+  $("#prArtTitle").textContent=t("pr_art",{l:langIn(SET.tl)});
   $("#prArt").innerHTML=Object.keys(ART[SET.tl]).map(k=>{ const s=artStats(SET.tl,k); return `<div class="sc"><span>${k} ${s.mastered?"✓":""}</span><div class="bar"><i style="width:${s.p}%;background:${s.mastered?'var(--ok)':'var(--accent)'}"></i></div><b>${s.n?s.p+"%":"–"}</b></div>`; }).join("");
   // measurements
   { const {g,W,H,dpr}=prepCanvas($("#measChart"),150), ser=[[store.mpt.map(m=>[m.t,m.v]),cssv("--ok")],[store.sz.map(z=>[z.t,z.r*10]),cssv("--accent2")]], all=ser.flatMap(s=>s[0]);
@@ -1971,7 +2036,7 @@ function startAttempt(sc,lang,level,mode,onlyTurns){
   ac(); keepAwake(true);
   ATT={sc,lang,level,mode,order:onlyTurns||sc.turns[lang].map((_,i)=>i),pos:0,res:{},t0:Date.now(),hints:0,srMiss:0};
   $("#convList").classList.add("hidden"); $("#convPlayer").classList.remove("hidden");
-  $("#cpTitle").textContent=sc.title[lang]+" ("+lang.toUpperCase()+")";
+  $("#cpTitle").textContent=sc.title[SET.ui]+" ("+lang.toUpperCase()+")";
   const pm=mode==="review"?PASS.review:PASS[level];
   $("#cpLevel").innerHTML=(mode==="review"?`↻ ${t("review")} – `:"")+`${t("lvl")} ${level} · ${t("lvl"+level)} – ${t("lvl_d"+level)} <b>(${t("res_need",{s:"–",n:pm}).split("·")[1].trim()})</b>`
     +(mode==="weak"?`<br><i>${t("weak_note")}</i>`:"")+(SET.mode==="text"?`<br><i>${t("txt_mode_note")}</i>`:"");
@@ -1980,15 +2045,15 @@ function startAttempt(sc,lang,level,mode,onlyTurns){
 }
 function closeAttempt(){ stopRecognition(); try{speechSynthesis.cancel();}catch(e){} keepAwake(false); ATT=null; $("#convPlayer").classList.add("hidden"); $("#convList").classList.remove("hidden"); renderScenes(); renderToday(); renderPlan(); }
 $("#cpClose").onclick=closeAttempt;
-function turnData(){ const A=ATT, ti=A.order[A.pos], [partner,task,model,kw]=A.sc.turns[A.lang][ti]; return {ti,partner,task,model,kw,groups:parseKW(kw)}; }
+function turnData(){ const A=ATT, ti=A.order[A.pos], [partner,taskTl,model,kw]=A.sc.turns[A.lang][ti], task=(A.sc.turns[SET.ui]&&A.sc.turns[SET.ui][ti]||[])[1]||taskTl; return {ti,partner,task,model,kw,groups:parseKW(kw)}; }
 function stepsBar(){ const A=ATT; $("#cpSteps").innerHTML=A.order.map((_,k)=>`<i class="${k<A.pos||(k===A.pos&&A.res[A.order[k]])?'d':''}"></i>`).join(""); }
 
 function renderTurn(){
   const A=ATT, d=turnData(); stepsBar();
-  const cue = A.level===1 ? `<div class="card flat"><div class="muted">${t("model")}</div><div style="font-size:1.05rem">${esc(d.model)}</div></div>`
-            : A.level===2 ? `<div class="muted">${t("keypoints")}</div><div>${d.groups.map(g=>`<span class="kp">${esc(g[0].trim())}</span>`).join("")}</div>` : "";
+  const cue = A.level===1 ? `<div class="card flat"><div class="muted">${t("model")}</div><div style="font-size:1.05rem" ${tlAttr(A.lang)}>${esc(d.model)}</div></div>`
+            : A.level===2 ? `<div class="muted">${t("keypoints")}</div><div>${d.groups.map(g=>`<span class="kp" lang="${A.lang}">${esc(g[0].trim())}</span>`).join("")}</div>` : "";
   $("#cpBody").innerHTML=`<div class="muted" style="margin-top:8px">${t("turn")} ${A.pos+1}/${A.order.length} · ${t("partner")}</div>
-    <div class="bubble them"><span>${esc(d.partner)}</span> <button class="b sm alt" id="pReplay" style="min-height:30px;padding:3px 9px">🔊</button></div>
+    <div class="bubble them"><span ${tlAttr(A.lang)}>${esc(d.partner)}</span> <button class="b sm alt" id="pReplay" style="min-height:30px;padding:3px 9px">🔊</button></div>
     <div id="pbLine"></div>
     <p><b>${t("your_task")}:</b> ${esc(d.task)}</p>${cue}<div id="answerBox"></div>`;
   $("#pReplay").onclick=()=>speak(d.partner,A.lang);
@@ -2013,7 +2078,7 @@ function onSpoken(r,usedSR){
   const latency=(A.cur.tapT!=null&&A.cur.readyT!=null)?Math.max(0,(A.cur.tapT-A.cur.readyT)/1000)+(an.ok?an.first:0):null;
   const sr=r.sr.text?r.sr:null;
   const tips=makeTips(an,{sr,lang:A.lang,expected:A.level===1?d.model:null,latency});
-  const take={blob:r.blob,video:false,an,tips,kind:"conv",title:A.sc.title[A.lang]+" – "+d.task,lang:A.lang,text:r.sr.text||""};
+  const take={blob:r.blob,video:false,an,tips,kind:"conv",title:A.sc.title[SET.ui]+" – "+d.task,lang:A.lang,text:r.sr.text||""};
   if(sr) turnResult(convScore({text:sr.text,an,tips,d,level:A.level,lang:A.lang}),take);
   else renderSelfCheck(take);
 }
@@ -2113,11 +2178,11 @@ function finishAttempt(){
     <h2 style="text-align:center">${passed?t("res_pass"):t("res_fail")}</h2>
     <p style="text-align:center" class="muted">${t("res_need",{s:avg,n:pm})}</p>
     ${msg?`<div class="${passed?"okbox":"warnbox"}">${msg}</div>`:""}
-    <table style="margin-top:10px">${A.order.map((i,k)=>`<tr><td>${k+1}.</td><td>${esc(A.sc.turns[A.lang][i][1])}</td><td><b style="color:${(A.res[i]?.score??0)>=pm?'var(--ok)':'var(--warn)'}">${A.res[i]?.score??"–"}</b></td></tr>`).join("")}</table>
+    <table style="margin-top:10px">${A.order.map((i,k)=>`<tr><td>${k+1}.</td><td>${esc((A.sc.turns[SET.ui]||A.sc.turns[A.lang])[i][1])}</td><td><b style="color:${(A.res[i]?.score??0)>=pm?'var(--ok)':'var(--warn)'}">${A.res[i]?.score??"–"}</b></td></tr>`).join("")}</table>
     <h3>${t("fb_title")}</h3>
     ${worked.length?`<p><b>✓ ${t("fb_worked")}</b></p><ul class="list">${worked.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
     ${improve.length?`<p><b>✗ ${t("fb_improve")}</b></p><ul class="list">${improve.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
-    ${weak.length?`<details><summary>${t("fb_alt")}</summary>${weak.map(i=>`<p><i>${esc(A.sc.turns[A.lang][i][1])}</i><br>${esc(A.sc.turns[A.lang][i][2])}</p>`).join("")}</details>`:""}
+    ${weak.length?`<details><summary>${t("fb_alt")}</summary>${weak.map(i=>`<p><i>${esc((A.sc.turns[SET.ui]||A.sc.turns[A.lang])[i][1])}</i><br><span ${tlAttr(A.lang)}>${esc(A.sc.turns[A.lang][i][2])}</span></p>`).join("")}</details>`:""}
     <div class="row" style="margin-top:12px" id="resBtns"></div>`;
   const rb=$("#resBtns"), sc=A.sc, lang=A.lang, lvl=A.level, mode=A.mode;
   const add=(label,cls,fn)=>{ const b=el("button",{class:"b grow "+cls},label); b.onclick=fn; rb.append(b); };
@@ -2207,7 +2272,7 @@ function serWord(){
   const w=S.words[S.i];
   box.innerHTML=`<div class="row"><b class="grow">${t("ser_word",{i:S.i+1,n:S.words.length})}</b><button class="b sm alt" id="serStop">${t("cancel")}</button></div>
     <div class="step">${S.words.map((_,k)=>`<i class="${k<S.i?'d':''}" style="${k<S.i?(S.results[k].ok?'':'background:var(--warn)'):''}"></i>`).join("")}</div>
-    <div class="huge" style="font-size:${w.length>18?'1.4rem':'2.4rem'}">${esc(w)}</div>
+    <div class="huge" ${tlAttr(SET.tl)} style="font-size:${w.length>18?'1.4rem':'2.4rem'}">${esc(w)}</div>
     <div class="meter"><i id="serLv"></i></div><p class="muted" id="serState" style="text-align:center;min-height:1.3em"></p>
     <div class="bubble me hidden" id="serHeard"></div>
     <div class="row"><button class="b grow" id="serGo">${t("ser_next")}</button></div>`;
@@ -2227,7 +2292,7 @@ async function recordWord(w){
         if(!started&&db>floor+14) started=true;
         if(started){ if(db<floor+7){ if(quietSince===null) quietSince=sec; else if(sec-quietSince>0.8) stopNow(); } else quietSince=null; }
         if(sec*1000>maxMs) stopNow(); }});
-  }catch(e){ micError(e); toast(t("mic_title")+" ✗"); S.running=false; keepAwake(false); SER=null; renderSerSetup(); }
+  }catch(e){ micError(e); toast(t("mic_fail")); S.running=false; keepAwake(false); SER=null; renderSerSetup(); }
 }
 function evalWord(w,r){
   const S=SER; if(!S) return;
@@ -2254,10 +2319,10 @@ function renderSerSummary(){
   const L=$("#serList");
   S.results.forEach((r,idx)=>{
     const c=el("div",{class:"card",style:"padding:10px;margin:8px 0;border-left:5px solid "+(r.ok===true?"var(--ok)":r.ok===false?"var(--warn)":"var(--line)")});
-    c.innerHTML=`<div class="row"><b class="grow" style="font-size:1.2rem">${r.ok===true?"✓":r.ok===false?"✗":"?"} ${esc(r.word)}</b></div>
+    c.innerHTML=`<div class="row"><b class="grow" style="font-size:1.2rem">${r.ok===true?"✓":r.ok===false?"✗":"?"} <span ${tlAttr(S.lang)}>${esc(r.word)}</span></b></div>
       ${r.heard||r.ok===false?`<p class="muted">${t("ser_heard",{w:esc(r.heard||t("ser_none"))})}</p>`:""}
       ${r.hints.length?`<ul class="list">${r.hints.map(h=>`<li>${esc(hintText(h))}</li>`).join("")}</ul>`:""}
-      ${r.ok===false?`<p class="muted"><b>${t("how_sound")}</b> ${esc(ART[S.lang][S.snd].tip)}</p>`:""}
+      ${r.ok===false?`<p class="muted"><b>${t("how_sound")}</b> ${esc(artTip(S.lang,S.snd))}</p>`:""}
       <div class="row"></div>`;
     const row=c.querySelector(".row:last-child");
     if(r.url){ const a=new Audio(r.url); const pb=el("button",{class:"b sm alt"},t("ser_your")); pb.onclick=()=>{ a.currentTime=0; a.play().catch(()=>{}); }; row.append(pb); }
@@ -2316,7 +2381,7 @@ function renderSupport(){
     b.innerHTML=`<p class="muted">${t("sup_flow_how")}</p><div class="huge" style="font-size:2rem">ssssssss…</div><div id="supRec"></div>`;
     recControls($("#supRec"),{maxSec:45,onDone:r=>flowDone(r)});
   } else {
-    b.innerHTML=`<p class="muted">${t("sup_ab_how")}</p><div class="card flat" style="font-size:1.1rem">${esc(SUP_SENT[SET.tl])}</div><div id="supAB"></div>`;
+    b.innerHTML=`<p class="muted">${t("sup_ab_how")}</p><div class="card flat" style="font-size:1.1rem" ${tlAttr(SET.tl)}>${esc(SUP_SENT[SET.tl])}</div><div id="supAB"></div>`;
     abStep(1);
   }
   if(last) b.append(el("p",{class:"muted"},t("sup_last",{d:last.d,s:last.score})));
@@ -2431,9 +2496,9 @@ function planLabel(it){
   switch(it.k){
     case "warm": return t("pk_warm")+": "+ROUTINES[it.r].name[SET.ui];
     case "drill": return t("pk_drill")+" – "+t("d_"+it.dim)+": "+drillName(it.act);
-    case "diction": { const x=TWISTERS[SET.tl][it.tw]; return t("pk_diction")+": "+(x.length>40?x.slice(0,38)+"…":x); }
-    case "review": return t("pk_review")+": "+sc(it.id).title[it.l]+" ("+it.l.toUpperCase()+")";
-    case "talk": { const s=getConv(it.id,it.l); return t("pk_talk")+": "+sc(it.id).title[it.l]+" – "+t("lvl")+" "+(s.mastered?3:s.lvl); }
+    case "diction": { const x=TWISTERS[SET.tl][it.tw]; return esc(t("pk_diction"))+": <span "+tlAttr(SET.tl)+">"+esc(x.length>40?x.slice(0,38)+"…":x)+"</span>"; }
+    case "review": return t("pk_review")+": "+sc(it.id).title[SET.ui]+" ("+it.l.toUpperCase()+")";
+    case "talk": { const s=getConv(it.id,it.l); return t("pk_talk")+": "+sc(it.id).title[SET.ui]+" ("+it.l.toUpperCase()+") – "+t("lvl")+" "+(s.mastered?3:s.lvl); }
     case "lesson": return t("pk_lesson")+": "+lessonOf(it.id).txt[SET.ui][0];
   } }
 function planGo(it){
@@ -2455,7 +2520,7 @@ function planGo(it){
   } }
 function renderPlan(){
   const box=$("#planList"); if(!box) return; const p=planFor(today()); box.innerHTML="";
-  p.items.forEach((it,i)=>{ const d=!!p.done[i]; const r=el("div",{class:"planitem"+(d?" done":"")},`<span class="ck">${d?"✅":"⬜"}</span><span class="grow">${esc(planLabel(it))}</span>`);
+  p.items.forEach((it,i)=>{ const d=!!p.done[i]; const r=el("div",{class:"planitem"+(d?" done":"")},`<span class="ck">${d?"✅":"⬜"}</span><span class="grow">${it.k==="diction"?planLabel(it):esc(planLabel(it))}</span>`);
     const b=el("button",{class:"b sm"+(d?" alt":"")},t("go")); b.onclick=()=>planGo(it); r.append(b); box.append(r); });
   $("#planCount").textContent=t("plan_done",{d:Object.keys(p.done).length,n:p.items.length});
   $("#planNoTest").classList.toggle("hidden",!!store.profile);
@@ -2468,27 +2533,27 @@ function renderPlan(){
 function renderLessons(){ const L=$("#lessonList"); L.innerHTML="";
   LESSONS.forEach(ls=>{ const [title,pts,task]=ls.txt[SET.ui], read=!!store.lessons[ls.id];
     const d=el("details",{class:"lesson",id:"lesson-"+ls.id},`<summary>${read?"✓ ":""}${esc(title)} <span class="tag">${t("d_"+ls.dim)}</span></summary>
-      <ul class="list">${pts.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><p class="muted"><b>🎤</b> ${esc(ls.txt[SET.tl][2])}</p><div class="row"></div>`);
+      <ul class="list">${pts.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><p class="muted"><b>🎤</b> ${esc(ls.txt[SET.ui][2])} <i>(${t("in_lang",{l:langIn(SET.tl)})})</i></p><div class="row"></div>`);
     const row=d.querySelector(".row"), tb=el("button",{class:"b sm"},t("lesson_try")), rb=el("button",{class:"b sm alt"},read?"✓ "+t("lesson_read"):t("lesson_done"));
-    tb.onclick=()=>{ studioSetTask(ls.txt[SET.tl][2],!!ls.video,"lesson:"+ls.id); show("voice"); scrollToId("studioCard"); };
+    tb.onclick=()=>{ studioSetTask(ls.txt[SET.ui][2]+" ("+t("in_lang",{l:langIn(SET.tl)})+")",!!ls.video,"lesson:"+ls.id); show("voice"); scrollToId("studioCard"); };
     rb.onclick=()=>{ store.lessons[ls.id]=Date.now(); save(); markPlan("lesson",ls.id); markPlan("drill","lesson:"+ls.id); renderLessons(); };
     row.append(tb,rb); L.append(d); }); }
 function openLesson(id){ show("today"); const d=document.getElementById("lesson-"+id); if(d){ d.open=true; scrollToId("lesson-"+id); } }
 
 /* ---------- practice studio ---------- */
 let STUDIO={task:null,act:"studio",video:false};
-function studioSetTask(text,video,act){ STUDIO.task=text; STUDIO.act=act||"studio"; $("#studioVideo").checked=!!video; renderStudio(); }
+function studioSetTask(text,video,act){ STUDIO.task=text; STUDIO.taskTxt=text; STUDIO.act=act||"studio"; $("#studioVideo").checked=!!video; renderStudio(); }
 function renderStudioPrompts(){ const s=$("#studioPrompt"); s.innerHTML=""; s.append(el("option",{value:""},t("studio_free")));
-  TOPICS[SET.tl][SET.ctx].forEach(x=>s.append(el("option",{value:x},esc(x)))); s.value=""; }
-$("#studioPrompt").onchange=e=>{ STUDIO.task=e.target.value||null; STUDIO.act="studio"; renderStudio(); };
+  TOPICS[SET.ui][SET.ctx].forEach((x,i)=>s.append(el("option",{value:i},esc(x)))); s.value=""; }
+$("#studioPrompt").onchange=e=>{ const v=e.target.value; STUDIO.task=v===""?null:topicHtml(+v); STUDIO.taskTxt=v===""?null:TOPICS[SET.ui][SET.ctx][+v]; STUDIO.act="studio"; renderStudio(); };
 $("#studioVideo").onchange=()=>renderStudio();
 function renderStudio(){
-  const tk=$("#studioTask"); tk.classList.toggle("hidden",!STUDIO.task); tk.textContent=STUDIO.task||"";
+  const tk=$("#studioTask"); tk.classList.toggle("hidden",!STUDIO.task); tk.innerHTML=STUDIO.task?(STUDIO.task.startsWith("<")?STUDIO.task:esc(STUDIO.task)):"";
   recControls($("#studioRec"),{video:$("#studioVideo").checked,lang:srLang(),maxSec:300,onDone:r=>studioDone(r,$("#studioVideo").checked)});
 }
 function studioDone(r,video){
   const an=analyze(r.pcm), tips=makeTips(an,{sr:r.sr.text?r.sr:null}), sc=tips.scores, score=avgScore(sc);
-  const take={blob:r.blob,video,an,tips,scores:sc,score,kind:video?"video":"studio",title:STUDIO.task||t("studio_free"),lang:SET.tl,text:r.sr.text||""};
+  const take={blob:r.blob,video,an,tips,scores:sc,score,kind:video?"video":"studio",title:STUDIO.taskTxt||(STUDIO.task&&!STUDIO.task.startsWith("<")?STUDIO.task:null)||t("studio_free"),lang:SET.tl,text:r.sr.text||""};
   const extra=video?`<h3>${t("bl_title")}</h3>`+t("bl_items").split("|").map(x=>`<label class="check"><input type="checkbox"> <span>${esc(x)}</span></label>`).join(""):"";
   const out=$("#studioOut"); out.innerHTML=""; out.append(replayView(take,{onSave:()=>saveTake(take),extra}));
   logSession(t("studio_title"),Math.max(0.5,an.dur/60)); markPlan("drill",STUDIO.act); if(STUDIO.act!=="studio") markPlan("drill","studio");
@@ -2524,7 +2589,7 @@ function renderProj(){ $("#projText").textContent=T[SET.tl].counting;
 
 /* ---------- impromptu speaking with recording ---------- */
 function renderImpRec(){ recControls($("#impRec"),{lang:srLang(),maxSec:240,onDone:r=>{ const an=analyze(r.pcm), tips=makeTips(an,{sr:r.sr.text?r.sr:null}), sc=tips.scores;
-  const topic=$("#topicBox").dataset.set?$("#topicBox").textContent:t("studio_free");
+  const topic=$("#topicBox").dataset.set?TOPICS[SET.ui][SET.ctx][+$("#topicBox").dataset.i]:t("studio_free");
   const take={blob:r.blob,an,tips,scores:sc,score:avgScore(sc),kind:"impromptu",title:topic,lang:SET.tl,text:r.sr.text||""};
   const o=$("#impOut"); o.innerHTML=""; o.append(replayView(take,{onSave:()=>saveTake(take)})); markPlan("drill","imp"); logSession(t("imp_title"),Math.max(0.5,an.dur/60)); }}); }
 
@@ -2553,7 +2618,7 @@ function testStep(n){
   const box=$("#testBody"); box.innerHTML=""; if(n===1) TEST={parts:[]};
   const passage=PASSAGES[SET.tl].cas[1];
   box.append(el("p",{},"<b>"+(n===1?t("test_p1"):t("test_p2"))+"</b>"));
-  box.append(el("div",{class:"card flat",style:"font-size:1.1rem;line-height:1.6"},esc(n===1?passage:t("test_prompt"))));
+  box.append(el("div",{class:"card flat",style:"font-size:1.1rem;line-height:1.6"},(n===1?`<div ${tlAttr(SET.tl)}>${esc(passage)}</div>`:`<div ${tlAttr(SET.tl)}>${esc(T[SET.tl].test_prompt)}</div>`+(SET.tl!==SET.ui?`<div class="muted" style="font-size:.9rem">${esc(t("test_prompt"))}</div>`:""))));
   const rc=el("div"); box.append(rc);
   const cancel=el("button",{class:"b sm alt",style:"margin-top:8px"},t("cancel")); cancel.onclick=()=>{ TEST=null; renderTest(); }; box.append(cancel);
   recControls(rc,{lang:srLang(),maxSec:n===1?90:45,onDone:r=>{ TEST.parts.push({r,an:analyze(r.pcm)}); if(n===1) testStep(2); else testFinish(); }});

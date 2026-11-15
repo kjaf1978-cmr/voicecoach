@@ -28,9 +28,9 @@ function planLabel(it){
   switch(it.k){
     case "warm": return t("pk_warm")+": "+ROUTINES[it.r].name[SET.ui];
     case "drill": return t("pk_drill")+" – "+t("d_"+it.dim)+": "+drillName(it.act);
-    case "diction": { const x=TWISTERS[SET.tl][it.tw]; return t("pk_diction")+": "+(x.length>40?x.slice(0,38)+"…":x); }
-    case "review": return t("pk_review")+": "+sc(it.id).title[it.l]+" ("+it.l.toUpperCase()+")";
-    case "talk": { const s=getConv(it.id,it.l); return t("pk_talk")+": "+sc(it.id).title[it.l]+" – "+t("lvl")+" "+(s.mastered?3:s.lvl); }
+    case "diction": { const x=TWISTERS[SET.tl][it.tw]; return esc(t("pk_diction"))+": <span "+tlAttr(SET.tl)+">"+esc(x.length>40?x.slice(0,38)+"…":x)+"</span>"; }
+    case "review": return t("pk_review")+": "+sc(it.id).title[SET.ui]+" ("+it.l.toUpperCase()+")";
+    case "talk": { const s=getConv(it.id,it.l); return t("pk_talk")+": "+sc(it.id).title[SET.ui]+" ("+it.l.toUpperCase()+") – "+t("lvl")+" "+(s.mastered?3:s.lvl); }
     case "lesson": return t("pk_lesson")+": "+lessonOf(it.id).txt[SET.ui][0];
   } }
 function planGo(it){
@@ -52,7 +52,7 @@ function planGo(it){
   } }
 function renderPlan(){
   const box=$("#planList"); if(!box) return; const p=planFor(today()); box.innerHTML="";
-  p.items.forEach((it,i)=>{ const d=!!p.done[i]; const r=el("div",{class:"planitem"+(d?" done":"")},`<span class="ck">${d?"✅":"⬜"}</span><span class="grow">${esc(planLabel(it))}</span>`);
+  p.items.forEach((it,i)=>{ const d=!!p.done[i]; const r=el("div",{class:"planitem"+(d?" done":"")},`<span class="ck">${d?"✅":"⬜"}</span><span class="grow">${it.k==="diction"?planLabel(it):esc(planLabel(it))}</span>`);
     const b=el("button",{class:"b sm"+(d?" alt":"")},t("go")); b.onclick=()=>planGo(it); r.append(b); box.append(r); });
   $("#planCount").textContent=t("plan_done",{d:Object.keys(p.done).length,n:p.items.length});
   $("#planNoTest").classList.toggle("hidden",!!store.profile);
@@ -65,27 +65,27 @@ function renderPlan(){
 function renderLessons(){ const L=$("#lessonList"); L.innerHTML="";
   LESSONS.forEach(ls=>{ const [title,pts,task]=ls.txt[SET.ui], read=!!store.lessons[ls.id];
     const d=el("details",{class:"lesson",id:"lesson-"+ls.id},`<summary>${read?"✓ ":""}${esc(title)} <span class="tag">${t("d_"+ls.dim)}</span></summary>
-      <ul class="list">${pts.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><p class="muted"><b>🎤</b> ${esc(ls.txt[SET.tl][2])}</p><div class="row"></div>`);
+      <ul class="list">${pts.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><p class="muted"><b>🎤</b> ${esc(ls.txt[SET.ui][2])} <i>(${t("in_lang",{l:langIn(SET.tl)})})</i></p><div class="row"></div>`);
     const row=d.querySelector(".row"), tb=el("button",{class:"b sm"},t("lesson_try")), rb=el("button",{class:"b sm alt"},read?"✓ "+t("lesson_read"):t("lesson_done"));
-    tb.onclick=()=>{ studioSetTask(ls.txt[SET.tl][2],!!ls.video,"lesson:"+ls.id); show("voice"); scrollToId("studioCard"); };
+    tb.onclick=()=>{ studioSetTask(ls.txt[SET.ui][2]+" ("+t("in_lang",{l:langIn(SET.tl)})+")",!!ls.video,"lesson:"+ls.id); show("voice"); scrollToId("studioCard"); };
     rb.onclick=()=>{ store.lessons[ls.id]=Date.now(); save(); markPlan("lesson",ls.id); markPlan("drill","lesson:"+ls.id); renderLessons(); };
     row.append(tb,rb); L.append(d); }); }
 function openLesson(id){ show("today"); const d=document.getElementById("lesson-"+id); if(d){ d.open=true; scrollToId("lesson-"+id); } }
 
 /* ---------- practice studio ---------- */
 let STUDIO={task:null,act:"studio",video:false};
-function studioSetTask(text,video,act){ STUDIO.task=text; STUDIO.act=act||"studio"; $("#studioVideo").checked=!!video; renderStudio(); }
+function studioSetTask(text,video,act){ STUDIO.task=text; STUDIO.taskTxt=text; STUDIO.act=act||"studio"; $("#studioVideo").checked=!!video; renderStudio(); }
 function renderStudioPrompts(){ const s=$("#studioPrompt"); s.innerHTML=""; s.append(el("option",{value:""},t("studio_free")));
-  TOPICS[SET.tl][SET.ctx].forEach(x=>s.append(el("option",{value:x},esc(x)))); s.value=""; }
-$("#studioPrompt").onchange=e=>{ STUDIO.task=e.target.value||null; STUDIO.act="studio"; renderStudio(); };
+  TOPICS[SET.ui][SET.ctx].forEach((x,i)=>s.append(el("option",{value:i},esc(x)))); s.value=""; }
+$("#studioPrompt").onchange=e=>{ const v=e.target.value; STUDIO.task=v===""?null:topicHtml(+v); STUDIO.taskTxt=v===""?null:TOPICS[SET.ui][SET.ctx][+v]; STUDIO.act="studio"; renderStudio(); };
 $("#studioVideo").onchange=()=>renderStudio();
 function renderStudio(){
-  const tk=$("#studioTask"); tk.classList.toggle("hidden",!STUDIO.task); tk.textContent=STUDIO.task||"";
+  const tk=$("#studioTask"); tk.classList.toggle("hidden",!STUDIO.task); tk.innerHTML=STUDIO.task?(STUDIO.task.startsWith("<")?STUDIO.task:esc(STUDIO.task)):"";
   recControls($("#studioRec"),{video:$("#studioVideo").checked,lang:srLang(),maxSec:300,onDone:r=>studioDone(r,$("#studioVideo").checked)});
 }
 function studioDone(r,video){
   const an=analyze(r.pcm), tips=makeTips(an,{sr:r.sr.text?r.sr:null}), sc=tips.scores, score=avgScore(sc);
-  const take={blob:r.blob,video,an,tips,scores:sc,score,kind:video?"video":"studio",title:STUDIO.task||t("studio_free"),lang:SET.tl,text:r.sr.text||""};
+  const take={blob:r.blob,video,an,tips,scores:sc,score,kind:video?"video":"studio",title:STUDIO.taskTxt||(STUDIO.task&&!STUDIO.task.startsWith("<")?STUDIO.task:null)||t("studio_free"),lang:SET.tl,text:r.sr.text||""};
   const extra=video?`<h3>${t("bl_title")}</h3>`+t("bl_items").split("|").map(x=>`<label class="check"><input type="checkbox"> <span>${esc(x)}</span></label>`).join(""):"";
   const out=$("#studioOut"); out.innerHTML=""; out.append(replayView(take,{onSave:()=>saveTake(take),extra}));
   logSession(t("studio_title"),Math.max(0.5,an.dur/60)); markPlan("drill",STUDIO.act); if(STUDIO.act!=="studio") markPlan("drill","studio");
@@ -121,7 +121,7 @@ function renderProj(){ $("#projText").textContent=T[SET.tl].counting;
 
 /* ---------- impromptu speaking with recording ---------- */
 function renderImpRec(){ recControls($("#impRec"),{lang:srLang(),maxSec:240,onDone:r=>{ const an=analyze(r.pcm), tips=makeTips(an,{sr:r.sr.text?r.sr:null}), sc=tips.scores;
-  const topic=$("#topicBox").dataset.set?$("#topicBox").textContent:t("studio_free");
+  const topic=$("#topicBox").dataset.set?TOPICS[SET.ui][SET.ctx][+$("#topicBox").dataset.i]:t("studio_free");
   const take={blob:r.blob,an,tips,scores:sc,score:avgScore(sc),kind:"impromptu",title:topic,lang:SET.tl,text:r.sr.text||""};
   const o=$("#impOut"); o.innerHTML=""; o.append(replayView(take,{onSave:()=>saveTake(take)})); markPlan("drill","imp"); logSession(t("imp_title"),Math.max(0.5,an.dur/60)); }}); }
 
@@ -150,7 +150,7 @@ function testStep(n){
   const box=$("#testBody"); box.innerHTML=""; if(n===1) TEST={parts:[]};
   const passage=PASSAGES[SET.tl].cas[1];
   box.append(el("p",{},"<b>"+(n===1?t("test_p1"):t("test_p2"))+"</b>"));
-  box.append(el("div",{class:"card flat",style:"font-size:1.1rem;line-height:1.6"},esc(n===1?passage:t("test_prompt"))));
+  box.append(el("div",{class:"card flat",style:"font-size:1.1rem;line-height:1.6"},(n===1?`<div ${tlAttr(SET.tl)}>${esc(passage)}</div>`:`<div ${tlAttr(SET.tl)}>${esc(T[SET.tl].test_prompt)}</div>`+(SET.tl!==SET.ui?`<div class="muted" style="font-size:.9rem">${esc(t("test_prompt"))}</div>`:""))));
   const rc=el("div"); box.append(rc);
   const cancel=el("button",{class:"b sm alt",style:"margin-top:8px"},t("cancel")); cancel.onclick=()=>{ TEST=null; renderTest(); }; box.append(cancel);
   recControls(rc,{lang:srLang(),maxSec:n===1?90:45,onDone:r=>{ TEST.parts.push({r,an:analyze(r.pcm)}); if(n===1) testStep(2); else testFinish(); }});

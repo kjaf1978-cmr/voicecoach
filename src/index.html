@@ -190,7 +190,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
     <div class="chips" id="posChips"></div>
     <p class="muted" id="soundTip"></p>
     <div class="card flat">
-      <div class="huge" id="drillWord">–</div>
+      <div class="huge tl" id="drillWord">–</div>
       <p class="muted" id="drillHeard" style="text-align:center;min-height:1.2em"></p>
       <div class="row">
         <button class="b alt" id="drillPrev">◀</button>
@@ -207,14 +207,14 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
   </div>
   <div class="card">
     <h2 data-t="pairs_title"></h2><p class="muted" data-t="pairs_desc"></p>
-    <div class="huge" id="pairBox">–</div>
+    <div class="huge tl" id="pairBox">–</div>
     <div class="row"><button class="b grow" id="pairNext" data-t="pairs_new"></button><button class="b alt grow" id="pairPick" data-t="pairs_pick"></button></div>
     <p class="muted" id="pairPicked"></p>
   </div>
   <div class="card" id="twCard">
     <h2 data-t="tw_title"></h2><p class="muted" data-t="tw_desc"></p>
-    <select id="twSelect" style="width:100%"></select>
-    <div class="reader card" id="twReader" style="margin-top:10px"></div>
+    <select class="tl" id="twSelect" style="width:100%"></select>
+    <div class="reader card tl" id="twReader" style="margin-top:10px"></div>
     <label class="muted"><span data-t="speed"></span>: <span id="twWpmVal">60</span> WPM</label>
     <input type="range" id="twWpm" min="30" max="200" step="5" value="60">
     <div class="row"><label class="muted grow"><input type="checkbox" id="twClick"> <span data-t="metronome"></span></label><button class="b" id="twStart" data-t="startb"></button></div>
@@ -222,8 +222,8 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
   </div>
   <div class="card" id="paceCard">
     <h2 data-t="read_title"></h2><p class="muted" data-t="read_desc"></p>
-    <select id="paceSelect" style="width:100%"></select>
-    <div class="reader card" id="paceReader" style="margin-top:10px"></div>
+    <select class="tl" id="paceSelect" style="width:100%"></select>
+    <div class="reader card tl" id="paceReader" style="margin-top:10px"></div>
     <label class="muted"><span data-t="speed"></span>: <span id="paceWpmVal">130</span> WPM</label>
     <input type="range" id="paceWpm" min="60" max="200" step="5" value="130">
     <div class="row"><span class="grow"></span><button class="b" id="paceStart" data-t="startb"></button></div>
@@ -233,7 +233,7 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
 <!-- VOICE -->
 <section class="view" id="v-voice">
   <div class="card" id="testCard"><h2 data-t="test_title"></h2><p class="muted" data-t="test_desc"></p><div id="testBody"></div>
-    <details><summary>ⓘ</summary><div class="muted" data-t="dims_help"></div></details></div>
+    <details><summary data-t="dims_info"></summary><div class="muted" data-t="dims_help"></div></details></div>
   <div class="card" id="studioCard"><h2 data-t="studio_title"></h2><p class="muted" data-t="studio_desc"></p>
     <label class="muted" data-t="studio_prompt"></label><select id="studioPrompt" style="width:100%"></select>
     <div class="card flat hidden" id="studioTask" style="margin-top:8px"></div>
@@ -242,10 +242,10 @@ textarea{width:100%;min-height:90px;font:inherit;padding:10px;border-radius:12px
     <label class="b sm alt" style="display:inline-flex;align-items:center;margin-top:8px">📂 <span data-t="studio_import"></span><input type="file" id="studioFile" accept="audio/*,video/*" class="hidden"></label>
     <div id="studioOut"></div></div>
   <div class="card" id="intoCard"><h2 data-t="into_title"></h2><p class="muted" data-t="into_desc"></p>
-    <div class="huge" id="intoSent" style="font-size:1.5rem;font-weight:500"></div><button class="b sm alt" id="intoNew" data-t="into_new"></button>
+    <div class="huge tl" id="intoSent" style="font-size:1.5rem;font-weight:500"></div><button class="b sm alt" id="intoNew" data-t="into_new"></button>
     <div id="intoRec" style="margin-top:8px"></div><div id="intoOut"></div></div>
   <div class="card" id="projCard"><h2 data-t="proj_title"></h2><p class="muted" data-t="proj_desc"></p>
-    <div class="huge" id="projText" style="font-size:1.2rem;font-weight:500"></div><div id="projRec"></div><div id="projOut"></div></div>
+    <div class="huge tl" id="projText" style="font-size:1.2rem;font-weight:500"></div><div id="projRec"></div><div id="projOut"></div></div>
   <div class="card"><h2 data-t="mic_title"></h2><p class="muted" data-t="mic_desc"></p>
     <button class="b" style="width:100%" id="micBtn" data-t="mic_on"></button>
     <div class="warnbox hidden" id="micErr" style="margin-top:8px"></div></div>

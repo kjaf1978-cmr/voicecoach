@@ -104,7 +104,7 @@ function applyI18n(){
   $("#fillTap").textContent=`${t("filler_btn")} (${FL.n})`; $("#ballLbl").textContent=t("br_ready"); showSZ(); showMptTries();
   if(!$("#topicBox").dataset.set) $("#topicBox").textContent=t("imp_tap");
   $("#micBtn").textContent=MIC.stream?t("mic_off"):t("mic_on");
-  refreshStats(); renderToday(); renderScenes(); renderV3(); if(curView==="progress") renderProgress();
+  refreshStats(); renderToday(); renderScenes(); renderV3(); renderProgress();
 }
 function renderSettings(){
   $("#setSummary").textContent=SET.tl.toUpperCase()+" · "+t("ctx_"+SET.ctx);
@@ -140,7 +140,7 @@ function renderScenes(){
     const s=getConv(sc.id,SET.tl), due=s.mastered&&s.due<=Date.now();
     const status = s.mastered ? (due?`<span class="tag due">${t("due_now")}</span>`:`<span class="tag ok">${t("mastered")} ✓</span>`) : `<span class="tag">${t("lvl")} ${s.lvl}</span>`;
     const bestTxt=[1,2,3].map(l=>s.best[l]!=null?`${t("lvl")} ${l}: ${s.best[l]}`:null).filter(Boolean).join(" · ");
-    const c=el("div",{class:"card"},`<div class="row"><b class="grow">${esc(sc.title[SET.tl])}</b>${status}</div>
+    const c=el("div",{class:"card"},`<div class="row"><b class="grow">${esc(sc.title[SET.ui])}</b>${status}</div>
       <div class="bar"><i style="width:${stepsPassed(s)/3*100}%"></i></div>
       <p class="muted">${bestTxt?t("best")+" – "+bestTxt:"&nbsp;"}${s.mastered&&!due?` · ${t("next_rev")}: ${new Date(s.due).toLocaleDateString()}`:""}</p>
       <div class="row lv"></div>`);
@@ -156,10 +156,10 @@ function renderScenes(){
 function renderToday(){
   const dl=dueList(), box=$("#dueList"); box.innerHTML="";
   if(!dl.length) box.innerHTML=`<p class="muted">${t("due_none")}</p>`;
-  dl.forEach(({sc,l})=>{ const b=el("button",{class:"b warm full"},`↻ ${esc(sc.title[l])} <span style="opacity:.8">(${l.toUpperCase()} · ${t("ctx_"+sc.ctx)})</span>`); b.onclick=()=>startAttempt(sc,l,3,"review"); box.append(b); });
+  dl.forEach(({sc,l})=>{ const b=el("button",{class:"b warm full"},`↻ ${esc(sc.title[SET.ui])} <span style="opacity:.8">(${l.toUpperCase()} · ${t("ctx_"+sc.ctx)})</span>`); b.onclick=()=>startAttempt(sc,l,3,"review"); box.append(b); });
   const nb=$("#nextBox"); nb.innerHTML="";
   const nx=SCENES.filter(s=>s.ctx===SET.ctx).map(sc=>({sc,s:getConv(sc.id,SET.tl)})).find(x=>!x.s.mastered);
-  if(nx){ const b=el("button",{class:"b full"},`▶ ${esc(nx.sc.title[SET.tl])} – ${t("lvl")} ${nx.s.lvl} · ${t("lvl"+nx.s.lvl)} <span style="opacity:.8">(${SET.tl.toUpperCase()} · ${t("ctx_"+SET.ctx)})</span>`); b.onclick=()=>startAttempt(nx.sc,SET.tl,nx.s.lvl,"level"); nb.append(b); }
+  if(nx){ const b=el("button",{class:"b full"},`▶ ${esc(nx.sc.title[SET.ui])} – ${t("lvl")} ${nx.s.lvl} · ${t("lvl"+nx.s.lvl)} <span style="opacity:.8">(${SET.tl.toUpperCase()} · ${t("ctx_"+SET.ctx)})</span>`); b.onclick=()=>startAttempt(nx.sc,SET.tl,nx.s.lvl,"level"); nb.append(b); }
   else nb.innerHTML=`<p class="muted">${t("next_none")}</p>`;
   $("#stDue").textContent=dl.length;
 }
@@ -273,7 +273,7 @@ function renderSpeech(){
   if(!ART[SET.tl][SP.snd]) SP.snd=Object.keys(ART[SET.tl])[0];
   chipSet($("#soundChips"),Object.keys(ART[SET.tl]).map(k=>[k,k+(artStats(SET.tl,k).mastered?" ✓":"")]),SP.snd,v=>{ SP.snd=v; SP.idx=0; renderSpeech(); });
   chipSet($("#posChips"),[["i",t("pos_i")],["m",t("pos_m")],["f",t("pos_f")],["s",t("pos_s")]],SP.pos,v=>{ SP.pos=v; SP.idx=0; renderSpeech(); });
-  $("#soundTip").innerHTML="<b>"+t("how_sound")+"</b> "+esc(ART[SET.tl][SP.snd].tip);
+  $("#soundTip").innerHTML="<b>"+t("how_sound")+"</b> "+esc(artTip(SET.tl,SP.snd));
   showWord(); showArtMastery(); if(typeof renderSerSetup==="function") renderSerSetup();
 }
 function curList(){ return ART[SET.tl][SP.snd][SP.pos]; }
@@ -324,7 +324,8 @@ $("#paceSelect").onchange=()=>pace.load();
 /* ---------- impromptu & fillers ---------- */
 let TP={dur:60,h:null,left:60};
 function drawDur(){ chipSet($("#topicDur"),[[30,"30 s"],[60,"1 min"],[120,"2 min"],[180,"3 min"]],TP.dur,v=>{ TP.dur=+v; TP.left=+v; $("#topicTime").textContent=fmt(+v); drawDur(); }); } drawDur();
-$("#topicNew").onclick=()=>{ $("#topicBox").textContent=rnd(TOPICS[SET.tl][SET.ctx]); $("#topicBox").dataset.set="1"; };
+function topicHtml(i){ const a=TOPICS[SET.tl][SET.ctx][i], b=TOPICS[SET.ui][SET.ctx][i]; return `<div ${tlAttr(SET.tl)}>${esc(a)}</div>`+(SET.tl!==SET.ui?`<div class="muted" style="font-size:.85rem;font-weight:400">${esc(b)}</div>`:""); }
+$("#topicNew").onclick=()=>{ const i=Math.floor(Math.random()*TOPICS[SET.tl][SET.ctx].length); $("#topicBox").innerHTML=`<div>${topicHtml(i)}</div>`; $("#topicBox").dataset.set="1"; $("#topicBox").dataset.i=i; };
 $("#topicStart").onclick=()=>{
   if(TP.h){ clearInterval(TP.h); TP.h=null; $("#topicStart").textContent=t("startb"); keepAwake(false); return; }
   if(!$("#topicBox").dataset.set) $("#topicNew").onclick();
@@ -347,7 +348,7 @@ function refreshStats(){
 }
 function prepCanvas(c,h){ const dpr=window.devicePixelRatio||1, W=c.clientWidth*dpr, H=h*dpr; c.width=W; c.height=H; const g=c.getContext("2d"); g.font=(10*dpr)+"px system-ui"; return {g,W,H,dpr}; }
 function renderProgress(){
-  $("#prMastTitle").textContent=t("pr_mastery",{l:LANG_NAMES[SET.tl]});
+  $("#prMastTitle").textContent=t("pr_mastery",{l:langIn(SET.tl)});
   const pm=$("#prMastery"); pm.innerHTML="";
   CTXS.forEach(c=>{ const sc=SCENES.filter(s=>s.ctx===c), st=sc.map(s=>getConv(s.id,SET.tl)), p=st.reduce((a,s)=>a+stepsPassed(s),0)/(3*sc.length);
     pm.append(el("div",{style:"margin:8px 0"},`<div class="row"><b class="grow">${t("ctx_"+c)}</b><span>${Math.round(p*100)} %</span></div><div class="bar"><i style="width:${p*100}%"></i></div>
@@ -363,7 +364,7 @@ function renderProgress(){
     g.strokeStyle=cssv("--accent"); g.lineWidth=1.5*dpr; g.beginPath(); hs.forEach((h,i)=>i?g.lineTo(X(i),Y(h.score)):g.moveTo(X(i),Y(h.score))); g.stroke();
     hs.forEach((h,i)=>{ g.fillStyle=h.pass?cssv("--ok"):cssv("--warn"); g.beginPath(); g.arc(X(i),Y(h.score),(h.mode==="review"?4.5:3.2)*dpr,0,7); g.fill(); }); }
   // articulation
-  $("#prArtTitle").textContent=t("pr_art",{l:LANG_NAMES[SET.tl]});
+  $("#prArtTitle").textContent=t("pr_art",{l:langIn(SET.tl)});
   $("#prArt").innerHTML=Object.keys(ART[SET.tl]).map(k=>{ const s=artStats(SET.tl,k); return `<div class="sc"><span>${k} ${s.mastered?"✓":""}</span><div class="bar"><i style="width:${s.p}%;background:${s.mastered?'var(--ok)':'var(--accent)'}"></i></div><b>${s.n?s.p+"%":"–"}</b></div>`; }).join("");
   // measurements
   { const {g,W,H,dpr}=prepCanvas($("#measChart"),150), ser=[[store.mpt.map(m=>[m.t,m.v]),cssv("--ok")],[store.sz.map(z=>[z.t,z.r*10]),cssv("--accent2")]], all=ser.flatMap(s=>s[0]);

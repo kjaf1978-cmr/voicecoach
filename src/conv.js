@@ -5,7 +5,7 @@ function startAttempt(sc,lang,level,mode,onlyTurns){
   ac(); keepAwake(true);
   ATT={sc,lang,level,mode,order:onlyTurns||sc.turns[lang].map((_,i)=>i),pos:0,res:{},t0:Date.now(),hints:0,srMiss:0};
   $("#convList").classList.add("hidden"); $("#convPlayer").classList.remove("hidden");
-  $("#cpTitle").textContent=sc.title[lang]+" ("+lang.toUpperCase()+")";
+  $("#cpTitle").textContent=sc.title[SET.ui]+" ("+lang.toUpperCase()+")";
   const pm=mode==="review"?PASS.review:PASS[level];
   $("#cpLevel").innerHTML=(mode==="review"?`↻ ${t("review")} – `:"")+`${t("lvl")} ${level} · ${t("lvl"+level)} – ${t("lvl_d"+level)} <b>(${t("res_need",{s:"–",n:pm}).split("·")[1].trim()})</b>`
     +(mode==="weak"?`<br><i>${t("weak_note")}</i>`:"")+(SET.mode==="text"?`<br><i>${t("txt_mode_note")}</i>`:"");
@@ -14,15 +14,15 @@ function startAttempt(sc,lang,level,mode,onlyTurns){
 }
 function closeAttempt(){ stopRecognition(); try{speechSynthesis.cancel();}catch(e){} keepAwake(false); ATT=null; $("#convPlayer").classList.add("hidden"); $("#convList").classList.remove("hidden"); renderScenes(); renderToday(); renderPlan(); }
 $("#cpClose").onclick=closeAttempt;
-function turnData(){ const A=ATT, ti=A.order[A.pos], [partner,task,model,kw]=A.sc.turns[A.lang][ti]; return {ti,partner,task,model,kw,groups:parseKW(kw)}; }
+function turnData(){ const A=ATT, ti=A.order[A.pos], [partner,taskTl,model,kw]=A.sc.turns[A.lang][ti], task=(A.sc.turns[SET.ui]&&A.sc.turns[SET.ui][ti]||[])[1]||taskTl; return {ti,partner,task,model,kw,groups:parseKW(kw)}; }
 function stepsBar(){ const A=ATT; $("#cpSteps").innerHTML=A.order.map((_,k)=>`<i class="${k<A.pos||(k===A.pos&&A.res[A.order[k]])?'d':''}"></i>`).join(""); }
 
 function renderTurn(){
   const A=ATT, d=turnData(); stepsBar();
-  const cue = A.level===1 ? `<div class="card flat"><div class="muted">${t("model")}</div><div style="font-size:1.05rem">${esc(d.model)}</div></div>`
-            : A.level===2 ? `<div class="muted">${t("keypoints")}</div><div>${d.groups.map(g=>`<span class="kp">${esc(g[0].trim())}</span>`).join("")}</div>` : "";
+  const cue = A.level===1 ? `<div class="card flat"><div class="muted">${t("model")}</div><div style="font-size:1.05rem" ${tlAttr(A.lang)}>${esc(d.model)}</div></div>`
+            : A.level===2 ? `<div class="muted">${t("keypoints")}</div><div>${d.groups.map(g=>`<span class="kp" lang="${A.lang}">${esc(g[0].trim())}</span>`).join("")}</div>` : "";
   $("#cpBody").innerHTML=`<div class="muted" style="margin-top:8px">${t("turn")} ${A.pos+1}/${A.order.length} · ${t("partner")}</div>
-    <div class="bubble them"><span>${esc(d.partner)}</span> <button class="b sm alt" id="pReplay" style="min-height:30px;padding:3px 9px">🔊</button></div>
+    <div class="bubble them"><span ${tlAttr(A.lang)}>${esc(d.partner)}</span> <button class="b sm alt" id="pReplay" style="min-height:30px;padding:3px 9px">🔊</button></div>
     <div id="pbLine"></div>
     <p><b>${t("your_task")}:</b> ${esc(d.task)}</p>${cue}<div id="answerBox"></div>`;
   $("#pReplay").onclick=()=>speak(d.partner,A.lang);
@@ -47,7 +47,7 @@ function onSpoken(r,usedSR){
   const latency=(A.cur.tapT!=null&&A.cur.readyT!=null)?Math.max(0,(A.cur.tapT-A.cur.readyT)/1000)+(an.ok?an.first:0):null;
   const sr=r.sr.text?r.sr:null;
   const tips=makeTips(an,{sr,lang:A.lang,expected:A.level===1?d.model:null,latency});
-  const take={blob:r.blob,video:false,an,tips,kind:"conv",title:A.sc.title[A.lang]+" – "+d.task,lang:A.lang,text:r.sr.text||""};
+  const take={blob:r.blob,video:false,an,tips,kind:"conv",title:A.sc.title[SET.ui]+" – "+d.task,lang:A.lang,text:r.sr.text||""};
   if(sr) turnResult(convScore({text:sr.text,an,tips,d,level:A.level,lang:A.lang}),take);
   else renderSelfCheck(take);
 }
@@ -147,11 +147,11 @@ function finishAttempt(){
     <h2 style="text-align:center">${passed?t("res_pass"):t("res_fail")}</h2>
     <p style="text-align:center" class="muted">${t("res_need",{s:avg,n:pm})}</p>
     ${msg?`<div class="${passed?"okbox":"warnbox"}">${msg}</div>`:""}
-    <table style="margin-top:10px">${A.order.map((i,k)=>`<tr><td>${k+1}.</td><td>${esc(A.sc.turns[A.lang][i][1])}</td><td><b style="color:${(A.res[i]?.score??0)>=pm?'var(--ok)':'var(--warn)'}">${A.res[i]?.score??"–"}</b></td></tr>`).join("")}</table>
+    <table style="margin-top:10px">${A.order.map((i,k)=>`<tr><td>${k+1}.</td><td>${esc((A.sc.turns[SET.ui]||A.sc.turns[A.lang])[i][1])}</td><td><b style="color:${(A.res[i]?.score??0)>=pm?'var(--ok)':'var(--warn)'}">${A.res[i]?.score??"–"}</b></td></tr>`).join("")}</table>
     <h3>${t("fb_title")}</h3>
     ${worked.length?`<p><b>✓ ${t("fb_worked")}</b></p><ul class="list">${worked.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
     ${improve.length?`<p><b>✗ ${t("fb_improve")}</b></p><ul class="list">${improve.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}
-    ${weak.length?`<details><summary>${t("fb_alt")}</summary>${weak.map(i=>`<p><i>${esc(A.sc.turns[A.lang][i][1])}</i><br>${esc(A.sc.turns[A.lang][i][2])}</p>`).join("")}</details>`:""}
+    ${weak.length?`<details><summary>${t("fb_alt")}</summary>${weak.map(i=>`<p><i>${esc((A.sc.turns[SET.ui]||A.sc.turns[A.lang])[i][1])}</i><br><span ${tlAttr(A.lang)}>${esc(A.sc.turns[A.lang][i][2])}</span></p>`).join("")}</details>`:""}
     <div class="row" style="margin-top:12px" id="resBtns"></div>`;
   const rb=$("#resBtns"), sc=A.sc, lang=A.lang, lvl=A.level, mode=A.mode;
   const add=(label,cls,fn)=>{ const b=el("button",{class:"b grow "+cls},label); b.onclick=fn; rb.append(b); };
