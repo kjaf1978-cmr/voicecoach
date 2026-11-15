@@ -396,10 +396,29 @@ $("#ccYes").onclick=()=>{ Object.assign(store,{sessions:[],mpt:[],sz:[],fill:[],
 
 
 /* microphone choice: with Bluetooth headphones Android switches to "call quality" when their mic is used – choosing the phone's microphone can keep music quality */
-async function renderMicPick(){ const box=$("#setMic"); if(!box) return; let list=[];
-  try{ list=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="audioinput"); }catch(e){}
-  const items=[["",t("mic_default")]].concat(list.filter(d=>d.deviceId&&d.deviceId!=="default"&&d.deviceId!=="communications").map((d,i)=>[d.deviceId,d.label||(t("mic_n")+" "+(i+1))]));
-  box.innerHTML=`<h3>${t("mic_title")}</h3><p class="muted" style="font-size:.8rem">${t("mic_hint")}</p><div class="chips" data-m></div>${list.length&&!list.some(d=>d.label)?`<button class="b alt sm" data-perm>${t("mic_show")}</button>`:""}`;
-  chipSet(box.querySelector("[data-m]"),items,SET.micId||"",v=>{ SET.micId=v; save(); renderMicPick(); });
+async function renderMicPick(){ ["#setMic","#chAudio"].forEach(id=>{ const b=$(id); if(b) renderAudioBox(b); }); }
+const HEADSET_RE=/bluetooth|buds|airpods|headset|head ?phone|earphone|ear ?buds|kopfhörer|ohrhörer|écouteur|casque|hands-?free|freisprech|wired|usb|jabra|sony|bose|jbl|beats|sennheiser|galaxy|pixel buds|oneplus|xiaomi|redmi|anker|soundcore|huawei|freebuds/i;
+async function audioDevices(){ try{ const all=await navigator.mediaDevices.enumerateDevices(); return {ins:all.filter(d=>d.kind==="audioinput"),outs:all.filter(d=>d.kind==="audiooutput"),labels:all.some(d=>d.label)}; }catch(e){ return {ins:[],outs:[],labels:false}; } }
+async function renderAudioBox(box){
+  const {ins,outs,labels}=await audioDevices(), clean=l=>l.filter(d=>d.deviceId&&d.deviceId!=="default"&&d.deviceId!=="communications");
+  const hs=clean(ins).concat(clean(outs)).find(d=>HEADSET_RE.test(d.label||""));
+  const canOut=typeof AudioContext!=="undefined"&&"setSinkId" in AudioContext.prototype&&clean(outs).length>0;
+  box.innerHTML=`<h3>🎧 ${t("au_title")}</h3>
+    <p style="margin:4px 0">${hs?`<b>${t("au_found",{n:esc(hs.label)})}</b>`:labels?t("au_none"):t("au_unknown")}</p>
+    ${labels?"":`<button class="b alt sm" data-perm>${t("mic_show")}</button>`}
+    <div class="row" style="margin-top:6px"><button class="b alt grow" data-test>🔊 ${t("au_test")}</button><button class="b alt grow" data-test2>🎤🔊 ${t("au_test2")}</button></div><div data-ask></div>
+    <p class="muted" style="font-size:.8rem;margin-top:8px"><b>${t("mic_title")}:</b> ${t("mic_hint")}</p><div class="chips" data-m></div>
+    ${SET.micId?`<div class="warnbox" style="margin-top:6px;font-size:.82rem">${t("au_micwarn")}</div>`:""}
+    ${canOut?`<p class="muted" style="font-size:.8rem;margin-top:8px"><b>${t("au_out")}:</b></p><div class="chips" data-o></div>`:""}`;
+  chipSet(box.querySelector("[data-m]"),[["",t("mic_default")]].concat(clean(ins).map((d,i)=>[d.deviceId,d.label||(t("mic_n")+" "+(i+1))])),SET.micId||"",v=>{ SET.micId=v; save(); renderMicPick(); });
+  if(canOut) chipSet(box.querySelector("[data-o]"),[["",t("au_out_def")]].concat(clean(outs).map((d,i)=>[d.deviceId,d.label||("Output "+(i+1))])),SET.outId||"",async v=>{ SET.outId=v; save(); await applySink(); renderMicPick(); });
   const pb=box.querySelector("[data-perm]"); if(pb) pb.onclick=async()=>{ try{ const st=await navigator.mediaDevices.getUserMedia({audio:true}); st.getTracks().forEach(x=>x.stop()); }catch(e){} renderMicPick(); };
+  const tone=(sec)=>{ const c=ac(), o=c.createOscillator(), g=c.createGain(); o.frequency.value=523; g.gain.setValueAtTime(0,c.currentTime); g.gain.linearRampToValueAtTime(0.25,c.currentTime+0.05); g.gain.setValueAtTime(0.25,c.currentTime+sec-0.1); g.gain.linearRampToValueAtTime(0,c.currentTime+sec); o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime+sec+0.05); };
+  const ask=box.querySelector("[data-ask]"), askWhere=withMic=>{ ask.innerHTML=`<p style="margin:6px 0 4px">${t("au_where")}</p><div class="row"><button class="b sm grow" data-y>✓ ${t("au_yes")}</button><button class="b warm sm grow" data-n>✗ ${t("au_no")}</button></div>`;
+    ask.querySelector("[data-y]").onclick=()=>{ ask.innerHTML=`<div class="okbox" style="margin-top:6px">${t("au_ok")}</div>`; };
+    ask.querySelector("[data-n]").onclick=()=>{ if(withMic&&SET.micId){ SET.micId=""; save(); renderMicPick(); toast(t("au_reset")); return; } ask.innerHTML=`<div class="warnbox" style="margin-top:6px">${t(withMic?"au_fix_mic":"au_fix")}</div>`; }; };
+  box.querySelector("[data-test]").onclick=()=>{ tone(1); askWhere(false); };
+  box.querySelector("[data-test2]").onclick=async()=>{ let tk; try{ tk=await startTake({capture:false}); }catch(e){ micError(e); toast(t("mic_fail")); return; } tone(1.6); setTimeout(()=>tk.stop(),1900); askWhere(true); };
 }
+/* send the app's sound to the chosen output (only where the browser supports choosing it) */
+async function applySink(){ try{ const c=ac(); if(c&&c.setSinkId) await c.setSinkId(SET.outId||""); }catch(e){} }

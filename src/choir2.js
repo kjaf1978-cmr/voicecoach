@@ -350,7 +350,7 @@ function stopGuide(){ try{ if(GUIDE.out){ GUIDE.out.disconnect(); if(AOUT===GUID
 async function playOrig(s,off,dur,rate,lead){
   if(rate===1){ const buf=await SongAudio.get(s.id); if(!buf) return; const c=ac(), src=c.createBufferSource(); src.buffer=buf; src.connect(outOf(c)); src.start(c.currentTime+lead,off,dur); GUIDE.src=src; return; }
   const raw=await SongAudio.raw(s.id); if(!raw) return; const blob=raw instanceof Blob?raw:null; if(!blob){ const buf=await SongAudio.get(s.id); if(!buf) return; const c=ac(), src=c.createBufferSource(); src.buffer=buf; src.playbackRate.value=rate; src.connect(outOf(c)); src.start(c.currentTime+lead,off,dur/rate); GUIDE.src=src; return; }
-  const a=new Audio(URL.createObjectURL(blob)); a.preservesPitch=true; a.mozPreservesPitch=true; a.webkitPreservesPitch=true; GUIDE.el=a;
+  const a=new Audio(URL.createObjectURL(blob)); if(SET.outId&&a.setSinkId) a.setSinkId(SET.outId).catch(()=>{}); a.preservesPitch=true; a.mozPreservesPitch=true; a.webkitPreservesPitch=true; GUIDE.el=a;
   await new Promise(r=>{ a.addEventListener("loadedmetadata",r,{once:true}); setTimeout(r,1500); }); a.currentTime=off; a.playbackRate=rate;
   GUIDE.timers.push(setTimeout(()=>{ a.play().catch(()=>{}); },lead*1000)); GUIDE.timers.push(setTimeout(()=>{ try{ a.pause(); }catch(e){} },(lead+dur)*1000));
 }
@@ -381,7 +381,7 @@ async function singAlongFix(box,s){
     const msg=o.querySelector("[data-fmsg]"), ft=o.querySelector("[data-ft]"), fp=o.querySelector("[data-fp]"), snd=o.querySelector("[data-fsound]");
     let playT0=null, a=null, src=null, done=false, tick;
     // the original is played by the phone's media player (keeps playing while the microphone is open); Web Audio only as fallback
-    if(blob){ a=new Audio(URL.createObjectURL(blob)); a.preload="auto"; GUIDE.el=a;
+    if(blob){ a=new Audio(URL.createObjectURL(blob)); if(SET.outId&&a.setSinkId) a.setSinkId(SET.outId).catch(()=>{}); a.preload="auto"; GUIDE.el=a;
       a.addEventListener("playing",()=>{ if(playT0===null) playT0=performance.now()-a.currentTime*1000; snd.classList.add("hidden"); });
       const go=()=>a.play().catch(()=>snd.classList.remove("hidden")); snd.onclick=go; go(); }
     else { src=c.createBufferSource(); src.buffer=buf; src.connect(c.destination); const st=c.currentTime+0.3; src.start(st,0,len); const p0=performance.now()+300; playT0=p0; GUIDE.src=src; }
