@@ -145,6 +145,7 @@ function renderScenes(){
   const roles=ROLES.filter(r=>SCENES.some(s=>s.ctx===SET.ctx&&s.role===r));
   if(roles.length){ const rc=el("div",{class:"card"},`<b>${t("role_title")}</b><p class="muted" style="font-size:.82rem;margin:2px 0 6px">${t("role_desc")}</p><div class="chips" data-r></div>`);
     chipSet(rc.querySelector("[data-r]"),[["",t("role_all")]].concat(roles.map(r=>[r,t("role_"+r)])),SET.role||"",v=>{ SET.role=v; save(); renderScenes(); if(typeof renderToday==="function") renderToday(); }); box.append(rc); }
+  if(typeof renderLive==="function"&&!(LIVE.S&&LIVE.S.on)) renderLive();
   SCENES.filter(sceneShown).forEach(sc=>{
     const s=getConv(sc.id,SET.tl), due=s.mastered&&s.due<=Date.now();
     const status = s.mastered ? (due?`<span class="tag due">${t("due_now")}</span>`:`<span class="tag ok">${t("mastered")} ✓</span>`) : `<span class="tag">${t("lvl")} ${s.lvl}</span>`;

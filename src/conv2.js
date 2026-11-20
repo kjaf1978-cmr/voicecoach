@@ -110,3 +110,36 @@ speak=function(text,lang,onend,rate,role,pitchMul){
 var PARTNER_VOICE=null;
 const _renderTurn0=renderTurn;
 renderTurn=function(){ _renderTurn0(); try{ const d=turnData(); if(d.surprise){ const b=$("#cpBody"); if(b&&!b.querySelector(".vy-sur")) b.insertAdjacentHTML("afterbegin",`<div class="vy-sur" style="margin-bottom:6px"><span class="tag due">${t("vy_surprise")}</span></div>`); } }catch(e){} };
+
+/* ---------- v5.5: focus on a part of the answer that was missed twice ---------- */
+Object.assign(T.en,{cf_prop:"“{w}” was missing or unclear twice.", cf_go:"🎯 Practise this part, then try the answer again", cf_title:"🎯 Focus: say it clearly", cf_how:"Listen, then say the phrase. When the key word is recognised twice in a row, you go back to your answer.", cf_listen:"🔊 Listen", cf_say:"🎤 Say it", cf_heard:"Heard: “{t}”", cf_ok:"✓ Clear!", cf_no:"Not recognised yet – speak a little slower and stress “{k}”.", cf_back:"↩ Back to the answer", cf_done:"✓ Done – now give your full answer again."});
+Object.assign(T.de,{cf_prop:"„{w}“ hat zweimal gefehlt oder war undeutlich.", cf_go:"🎯 Diesen Teil üben, dann die Antwort noch einmal", cf_title:"🎯 Fokus: deutlich sprechen", cf_how:"Hör zu und sprich die Wortgruppe nach. Wenn das Schlüsselwort zweimal hintereinander erkannt wird, geht es zurück zu deiner Antwort.", cf_listen:"🔊 Anhören", cf_say:"🎤 Sprechen", cf_heard:"Gehört: „{t}“", cf_ok:"✓ Deutlich!", cf_no:"Noch nicht erkannt – sprich etwas langsamer und betone „{k}“.", cf_back:"↩ Zurück zur Antwort", cf_done:"✓ Geschafft – gib jetzt deine ganze Antwort noch einmal."});
+Object.assign(T.fr,{cf_prop:"« {w} » manquait ou n'était pas clair deux fois.", cf_go:"🎯 Travailler cette partie, puis répondre à nouveau", cf_title:"🎯 Focus : articuler clairement", cf_how:"Écoutez, puis répétez le groupe de mots. Quand le mot clé est reconnu deux fois de suite, vous revenez à votre réponse.", cf_listen:"🔊 Écouter", cf_say:"🎤 Parler", cf_heard:"Entendu : « {t} »", cf_ok:"✓ Clair !", cf_no:"Pas encore reconnu – parlez un peu plus lentement et accentuez « {k} ».", cf_back:"↩ Retour à la réponse", cf_done:"✓ Réussi – donnez maintenant à nouveau votre réponse complète."});
+/* the phrase around a keyword inside the model answer (≈ up to 6 words) */
+function keyPhrase(model,alt){ const k=norm(alt), sents=model.split(/(?<=[.!?;])\s+/), sent=sents.find(x=>norm(x).includes(k))||model, words=sent.split(/\s+/); let idx=words.findIndex(w=>norm(w).includes(k)||k.includes(norm(w))&&norm(w).length>3);
+  if(idx<0) return alt.trim(); const a=Math.max(0,idx-2), b=Math.min(words.length,idx+4); return words.slice(a,b).join(" ").replace(/[.,;:!?]+$/,""); }
+const _turnResult0=turnResult;
+turnResult=function(res,take){ _turnResult0(res,take); const A=ATT; if(!A||!res||!res.hits||SET.mode==="text") return;
+  const d=turnData(), ti=d.ti; A.tries=A.tries||{}; const miss=res.hits.map((h,i)=>h?-1:i).filter(i=>i>=0); (A.tries[ti]=A.tries[ti]||[]).push(miss);
+  const tr=A.tries[ti]; if(tr.length<2) return; const inter=tr[tr.length-1].filter(i=>tr[tr.length-2].includes(i)); if(!inter.length) return;
+  const items=inter.slice(0,2).map(i=>{ const g=d.groups[i], alt=g.filter(a=>norm(a)&&norm(d.model).includes(norm(a))).sort((x,y)=>norm(y).length-norm(x).length)[0]||g[0]; return {k:alt.trim(),p:keyPhrase(d.model,alt),g}; });
+  const box=$("#answerBox"); if(!box) return; const w=items.map(x=>x.p).join(" · ");
+  box.insertAdjacentHTML("afterbegin",`<div class="warnbox" style="margin-bottom:8px"><b>${esc(t("cf_prop",{w}))}</b><button class="b warm" style="width:100%;margin-top:6px" data-cf>${t("cf_go")}</button></div>`);
+  box.querySelector("[data-cf]").onclick=()=>phraseFocus(box,items,A.lang,()=>{ tr.length=0; delete A.res[ti]; A.cur={readyT:performance.now(),tapT:null,pushed:false,first:null,hints:0}; $("#pbLine").innerHTML=""; renderAnswer(); });
+};
+function phraseFocus(box,items,lang,onDone){ let i=0, streak=0;
+  const draw=(msg)=>{ const it=items[i]; box.innerHTML=`<div class="card" style="border:2px solid var(--accent)"><h3 style="margin:0 0 4px">${t("cf_title")}</h3><p class="muted" style="font-size:.82rem">${t("cf_how")}</p>
+      <div class="dots big" style="margin:4px 0">${[0,1].map(k=>`<i class="${k<streak?"on":""}"></i>`).join("")}</div>
+      <div ${tlAttr(lang)} style="font-size:1.6rem;font-weight:700;text-align:center;margin:8px 0">${esc(it.p).replace(new RegExp("("+it.k.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\S*)","i"),'<u style="color:var(--accent2)">$1</u>')}</div>
+      <div class="row"><button class="b alt grow" data-l>${t("cf_listen")}</button><button class="b warm grow" data-s>${t("cf_say")}</button></div><div data-m style="margin-top:6px">${msg||""}</div>
+      <button class="b alt sm" data-b style="margin-top:6px">${t("cf_back")}</button></div>`;
+    box.querySelector("[data-l]").onclick=()=>speak(it.p,lang,null,0.8,"model");
+    box.querySelector("[data-b]").onclick=onDone;
+    box.querySelector("[data-s]").onclick=async e=>{ const b=e.currentTarget; b.disabled=true; b.textContent="…"; let r; try{ r=await recognizeOnce(lang); }catch(err){ draw(`<div class="warnbox">${t("sr_off")}</div>`); return; }
+      const tn=norm(r.text||""), ok=it.g.some(a=>kwHit(tn,a)); streak=ok?streak+1:0; beep(ok?990:520,.12,.1);
+      let m=`<div class="muted">${esc(t("cf_heard",{t:r.text||"…"}))}</div><div class="${ok?"okbox":"warnbox"}">${ok?t("cf_ok"):esc(t("cf_no",{k:it.k}))}</div>`;
+      if(streak>=2){ i++; streak=0; if(i>=items.length){ box.innerHTML=`<div class="okbox">${t("cf_done")}</div>`; setTimeout(onDone,1300); return; } }
+      draw(m); };
+  };
+  draw(); speak(items[0].p,lang,null,0.8,"model");
+}

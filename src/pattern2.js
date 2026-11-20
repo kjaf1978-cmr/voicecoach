@@ -30,13 +30,13 @@ function marksHtml(marks,lang){
     return `<div style="text-align:center;min-width:44px"><div style="font-size:1.5rem;line-height:1;color:${col};font-weight:700">${sym}</div><div style="font-size:1.05rem;font-weight:600;padding:2px 6px;border-radius:8px;border:2px solid ${col}">${esc(m.w)}</div><div style="font-size:.7rem;color:${col}">${hint}</div></div>`; }).join("")}</div>`;
 }
 /* the loop itself */
-function loopDrill(host,{tpl,center,relative,ownMed,lang,label,word=false}){
-  const L={on:true,paused:false,n:0,ok:0,streak:0,best:0,nov:0,hist:[],take:null,timers:[],wstat:tpl.words.map(w=>({w:w.w,n:0,ok:0})),last:null}, tol=word?WD_TOL:2.0;
+function loopDrill(host,{tpl,center,relative,ownMed,lang,label,word=false,goal=0,onGoal=null,onExit=null,focus=false}){
+  const L={on:true,paused:false,n:0,ok:0,streak:0,best:0,nov:0,hist:[],take:null,timers:[],wstat:tpl.words.map(w=>({w:w.w,n:0,ok:0})),last:null,fails:[]}, tol=word?WD_TOL:2.0;
   const base=()=>relative?(ownMed||center):center, text=tpl.words.map(w=>w.w).join(" ");
   const tMean=tpl.pts.reduce((a,p)=>a+p.st,0)/Math.max(1,tpl.pts.length);
   const box=el("div",{class:"card",style:"border:2px solid var(--accent);margin-top:8px"}); host.innerHTML=""; host.append(box);
-  box.innerHTML=`<div class="row"><h3 class="grow" style="margin:0">${t("lp_title")}${label?": "+esc(label):""}</h3></div>
-    <p class="muted" style="font-size:.82rem">${t("lp_how")}</p>
+  box.innerHTML=`<div class="row"><h3 class="grow" style="margin:0">${focus?"🎯 "+t("fc_title"):t("lp_title")}${label?": "+esc(label):""}</h3></div>
+    <p class="muted" style="font-size:.82rem">${focus?t("fc_how",{n:goal}):t("lp_how")}</p>
     <label class="row" style="font-size:.85rem"><input type="checkbox" data-mod checked> ${t("lp_model_each")}</label>
     <div class="row"><b data-rnd class="grow"></b><span class="muted" data-st></span></div>
     <div data-band style="position:sticky;top:0;z-index:3;background:var(--card);padding:6px 0 4px;border-bottom:1px solid var(--line)"></div>
@@ -66,18 +66,31 @@ function loopDrill(host,{tpl,center,relative,ownMed,lang,label,word=false}){
     const an=analyze(r.pcm,{minSpeech:15});
     if(!voice||!an.ok||!an.f0med){ L.nov++; msg.innerHTML=`<div class="warnbox">${t("lp_nov")}</div>`; mk.innerHTML="";
       if(L.nov>=3){ L.nov=0; pause(true); msg.innerHTML=`<div class="warnbox">${t("lp_paused")}</div>`; return; } later(round,1200); return; }
-    L.nov=0; const res=pan.evaluate(an), marks=wordMarks(tpl,an,relative?an.f0med:base(),tol);
+    L.nov=0; L.lastMed=an.f0med; const res=pan.evaluate(an), marks=wordMarks(tpl,an,relative?an.f0med:base(),tol);
     pan.mark&&pan.mark(marks);
     const allOk=marks.length&&marks.every(m=>m.ok), tempo=res&&res.ratio<0.75?"lp_tempo_f":res&&res.ratio>1.35?"lp_tempo_s":null, ok=allOk&&!tempo;
     L.n++; if(ok){ L.ok++; L.streak++; L.best=Math.max(L.best,L.streak); } else L.streak=0; L.hist.push(ok); beep(ok?990:520,.12,.1);
     L.last=marks; marks.forEach((m,i)=>{ const ws=L.wstat[i]; if(ws&&!m.miss){ ws.n++; if(m.ok) ws.ok++; } });
+    L.fails.push(ok?null:new Set(marks.map((m,i)=>m.ok||m.miss?-1:i).filter(i=>i>=0)));
     mk.innerHTML=marksHtml(marks,lang);
     msg.innerHTML=ok?`<div class="okbox"><b>${t("lp_ok")}</b></div>`:`<div class="warnbox">${t("lp_some")}${tempo?" "+t(tempo)+".":""}</div>`;
-    stats(); later(round,ok?1300:2200);
+    stats();
+    if(goal&&L.streak>=goal){ msg.innerHTML=`<div class="okbox" style="font-size:1.05rem"><b>${t("fc_done",{w:label||""})}</b></div>`; L.timers.push(setTimeout(()=>{ L.on=false; onGoal&&onGoal(); },1600)); return; }
+    // the same words wrong in the last two rounds → propose a focused drill on exactly that part
+    const f2=L.fails.slice(-2); if(!focus&&!word&&tpl.words.length>1&&f2.length===2&&f2[0]&&f2[1]){ const inter=[...f2[1]].filter(i=>f2[0].has(i));
+      if(inter.length&&!(inter.length===tpl.words.length)){ proposeFocus(Math.min(...inter),Math.max(...inter)); return; } }
+    later(round,ok?1300:2200);
+  };
+  const proposeFocus=(i0,i1)=>{ pause(true); dot.textContent="🎯"; const words=tpl.words.slice(i0,i1+1).map(w=>w.w).join(" ");
+    msg.innerHTML=`<div class="warnbox" style="text-align:left"><b>${t("fc_prop",{w:words})}</b><br>${t("fc_prop_h")}<div class="row" style="margin-top:6px"><button class="b warm grow" data-fgo>🎯 ${t("fc_go",{w:words})}</button><button class="b alt grow" data-fno>${t("fc_no")}</button></div></div>`;
+    msg.querySelector("[data-fno]").onclick=()=>{ L.fails=[]; pause(false); };
+    msg.querySelector("[data-fgo]").onclick=()=>{ L.fails=[]; const sub=spanTpl(tpl,i0,i1), fh=el("div"); box.style.display="none"; box.after(fh);
+      const back=(okDone)=>{ fh.remove(); box.style.display=""; msg.innerHTML=`<div class="${okDone?"okbox":"warnbox"}">${t(okDone?"fc_back":"fc_back2",{w:words})}</div>`; box.scrollIntoView({behavior:"smooth",block:"start"}); setTimeout(()=>{ if(L.on) pause(false); },900); };
+      loopDrill(fh,{tpl:sub,center,relative,ownMed:L.lastMed||ownMed,lang,label:words,word:i0===i1,goal:2,focus:true,onGoal:()=>back(true),onExit:()=>back(false)}); };
   };
   const pause=(on)=>{ L.paused=on; L.timers.forEach(clearTimeout); L.timers=[]; if(on){ if(L.take){ const tk=L.take; L.take=null; tk.stop().catch(()=>{}); } try{ speechSynthesis.cancel(); }catch(e){} dot.classList.remove("on"); dot.textContent="⏸"; }
     box.querySelector("[data-pause]").textContent=on?t("lp_resume"):t("lp_pause"); if(!on){ msg.innerHTML=""; round(); } };
-  const stop=()=>{ L.on=false; L.timers.forEach(clearTimeout); if(L.take){ L.take.stop().catch(()=>{}); L.take=null; } try{ speechSynthesis.cancel(); }catch(e){}
+  const stop=()=>{ L.on=false; L.timers.forEach(clearTimeout); if(onExit){ if(L.take){ L.take.stop().catch(()=>{}); L.take=null; } try{ speechSynthesis.cancel(); }catch(e){} onExit(); return; } if(L.take){ L.take.stop().catch(()=>{}); L.take=null; } try{ speechSynthesis.cancel(); }catch(e){}
     if(L.n) logSession(t("lp_title")+(label?": "+label:""),Math.max(0.5,L.n*0.15));
     box.innerHTML=`<div class="okbox"><b>${t("lp_title")}</b><br>${t("lp_sum",{n:L.n,a:L.ok,p:L.n?Math.round(100*L.ok/L.n):0,b:L.best})}</div>${L.n?`<div style="margin-top:6px">${bandHtml(L,lang)}</div>`:""}`;
     const again=el("button",{class:"b alt",style:"width:100%;margin-top:6px"},label?t(word?"lp_btn_word":"lp_btn_sent",{w:label}):t("lp_btn_sent")); again.onclick=()=>loopDrill(host,{tpl,center,relative,ownMed,lang,label,word}); box.append(again); };
@@ -115,3 +128,10 @@ function bandHtml(L,lang){
   return `<div class="row" style="font-size:.8rem;margin-bottom:3px"><b class="grow">${t("lp_band",{p:pct})}</b><span class="muted">${t("lp_streak",{s:L.streak,b:L.best})}</span></div>${bar}${words}`;
 }
 Object.assign(T.en,{lp_band:"Success this session: {p} %"}); Object.assign(T.de,{lp_band:"Erfolg in dieser Übung: {p} %"}); Object.assign(T.fr,{lp_band:"Réussite de cette séance : {p} %"});
+
+/* sub-template covering words i0..i1 of a sentence template */
+function spanTpl(tpl,i0,i1){ const a=wordSpan(tpl,i0), b=wordSpan(tpl,i1), t0=a.t0, t1=b.t1;
+  return {dur:Math.max(0.3,t1-t0),pts:tpl.pts.filter(p=>p.t>=t0-0.01&&p.t<=t1+0.01).map(p=>({t:p.t-t0,st:p.st})),words:tpl.words.slice(i0,i1+1).map(w=>({t:Math.max(0,w.t-t0),w:w.w})),pauses:tpl.pauses.filter(p=>p.s>t0&&p.e<t1).map(p=>({s:p.s-t0,e:p.e-t0})),src:"focus"}; }
+Object.assign(T.en,{fc_title:"Focus", fc_prop:"“{w}” was not right twice in a row.", fc_prop_h:"Practise just this part until it is right twice in a row – then you go back to the whole sentence.", fc_go:"Practise “{w}”", fc_no:"Keep going with the whole sentence", fc_how:"Say only this part. When it is right {n}× in a row, you automatically return to the whole sentence.", fc_done:"✓ “{w}” is right now – back to the whole sentence …", fc_back:"Back to the whole sentence – say “{w}” just like in the focus practice.", fc_back2:"Back to the whole sentence."});
+Object.assign(T.de,{fc_title:"Fokus", fc_prop:"„{w}“ war zweimal hintereinander nicht richtig.", fc_prop_h:"Übe nur diesen Teil, bis er zweimal hintereinander sitzt – danach geht es zurück zum ganzen Satz.", fc_go:"„{w}“ üben", fc_no:"Mit dem ganzen Satz weitermachen", fc_how:"Sprich nur diesen Teil. Wenn er {n}-mal hintereinander richtig ist, geht es automatisch zurück zum ganzen Satz.", fc_done:"✓ „{w}“ sitzt jetzt – zurück zum ganzen Satz …", fc_back:"Zurück zum ganzen Satz – sprich „{w}“ genau wie in der Fokusübung.", fc_back2:"Zurück zum ganzen Satz."});
+Object.assign(T.fr,{fc_title:"Focus", fc_prop:"« {w} » n'était pas juste deux fois de suite.", fc_prop_h:"Travaillez seulement cette partie jusqu'à ce qu'elle soit juste deux fois de suite – puis retour à la phrase entière.", fc_go:"Travailler « {w} »", fc_no:"Continuer avec la phrase entière", fc_how:"Dites seulement cette partie. Quand elle est juste {n} fois de suite, vous revenez automatiquement à la phrase entière.", fc_done:"✓ « {w} » est juste – retour à la phrase entière …", fc_back:"Retour à la phrase entière – dites « {w} » comme dans l'exercice ciblé.", fc_back2:"Retour à la phrase entière."});
