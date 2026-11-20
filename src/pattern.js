@@ -65,11 +65,14 @@ function patternPanel(box,tpl,{center=patternCenter(),band=voiceTarget(),relativ
     g.fillStyle=cssv("--accent2");
     if(P.user) P.user.pts.forEach(p=>{ g.beginPath(); g.arc(X(p.t),Y(p.st),2*dpr,0,7); g.fill(); });
     else P.live.forEach(p=>{ if(p.f>0){ g.beginPath(); g.arc(X(p.t),Y(rel(p.f)),2.2*dpr,0,7); g.fill(); } });
+    if(P.marks){ g.font="bold "+(16*dpr)+"px system-ui"; g.textAlign="center"; P.marks.forEach(m=>{ const sym=m.miss?"–":m.ok?"✓":m.dir==="up"?"▲":m.dir==="down"?"▼":m.slope==="rise"?"↗":"↘";
+        const tp=tplAt(tpl,m.t), y=tp!=null?Y(tp)+(m.dir==="up"?18*dpr:m.dir==="down"?-8*dpr:-10*dpr):16*dpr; g.fillStyle=m.ok?cssv("--ok"):m.miss?cssv("--muted"):cssv("--accent2"); g.fillText(sym,X(m.t),Math.max(16*dpr,Math.min(H-lab-4*dpr,y))); }); g.textAlign="left"; g.font=(10*dpr)+"px system-ui"; }
     if(cursor!=null){ g.strokeStyle=cssv("--ink"); g.lineWidth=2*dpr; g.beginPath(); g.moveTo(X(cursor),0); g.lineTo(X(cursor),H-lab); g.stroke(); g.lineWidth=1; }
   };
   requestAnimationFrame(()=>draw(null));
   return {
-    reset(){ P.live=[]; P.onset=null; P.user=null; P.ownMed=null; draw(null); },
+    reset(){ P.live=[]; P.onset=null; P.user=null; P.ownMed=null; P.marks=null; draw(null); },
+    mark(m){ P.marks=m; draw(null); },
     pushAt(f,tt){ P.live.push({t:tt,f}); P.cur=Math.min(tt,tpl.dur+0.5); if(!P.pend){ P.pend=true; setTimeout(()=>{ P.pend=false; draw(P.cur); },50); } },
     onPitch(f,sec,db){ if(P.onset===null){ if(f>0&&db>-55) P.onset=sec; else return; } const tt=sec-P.onset; P.live.push({t:tt,f});
       if(relative&&!P.ownMed){ const v=P.live.filter(x=>x.f>0).map(x=>x.f); if(v.length>25) P.ownMed=pctl(v,0.5); } draw(Math.min(tt,tpl.dur+0.5)); },
