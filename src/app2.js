@@ -4,7 +4,7 @@ const srLang=()=> (!srBroken && store.flags.conc!==false && SET.mode!=="rec") ? 
 function scrollToId(id){ const e=document.getElementById(id); if(e){ setTimeout(()=>e.scrollIntoView({behavior:"smooth",block:"start"}),60); e.style.outline="3px solid var(--accent2)"; setTimeout(()=>e.style.outline="",2500); } }
 
 /* ---------- daily plan ---------- */
-function nextScene(){ return SCENES.filter(s=>s.ctx===SET.ctx).map(sc=>({sc,s:getConv(sc.id,SET.tl)})).find(x=>!x.s.mastered); }
+function nextScene(){ return SCENES.filter(sceneShown).map(sc=>({sc,s:getConv(sc.id,SET.tl)})).find(x=>!x.s.mastered); }
 function planFor(date){
   if(store.plan[date]) return store.plan[date];
   const gi=typeof goalPlanItems==="function"?goalPlanItems():null;

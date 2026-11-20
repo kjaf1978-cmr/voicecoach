@@ -39,7 +39,7 @@ Object.assign(T.fr,{
 const UNIT_MIN=5, MAX_DAY=60, MAX_SESSION=20;
 function goalWork(areas){
   const w={conv:0,coach:0,art:0,les:0,tone:0};
-  if(areas.conv) SCENES.filter(s=>s.ctx===SET.ctx).forEach(sc=>{ const s=getConv(sc.id,SET.tl); w.conv+=(3-stepsPassed(s))*1.5; });
+  if(areas.conv) SCENES.filter(sceneShown).forEach(sc=>{ const s=getConv(sc.id,SET.tl); w.conv+=(3-stepsPassed(s))*1.5; });
   if(areas.coach) coachOpen().filter(a=>a.id!=="tone").forEach(a=>{ w.coach+=a.done?0.5:Math.max(0.5,1.5*(1-(a.streak||0)/STREAK)); });
   if(areas.art) Object.keys(ART[SET.tl]).forEach(k=>{ const st=artStats(SET.tl,k); if(!st.mastered) w.art+=2*(1-st.p/100*0.7); });
   if(areas.les) LESSONS.forEach(l=>{ if(!store.lessons[l.id]) w.les+=0.5; });
@@ -89,7 +89,7 @@ function goalPlanItems(){
   const pool=[], dayN=Math.floor(Date.now()/DAY);
   if(G.areas.tone&&voiceTarget()&&!(coachStore().tone&&coachStore().tone.done)) pool.push({k:"coach",id:"tone",u:1.5});
   if(G.areas.coach) coachOpen().filter(a=>a.id!=="tone").forEach(a=>pool.push({k:"coach",id:a.id,u:1.5}));
-  if(G.areas.conv){ dueList().forEach(d=>pool.push({k:"review",id:d.sc.id,l:d.l,u:1.5})); SCENES.filter(s=>s.ctx===SET.ctx).forEach(sc=>{ const s=getConv(sc.id,SET.tl); if(!s.mastered) pool.push({k:"talk",id:sc.id,l:SET.tl,u:1.5}); }); }
+  if(G.areas.conv){ dueList().forEach(d=>pool.push({k:"review",id:d.sc.id,l:d.l,u:1.5})); SCENES.filter(sceneShown).forEach(sc=>{ const s=getConv(sc.id,SET.tl); if(!s.mastered) pool.push({k:"talk",id:sc.id,l:SET.tl,u:1.5}); }); }
   if(G.areas.art) Object.keys(ART[SET.tl]).filter(k=>!artStats(SET.tl,k).mastered).forEach(k=>pool.push({k:"art",snd:k,u:1}));
   if(G.areas.les) LESSONS.filter(l=>!store.lessons[l.id]).forEach(l=>pool.push({k:"lesson",id:l.id,u:0.5}));
   // interleave categories so every day mixes voice, speech and conversation

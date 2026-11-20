@@ -140,11 +140,14 @@ function stepsPassed(s){ return s.mastered?3:Math.max(0,s.lvl-1); }
 
 function renderScenes(){
   const box=$("#sceneList"); if(!box) return; box.innerHTML="";
-  SCENES.filter(s=>s.ctx===SET.ctx).forEach(sc=>{
+  const roles=ROLES.filter(r=>SCENES.some(s=>s.ctx===SET.ctx&&s.role===r));
+  if(roles.length){ const rc=el("div",{class:"card"},`<b>${t("role_title")}</b><p class="muted" style="font-size:.82rem;margin:2px 0 6px">${t("role_desc")}</p><div class="chips" data-r></div>`);
+    chipSet(rc.querySelector("[data-r]"),[["",t("role_all")]].concat(roles.map(r=>[r,t("role_"+r)])),SET.role||"",v=>{ SET.role=v; save(); renderScenes(); if(typeof renderToday==="function") renderToday(); }); box.append(rc); }
+  SCENES.filter(sceneShown).forEach(sc=>{
     const s=getConv(sc.id,SET.tl), due=s.mastered&&s.due<=Date.now();
     const status = s.mastered ? (due?`<span class="tag due">${t("due_now")}</span>`:`<span class="tag ok">${t("mastered")} ✓</span>`) : `<span class="tag">${t("lvl")} ${s.lvl}</span>`;
     const bestTxt=[1,2,3].map(l=>s.best[l]!=null?`${t("lvl")} ${l}: ${s.best[l]}`:null).filter(Boolean).join(" · ");
-    const c=el("div",{class:"card"},`<div class="row"><b class="grow">${esc(sc.title[SET.ui])}</b>${status}</div>
+    const c=el("div",{class:"card"},`<div class="row"><b class="grow">${esc(sc.title[SET.ui])}</b>${status}</div>${sc.role?`<div style="margin:2px 0 4px"><span class="tag">${t("kind_"+sc.kind)}</span> <span class="tag">${t("role_"+sc.role)}</span></div>`:""}
       <div class="bar"><i style="width:${stepsPassed(s)/3*100}%"></i></div>
       <p class="muted">${bestTxt?t("best")+" – "+bestTxt:"&nbsp;"}${s.mastered&&!due?` · ${t("next_rev")}: ${new Date(s.due).toLocaleDateString()}`:""}</p>
       <div class="row lv"></div>`);
@@ -162,7 +165,7 @@ function renderToday(){
   if(!dl.length) box.innerHTML=`<p class="muted">${t("due_none")}</p>`;
   dl.forEach(({sc,l})=>{ const b=el("button",{class:"b warm full"},`↻ ${esc(sc.title[SET.ui])} <span style="opacity:.8">(${l.toUpperCase()} · ${t("ctx_"+sc.ctx)})</span>`); b.onclick=()=>startAttempt(sc,l,3,"review"); box.append(b); });
   const nb=$("#nextBox"); nb.innerHTML="";
-  const nx=SCENES.filter(s=>s.ctx===SET.ctx).map(sc=>({sc,s:getConv(sc.id,SET.tl)})).find(x=>!x.s.mastered);
+  const nx=SCENES.filter(sceneShown).map(sc=>({sc,s:getConv(sc.id,SET.tl)})).find(x=>!x.s.mastered);
   if(nx){ const b=el("button",{class:"b full"},`▶ ${esc(nx.sc.title[SET.ui])} – ${t("lvl")} ${nx.s.lvl} · ${t("lvl"+nx.s.lvl)} <span style="opacity:.8">(${SET.tl.toUpperCase()} · ${t("ctx_"+SET.ctx)})</span>`); b.onclick=()=>startAttempt(nx.sc,SET.tl,nx.s.lvl,"level"); nb.append(b); }
   else nb.innerHTML=`<p class="muted">${t("next_none")}</p>`;
   $("#stDue").textContent=dl.length;

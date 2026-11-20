@@ -14,7 +14,7 @@ function startAttempt(sc,lang,level,mode,onlyTurns){
 }
 function closeAttempt(){ stopRecognition(); try{speechSynthesis.cancel();}catch(e){} keepAwake(false); ATT=null; $("#convPlayer").classList.add("hidden"); $("#convList").classList.remove("hidden"); renderScenes(); renderToday(); renderPlan(); }
 $("#cpClose").onclick=closeAttempt;
-function turnData(){ const A=ATT, ti=A.order[A.pos], [partner,taskTl,model,kw]=A.sc.turns[A.lang][ti], task=(A.sc.turns[SET.ui]&&A.sc.turns[SET.ui][ti]||[])[1]||taskTl; return {ti,partner,task,model,kw,groups:parseKW(kw)}; }
+function turnData(){ const A=ATT, ti=A.order[A.pos], [partner0,taskTl,model,kw]=A.sc.turns[A.lang][ti], pv=String(partner0).split("||"); A.pvar=A.pvar||{}; if(A.pvar[ti]==null) A.pvar[ti]=Math.floor(Math.random()*pv.length); const partner=pv[A.pvar[ti]].trim(), task=(A.sc.turns[SET.ui]&&A.sc.turns[SET.ui][ti]||[])[1]||taskTl; return {ti,partner,task,model,kw,groups:parseKW(kw)}; }
 function stepsBar(){ const A=ATT; $("#cpSteps").innerHTML=A.order.map((_,k)=>`<i class="${k<A.pos||(k===A.pos&&A.res[A.order[k]])?'d':''}"></i>`).join(""); }
 
 function renderTurn(){
