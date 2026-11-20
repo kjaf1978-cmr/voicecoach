@@ -92,7 +92,7 @@ function turnResult(res,take){
   const A=ATT, d=turnData(), ti=d.ti, pm=A.mode==="review"?PASS.review:PASS[A.level];
   // pushback: partner insists once when content is weak (levels 2–3, review)
   if(A.level>=2&&!A.cur.pushed&&res.hits&&res.content<0.6){
-    A.cur.pushed=true; A.cur.first=res; const line=rnd(PUSHBACK[A.lang]);
+    A.cur.pushed=true; A.cur.first=res; const line=rnd((A.sc._c2&&typeof C2PB!=="undefined"&&C2PB[A.lang])||PUSHBACK[A.lang]);
     $("#pbLine").innerHTML=`<div class="bubble them" style="border-left:4px solid var(--accent2)">${esc(line)}</div><p class="muted">${t("pushback")}</p>`;
     speak(line,A.lang,()=>{ if(ATT===A) A.cur.readyT=performance.now(); }); A.cur.readyT=null; A.cur.tapT=null;
     renderAnswer(); return;
