@@ -80,18 +80,20 @@ Object.assign(T.de,{vy_with:"Dein Gegenüber:", ps_friendly:"freundlich", ps_cri
 Object.assign(T.fr,{vy_with:"Votre interlocuteur :", ps_friendly:"aimable", ps_critical:"critique – restez factuel et concret", ps_hurried:"pressé – répondez brièvement et précisément", ps_warm:"chaleureux et ouvert", ps_reserved:"réservé – faites vivre la conversation vous-même", ps_chatty:"bavard – réagissez et trouvez votre place", vy_surprise:"⚡ Question surprise", vy_note:"Chaque tentative a un interlocuteur différent et une question surprise."});
 SCENES.forEach(s=>{ if(s.id==="interview"&&!s.kind) s.kind="iv"; if(["st_grad","st_eng","st_senior","st_lawyer","st_exec"].includes(s.id)) s.formal=true; });
 function varyScene(base){
-  if(!base.kind||!CURVE[base.kind]) return base;
-  const pool=CURVE[base.kind].filter(c=>!c.roles||!base.role||c.roles.includes(base.role));
-  const own=pool.filter(c=>c.roles), pick=own.length&&Math.random()<0.5?rnd(own):rnd(pool);
+  const hasCurve=!!(base.kind&&CURVE[base.kind]);
+  if(!hasCurve&&!base.pool) return base;
+  // v5.7: classic scenes without kind still shuffle their question pool, just without a curveball
+  const pool=hasCurve?CURVE[base.kind].filter(c=>!c.roles||!base.role||c.roles.includes(base.role)):[];
+  const own=pool.filter(c=>c.roles), pick=hasCurve?(own.length&&Math.random()<0.5?rnd(own):rnd(pool)):null;
   const turns={}; let at=null;
   // v5.6: the middle questions are drawn from the scene's own turns plus its question pool (≈20 per scene)
   const n=base.turns.en?base.turns.en.length:base.turns[Object.keys(base.turns)[0]].length, refs=[];
   for(let i=1;i<n-1;i++) refs.push({b:i}); (base.pool||[]).forEach((x,i)=>refs.push({p:i}));
-  const mid=refs.sort(()=>Math.random()-0.5).slice(0,Math.max(0,n-2));
+  const mid=refs.sort(()=>Math.random()-0.5).slice(0,Math.max(base.pool?2:0,n-2));
   Object.keys(base.turns).forEach(l=>{ const bt=base.turns[l], get=r=>r.b!=null?bt[r.b]:((base.formal&&base.pool[r.p][l+"_f"])||base.pool[r.p][l]);
     const arr=base.pool?[bt[0]].concat(mid.map(get)).concat([bt[bt.length-1]]):bt.slice();
-    if(at===null) at=1+Math.floor(Math.random()*Math.max(1,arr.length-1)); const it=(base.formal&&pick[l+"_f"])||pick[l]; if(it) arr.splice(at,0,it); turns[l]=arr; });
-  return Object.assign({},base,{turns,_base:base,_surprise:at});
+    if(at===null) at=1+Math.floor(Math.random()*Math.max(1,arr.length-1)); const it=pick&&((base.formal&&pick[l+"_f"])||pick[l]); if(it) arr.splice(at,0,it); turns[l]=arr; });
+  return Object.assign({},base,{turns,_base:base,_surprise:pick?at:null});
 }
 const _startAttempt0=startAttempt;
 startAttempt=function(sc,lang,level,mode,onlyTurns){

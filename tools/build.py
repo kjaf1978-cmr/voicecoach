@@ -2,9 +2,9 @@
 import pathlib, json
 root = pathlib.Path(__file__).resolve().parent.parent
 src = root/"src"; dist = root/"dist"; dist.mkdir(exist_ok=True)
-VERSION = "5.6"
+VERSION = "5.7"
 html = (src/"index.html").read_text(encoding="utf-8").replace("__VERSION__", VERSION)
-js = "\n".join((src/f).read_text(encoding="utf-8") for f in ["i18n.js","i18n2.js","i18n3.js","content.js","content2.js","content3.js","content4.js","i18n4.js","i18n5.js","i18n6.js","media.js","app.js","conv.js","conv2.js","live.js","artseries.js","support.js","coach.js","tone.js","goal.js","refstyle.js","voices.js","pattern.js","pattern2.js","cons.js","choir.js","choir2.js","choir3.js","app2.js"])
+js = "\n".join((src/f).read_text(encoding="utf-8") for f in ["i18n.js","i18n2.js","i18n3.js","content.js","content2.js","content3.js","content4.js","content5a.js","content5b.js","content5c.js","i18n4.js","i18n5.js","i18n6.js","media.js","app.js","conv.js","conv2.js","live.js","artseries.js","support.js","coach.js","tone.js","goal.js","refstyle.js","voices.js","pattern.js","pattern2.js","cons.js","choir.js","choir2.js","choir3.js","app2.js"])
 scripts = "<script>\n/* VoiceCoach v%s */\n" % VERSION + js.replace("</script","<\\/script") + "\n</script>"
 (dist/"artifact.html").write_text(html.replace("<!--MANIFEST-->","").replace("<!--SCRIPTS-->",scripts), encoding="utf-8")
 (root/"index.html").write_text(html.replace("<!--MANIFEST-->",'<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">').replace("<!--SCRIPTS-->",scripts), encoding="utf-8")
