@@ -95,7 +95,7 @@ const VIEWS=["today","talk","speech","voice","breath","choir","progress"];
 function buildNav(){ $("#nav").innerHTML=""; VIEWS.forEach(id=>{ const b=el("button",{"data-v":id},`<svg viewBox="0 0 24 24">${ICONS[id]}</svg>${t("nav_"+id)}`); b.onclick=()=>show(id); $("#nav").append(b); }); markNav(); }
 let curView="today";
 function markNav(){ document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===curView)); }
-function show(id){ curView=id; document.querySelectorAll("section.view").forEach(s=>s.classList.toggle("on",s.id==="v-"+id)); markNav(); try{ if(location.hash!=="#"+id) history.replaceState(null,"","#"+id); }catch(e){} window.scrollTo(0,0); if(id==="progress") renderProgress(); if(id==="today") renderToday(); if(id==="talk") renderScenes(); if(id==="choir"&&typeof renderChoir==="function") renderChoir(); }
+function show(id){ curView=id; document.querySelectorAll("section.view").forEach(s=>s.classList.toggle("on",s.id==="v-"+id)); markNav(); try{ if(location.hash!=="#"+id) history.replaceState(null,"","#"+id); }catch(e){} window.scrollTo(0,0); if(id==="progress") renderProgress(); if(id==="today") renderToday(); if(id==="talk") renderScenes(); if(id==="choir"&&typeof renderChoir==="function") renderChoir(); if(id==="speech"&&typeof renderCons==="function") renderCons(); }
 window.addEventListener("hashchange",()=>{ const h=location.hash.slice(1); if(VIEWS.includes(h)) show(h); });
 
 /* ================= settings & i18n ================= */

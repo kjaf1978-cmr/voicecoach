@@ -15,6 +15,7 @@ function planFor(date){
   const co=typeof coachOpen==="function"?coachOpen():[]; if(co.length) items.splice(1,0,{k:"coach",id:co[0].id});
   const due=dueList(); if(due.length) items.push({k:"review",id:due[0].sc.id,l:due[0].l});
   const nx=nextScene(); if(nx) items.push({k:"talk",id:nx.sc.id,l:SET.tl});
+  if(SET.consFocus) items.splice(1,0,{k:"cons"});
   const ls=LESSONS.find(l=>!store.lessons[l.id]&&l.dim===focus)||LESSONS.find(l=>!store.lessons[l.id])||LESSONS[dayN%LESSONS.length];
   items.push({k:"lesson",id:ls.id});
   store.plan[date]={items,done:{}};
@@ -36,6 +37,7 @@ function planLabel(it){
     case "talk": { const s=getConv(it.id,SET.tl); return t("pk_talk")+": "+sc(it.id).title[SET.ui]+" ("+SET.tl.toUpperCase()+") – "+t("lvl")+" "+(s.mastered?3:s.lvl); }
     case "lesson": return t("pk_lesson")+": "+lessonOf(it.id).txt[SET.ui][0];
     case "coach": return t("pk_coach")+": "+coachName(it.id);
+    case "cons": return t("pk_cons")+": "+t("st_"+csRecommended());
     case "art": return t("ser_title")+": "+(ART[SET.tl][it.snd]?it.snd:Object.keys(ART[SET.tl])[0])+" ("+langIn(SET.tl)+")";
   } }
 function planGo(it){
@@ -55,6 +57,7 @@ function planGo(it){
     case "talk": { const sc=SCENES.find(s=>s.id===it.id), s=getConv(it.id,SET.tl); startAttempt(sc,SET.tl,s.mastered?3:s.lvl,s.mastered?"review":"level"); break; }
     case "lesson": openLesson(it.id); break;
     case "coach": coachGo(it.id); break;
+    case "cons": show("speech"); CS.view="home"; CS.stage=csRecommended(); renderCons(); scrollToId("consCard"); break;
     case "art": show("speech"); SP.snd=ART[SET.tl][it.snd]?it.snd:Object.keys(ART[SET.tl])[0]; SP.pos="i"; SP.idx=0; renderSpeech(); scrollToId("serBox"); break;
   } }
 function renderPlan(){
@@ -220,7 +223,7 @@ window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); deferredI
 $("#installBtn").onclick=async()=>{ if(!deferredInstall) return; deferredInstall.prompt(); try{ await deferredInstall.userChoice; }catch(e){} deferredInstall=null; $("#installBtn").classList.add("hidden"); };
 
 /* ---------- re-render everything that depends on language / mode ---------- */
-function renderV3(){ renderPlan(); renderLessons(); renderTest(); renderStudioPrompts(); renderStudio(); renderInto(); renderProj(); renderImpRec(); renderTwRec(); renderSupport(); renderCoachList(); renderTone(); renderGoal(); renderRef(); if(typeof renderChoir==="function") renderChoir(); }
+function renderV3(){ renderPlan(); renderLessons(); renderTest(); renderStudioPrompts(); renderStudio(); renderInto(); renderProj(); renderImpRec(); renderTwRec(); renderSupport(); renderCoachList(); renderTone(); renderGoal(); renderRef(); if(typeof renderChoir==="function") renderChoir(); if(typeof renderCons==="function"&&(typeof CS==="undefined"||CS.view==="home")) renderCons(); }
 
 /* ================= init ================= */
 applyI18n(); nextPair(); maybeAskProfile();
