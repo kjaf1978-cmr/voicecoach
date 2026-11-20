@@ -36,7 +36,9 @@ function speak(text, lang, onend, rate, role, pitchMul){
     const u=new SpeechSynthesisUtterance(text); u.lang=LOCALE[lang]; u.rate=rate||+SET.rate||1;
     if(role==="model"&&typeof modelVoice==="function"){ const m=modelVoice(lang); if(m.voice) try{ u.voice=m.voice; }catch(e){} u.pitch=Math.max(0.1,Math.min(2,m.pitch*(pitchMul||1))); u.rate=u.rate*m.rate; }
     else { const vs=speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.replace("_","-").toLowerCase().startsWith(lang));
-      const pref=vs.find(v=>v.lang.replace("_","-")===LOCALE[lang])||vs[0]; if(pref) try{ u.voice=pref; }catch(e){} }
+      let pref=vs.find(v=>v.lang.replace("_","-")===LOCALE[lang])||vs[0];
+      if(typeof PARTNER_VOICE!=="undefined"&&PARTNER_VOICE){ const loc=vs.filter(v=>v.lang.replace("_","-")===LOCALE[lang]), pool=loc.length>1?loc:vs; if(pool.length) pref=pool[PARTNER_VOICE.idx%pool.length]; u.pitch=PARTNER_VOICE.pitch; }
+      if(pref) try{ u.voice=pref; }catch(e){} }
     u.onend=fin; u.onerror=fin; speechSynthesis.speak(u);
     setTimeout(fin, 1500+text.length*90/(rate||+SET.rate||1));
   }catch(e){ fin(); }
