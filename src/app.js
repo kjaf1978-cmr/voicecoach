@@ -90,12 +90,13 @@ const ICONS={choir:'<path d="M9 18V5l11-2v13" stroke="currentColor" stroke-width
  speech:'<path d="M5 12c2-6 12-6 14 0-2 6-12 6-14 0z" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 12h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
  voice:'<path d="M3 12h2l2-6 3 12 3-9 2 6 2-3h4" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>',
  breath:'<circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/>',
+ video:'<rect x="2" y="6" width="14" height="12" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M16 10l6-3v10l-6-3z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/>',
  progress:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>'};
-const VIEWS=["today","talk","speech","voice","breath","choir","progress"];
+const VIEWS=["today","talk","speech","voice","breath","video","choir","progress"];
 function buildNav(){ $("#nav").innerHTML=""; VIEWS.forEach(id=>{ const b=el("button",{"data-v":id},`<svg viewBox="0 0 24 24">${ICONS[id]}</svg>${t("nav_"+id)}`); b.onclick=()=>show(id); $("#nav").append(b); }); markNav(); }
 let curView="today";
 function markNav(){ document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===curView)); }
-function show(id){ curView=id; document.querySelectorAll("section.view").forEach(s=>s.classList.toggle("on",s.id==="v-"+id)); markNav(); try{ if(location.hash!=="#"+id) history.replaceState(null,"","#"+id); }catch(e){} window.scrollTo(0,0); if(id==="progress") renderProgress(); if(id==="today") renderToday(); if(id==="talk") renderScenes(); if(id==="choir"&&typeof renderChoir==="function") renderChoir(); if(id==="speech"&&typeof renderCons==="function") renderCons(); if(id==="talk"&&typeof renderFlow==="function") renderFlow(); if(id==="speech"&&typeof renderFlowTeaser==="function") renderFlowTeaser(); if(id==="breath"&&typeof renderPPC==="function") renderPPC(); }
+function show(id){ curView=id; document.querySelectorAll("section.view").forEach(s=>s.classList.toggle("on",s.id==="v-"+id)); markNav(); try{ if(location.hash!=="#"+id) history.replaceState(null,"","#"+id); }catch(e){} window.scrollTo(0,0); if(id==="progress") renderProgress(); if(id==="today") renderToday(); if(id==="talk") renderScenes(); if(id==="choir"&&typeof renderChoir==="function") renderChoir(); if(id==="speech"&&typeof renderCons==="function") renderCons(); if(id==="talk"&&typeof renderFlow==="function") renderFlow(); if(id==="speech"&&typeof renderFlowTeaser==="function") renderFlowTeaser(); if(id==="breath"&&typeof renderPPC==="function") renderPPC(); try{ if(id!=="video"&&VIS.run) visStop(false); if(id==="video") renderVis(); }catch(e){} }
 window.addEventListener("hashchange",()=>{ const h=location.hash.slice(1); if(VIEWS.includes(h)) show(h); });
 
 /* ================= settings & i18n ================= */
