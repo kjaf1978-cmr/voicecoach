@@ -7681,11 +7681,14 @@ if("serviceWorker" in navigator && location.protocol==="https:" && topLevel && d
 /* ================= v6.1: Camera coach – automatic video evaluation (MediaPipe Face Mesh + Pose, on-device) ================= */
 const VIS={state:"idle",fm:null,ps:null,run:null,hist:null};
 function visStore(){ if(!store.vis) store.vis={hist:[]}; return store.vis; }
-const visBase=()=>{ try{ return new URL("mp/",location.href).href; }catch(e){ return "mp/"; } };
+const VIS_REMOTE="https://kjaf1978-cmr.github.io/voicecoach/mp/";
+async function visBaseFind(){ if(VIS.base) return VIS.base; let local=null; try{ local=new URL("mp/",location.href).href; }catch(e){}
+  if(local&&/^https?:/.test(local)){ try{ const r=await fetch(local+"face_mesh.js",{method:"HEAD",cache:"no-store"}); if(r.ok&&!/text\/html/.test(r.headers.get("content-type")||"")) return VIS.base=local; }catch(e){} }
+  return VIS.base=VIS_REMOTE; }
 function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error("load "+src)); document.head.append(s); }); }
 async function visLoad(onProg){
   if(VIS.state==="ready") return true; if(VIS.state==="loading") { while(VIS.state==="loading") await new Promise(r=>setTimeout(r,200)); return VIS.state==="ready"; }
-  VIS.state="loading"; const base=visBase();
+  VIS.state="loading"; const base=await visBaseFind();
   try{ onProg&&onProg(t("vs_load1")); if(typeof FaceMesh==="undefined") await loadScript(base+"face_mesh.js"); if(typeof Pose==="undefined") await loadScript(base+"pose.js");
     const fm=new FaceMesh({locateFile:f=>base+f}); fm.setOptions({maxNumFaces:1,refineLandmarks:true,minDetectionConfidence:.5,minTrackingConfidence:.5}); fm.onResults(r=>{ VIS._f=r; });
     onProg&&onProg(t("vs_load2")); await Promise.race([fm.initialize(),new Promise((_,r)=>setTimeout(()=>r(new Error("timeout")),120000))]);
