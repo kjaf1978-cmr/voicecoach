@@ -17,6 +17,7 @@ function planFor(date){
   const nx=nextScene(); if(nx) items.push({k:"talk",id:nx.sc.id,l:SET.tl});
   if(SET.consFocus) items.splice(1,0,{k:"cons"});
   if(store.flow&&store.flow.placed) items.splice(2,0,{k:"flow"});
+  if(store.ppc&&store.ppc.prog) items.splice(1,0,{k:"ppc"});
   const ls=LESSONS.find(l=>!store.lessons[l.id]&&l.dim===focus)||LESSONS.find(l=>!store.lessons[l.id])||LESSONS[dayN%LESSONS.length];
   items.push({k:"lesson",id:ls.id});
   store.plan[date]={items,done:{}};
@@ -40,6 +41,7 @@ function planLabel(it){
     case "coach": return t("pk_coach")+": "+coachName(it.id);
     case "cons": return t("pk_cons")+": "+t("st_"+csRecommended());
     case "flow": return t("fl_title")+": "+flLearn(fl().cur).t;
+    case "ppc": return t("pp_title");
     case "art": return t("ser_title")+": "+(ART[SET.tl][it.snd]?it.snd:Object.keys(ART[SET.tl])[0])+" ("+langIn(SET.tl)+")";
   } }
 function planGo(it){
@@ -61,6 +63,7 @@ function planGo(it){
     case "coach": coachGo(it.id); break;
     case "cons": show("speech"); CS.view="home"; CS.stage=csRecommended(); renderCons(); scrollToId("consCard"); break;
     case "flow": show("talk"); FLOW.view="home"; FLOW.sel=fl().cur; renderFlow(); scrollToId("flowCard"); break;
+    case "ppc": show("breath"); PPC.run=null; renderPPC(); scrollToId("ppcCard"); break;
     case "art": show("speech"); SP.snd=ART[SET.tl][it.snd]?it.snd:Object.keys(ART[SET.tl])[0]; SP.pos="i"; SP.idx=0; renderSpeech(); scrollToId("serBox"); break;
   } }
 function renderPlan(){
